@@ -30,7 +30,7 @@ public sealed class GameApplication
         var errors = new ConcurrentQueue<Exception>();
 
         var simulation = new SimulationLoop(world, channel, SystemPipeline.CreateSimulationSystems(),
-            new SnapshotSystem(frames), frames, 1000 / _settings.SimulationFps, shutdown);
+            new SnapshotSystem(frames), frames, shutdown);
         var render = new RenderLoop(console, frames,
             new ConsolePresentSystem(console, frames), 1000 / _settings.RenderFps);
         var input = new InputLoop(channel, GameContent.CreateKeyBindings(), _settings.InputPollMs);
@@ -42,7 +42,7 @@ public sealed class GameApplication
             Start("Input",      () => input.Run(shutdown.Token),      shutdown, errors),
         };
 
-        foreach (var thread in threads) thread.Join();   // консоль освобождаем только после остановки рендера
+        foreach (var thread in threads) thread.Join();
         channel.Close();
 
         if (!errors.IsEmpty) throw new AggregateException("Сбой игрового потока.", errors);

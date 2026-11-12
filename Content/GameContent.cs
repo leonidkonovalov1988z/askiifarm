@@ -5,7 +5,6 @@ using AsciiFarm.Input;
 using askiifarm;
 namespace AsciiFarm.Content;
 
-/// <summary>Контент = данные. Заменяет switch'и из GameRenderer и MapPhysics.</summary>
 public static class GameContent
 {
     public static TilePalette CreatePalette()
@@ -20,9 +19,9 @@ public static class GameContent
         Set(".,'`;", ConsoleColor.Green);
         Set("\"", ConsoleColor.Yellow);
         Set("♣♠", ConsoleColor.DarkGreen, blocks: true);
-        Set("≈", ConsoleColor.Cyan);
+        Set("≈", ConsoleColor.Cyan); // базовый, переопределяется RiverFlowSystem
         Set("┌┐└┘─│┬┴├┤▒#", ConsoleColor.DarkYellow, blocks: true);
-        Set("┼╪", ConsoleColor.DarkYellow);                       // проёмы — проходимы
+        Set("┼╪", ConsoleColor.DarkYellow);
         Set("Θ", ConsoleColor.Red, blocks: true);
         Set("≡", ConsoleColor.White, ConsoleColor.DarkBlue, blocks: true);
         Set("╔╗╚╝═║╠╣╦╩╬", ConsoleColor.Gray, blocks: true);
@@ -44,6 +43,37 @@ public static class GameContent
         Bind(GameCommand.MoveRight, ConsoleKey.D, ConsoleKey.RightArrow);
         Bind(GameCommand.Exit, ConsoleKey.Escape);
         return b;
+    }
+
+    public static CharacterPalette CreateCharacterPalette()
+    {
+        var palette = new CharacterPalette();
+
+        palette.Characters["player"] = new Glyph
+        {
+            Symbol = Cp437Symbols.WhiteSmilingFace,
+            Foreground = ConsoleColor.Yellow,
+            Background = ConsoleColor.Black,
+            Layer = 10
+        };
+
+        palette.Characters["warrior"] = new Glyph
+        {
+            Symbol = Cp437Symbols.BlackSpadeSuit,
+            Foreground = ConsoleColor.White,
+            Background = ConsoleColor.Black,
+            Layer = 10
+        };
+
+        palette.Characters["mage"] = new Glyph
+        {
+            Symbol = Cp437Symbols.EighthNote,
+            Foreground = ConsoleColor.Magenta,
+            Background = ConsoleColor.Black,
+            Layer = 10
+        };
+
+        return palette;
     }
 
     public static Glyph PlayerGlyph => new()
