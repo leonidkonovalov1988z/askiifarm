@@ -4,6 +4,8 @@ using AsciiFarm.Data;
 namespace AsciiFarm.Systems;
 
 /// <summary>Накапливает игровое время из дельты.</summary>
+/// 
+[GameSystem(Order = 1)]
 public sealed class ElapsedTimeSystem : ISystem
 {
     public void Update(World world)

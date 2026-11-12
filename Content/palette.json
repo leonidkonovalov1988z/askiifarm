@@ -1,0 +1,189 @@
+﻿{
+  "fallback": {
+    "foreground": "Gray",
+    "background": "Black",
+    "blocksMovement": false
+  },
+  "tiles": {
+    ".": {
+      "foreground": "Red",
+      "background": "Black",
+      "blocksMovement": false
+    },
+    ",": {
+      "foreground": "Green",
+      "background": "Black",
+      "blocksMovement": false
+    },
+    "'": {
+      "foreground": "Green",
+      "background": "Black",
+      "blocksMovement": false
+    },
+    "`": {
+      "foreground": "Green",
+      "background": "Black",
+      "blocksMovement": false
+    },
+    ";": {
+      "foreground": "Green",
+      "background": "Black",
+      "blocksMovement": false
+    },
+    "\"": {
+      "foreground": "Yellow",
+      "background": "Black",
+      "blocksMovement": false
+    },
+    "♣": {
+      "foreground": "DarkGreen",
+      "background": "Black",
+      "blocksMovement": true
+    },
+    "♠": {
+      "foreground": "DarkGreen",
+      "background": "Black",
+      "blocksMovement": true
+    },
+    "≈": {
+      "foreground": "Cyan",
+      "background": "Black",
+      "blocksMovement": false
+    },
+    "┌": {
+      "foreground": "DarkYellow",
+      "background": "Black",
+      "blocksMovement": true
+    },
+    "┐": {
+      "foreground": "DarkYellow",
+      "background": "Black",
+      "blocksMovement": true
+    },
+    "└": {
+      "foreground": "DarkYellow",
+      "background": "Black",
+      "blocksMovement": true
+    },
+    "┘": {
+      "foreground": "DarkYellow",
+      "background": "Black",
+      "blocksMovement": true
+    },
+    "─": {
+      "foreground": "DarkYellow",
+      "background": "Black",
+      "blocksMovement": true
+    },
+    "│": {
+      "foreground": "DarkYellow",
+      "background": "Black",
+      "blocksMovement": true
+    },
+    "┬": {
+      "foreground": "DarkYellow",
+      "background": "Black",
+      "blocksMovement": true
+    },
+    "┴": {
+      "foreground": "DarkYellow",
+      "background": "Black",
+      "blocksMovement": true
+    },
+    "├": {
+      "foreground": "DarkYellow",
+      "background": "Black",
+      "blocksMovement": true
+    },
+    "┤": {
+      "foreground": "DarkYellow",
+      "background": "Black",
+      "blocksMovement": true
+    },
+    "▒": {
+      "foreground": "DarkYellow",
+      "background": "Black",
+      "blocksMovement": true
+    },
+    "#": {
+      "foreground": "DarkYellow",
+      "background": "Black",
+      "blocksMovement": true
+    },
+    "┼": {
+      "foreground": "DarkYellow",
+      "background": "Black",
+      "blocksMovement": false
+    },
+    "╪": {
+      "foreground": "DarkYellow",
+      "background": "Black",
+      "blocksMovement": false
+    },
+    "Θ": {
+      "foreground": "Red",
+      "background": "Black",
+      "blocksMovement": true
+    },
+    "≡": {
+      "foreground": "White",
+      "background": "DarkBlue",
+      "blocksMovement": true
+    },
+    "╔": {
+      "foreground": "Gray",
+      "background": "Black",
+      "blocksMovement": true
+    },
+    "╗": {
+      "foreground": "Gray",
+      "background": "Black",
+      "blocksMovement": true
+    },
+    "╚": {
+      "foreground": "Gray",
+      "background": "Black",
+      "blocksMovement": true
+    },
+    "╝": {
+      "foreground": "Gray",
+      "background": "Black",
+      "blocksMovement": true
+    },
+    "═": {
+      "foreground": "Gray",
+      "background": "Black",
+      "blocksMovement": true
+    },
+    "║": {
+      "foreground": "Gray",
+      "background": "Black",
+      "blocksMovement": true
+    },
+    "╠": {
+      "foreground": "Gray",
+      "background": "Black",
+      "blocksMovement": true
+    },
+    "╣": {
+      "foreground": "Gray",
+      "background": "Black",
+      "blocksMovement": true
+    },
+    "╦": {
+      "foreground": "Gray",
+      "background": "Black",
+      "blocksMovement": true
+    },
+    "╩": {
+      "foreground": "Gray",
+      "background": "Black",
+      "blocksMovement": true
+    },
+    "╬": {
+      "foreground": "Gray",
+      "background": "Black",
+      "blocksMovement": true
+    }
+  }
+}

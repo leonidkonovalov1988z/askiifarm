@@ -1,15 +1,21 @@
 ﻿// Systems/SystemPipeline.cs
+using System;
+using System.Linq;
+using System.Reflection;
 using AsciiFarm.Core;
 namespace AsciiFarm.Systems;
 
 public static class SystemPipeline
 {
-    public static ISystem[] CreateSimulationSystems() => new ISystem[]
+    public static ISystem[] CreateSimulationSystems()
     {
-        new ElapsedTimeSystem(),     // 1. Время
-        new FpsUpdateSystem(),       // 2. Счётчик FPS
-        new PlayerIntentSystem(),    // 3. Ввод → намерения
-        new MovementSystem(),        // 4. Физика
-        new RiverFlowSystem(),       // 5. Анимация воды
-    };
+        return Assembly.GetExecutingAssembly()
+            .GetTypes()
+            .Where(t => typeof(ISystem).IsAssignableFrom(t) && !t.IsAbstract && !t.IsInterface)
+            .Select(t => new { Type = t, Attr = t.GetCustomAttribute<GameSystemAttribute>() })
+            .Where(x => x.Attr != null)
+            .OrderBy(x => x.Attr.Order)
+            .Select(x => (ISystem)Activator.CreateInstance(x.Type)!)
+            .ToArray();
+    }
 }

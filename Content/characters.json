@@ -1,0 +1,23 @@
+﻿{
+  "defaultPlayerKey": "player",
+  "characters": {
+    "player": {
+      "symbol": "☺",
+      "foreground": "Red",
+      "background": "Black",
+      "layer": 10
+    },
+    "warrior": {
+      "symbol": "♠",
+      "foreground": "White",
+      "background": "Black",
+      "layer": 10
+    },
+    "mage": {
+      "symbol": "♪",
+      "foreground": "Magenta",
+      "background": "Black",
+      "layer": 10
+    }
+  }
+}

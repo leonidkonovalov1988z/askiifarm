@@ -4,6 +4,8 @@ namespace AsciiFarm.App;
 public sealed class GameSettings
 {
     public string MapPath { get; init; } = "map_raw.txt";
+    public string ContentRoot { get; init; } =
+    System.IO.Path.Combine(AppContext.BaseDirectory, "Content");
     public int ScreenWidth { get; init; } = 80;
     public int ScreenHeight { get; init; } = 25;
     public int SimulationFps { get; init; } = 12;
@@ -13,4 +15,5 @@ public sealed class GameSettings
     public int PlayerStartX { get; init; } = 28;
     public int PlayerStartY { get; init; } = 12;
     public string PlayerCharacterKey { get; init; } = "player";
+    public bool UseJsonContent { get; init; } = true;  // ← новое, можно выключить
 }

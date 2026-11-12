@@ -4,6 +4,7 @@ using AsciiFarm.Data;
 namespace AsciiFarm.Systems;
 
 /// <summary>Записывает замер FPS каждый тик.</summary>
+[GameSystem(Order = 2)]
 public sealed class FpsUpdateSystem : ISystem
 {
     public void Update(World world)

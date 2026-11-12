@@ -1,0 +1,13 @@
+﻿{
+  "bindings": {
+    "W": "MoveUp",
+    "UpArrow": "MoveUp",
+    "S": "MoveDown",
+    "DownArrow": "MoveDown",
+    "A": "MoveLeft",
+    "LeftArrow": "MoveLeft",
+    "D": "MoveRight",
+    "RightArrow": "MoveRight",
+    "Escape": "Exit"
+  }
+}

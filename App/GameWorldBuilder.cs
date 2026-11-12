@@ -1,4 +1,5 @@
-﻿using AsciiFarm.Components;
+﻿// App/GameWorldBuilder.cs
+using AsciiFarm.Components;
 using AsciiFarm.Content;
 using AsciiFarm.Core;
 using AsciiFarm.Data;
@@ -13,8 +14,21 @@ public static class GameWorldBuilder
         var data = storage.LoadLatest<GameDataV0_0_3>(settings.MapPath);
 
         var world = new World();
-        var palette = GameContent.CreatePalette();
-        var charPalette = GameContent.CreateCharacterPalette();
+
+        TilePalette palette;
+        KeyBindings _; // не нужен здесь, но загружаем для единообразия
+        CharacterPalette charPalette;
+
+        if (settings.UseJsonContent && Directory.Exists(settings.ContentRoot))
+        {
+            (palette, _, charPalette) = GameContent.LoadFromFiles(settings.ContentRoot);
+        }
+        else
+        {
+            palette = GameContent.CreatePalette();
+            charPalette = GameContent.CreateCharacterPalette();
+        }
+
         world.SetResource(palette);
         world.SetResource(charPalette);
         world.SetResource(new GameState());

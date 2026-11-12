@@ -5,6 +5,7 @@ using AsciiFarm.Data;
 namespace AsciiFarm.Systems;
 
 /// <summary>Бывший MapPhysics: проходимость берётся из данных палитры, а не из switch.</summary>
+[GameSystem(Order = 4)]
 public sealed class MovementSystem : ISystem
 {
     public void Update(World world)

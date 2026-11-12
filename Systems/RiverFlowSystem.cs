@@ -9,6 +9,7 @@ namespace AsciiFarm.Systems;
 /// Анимация реки: каждый водный тайл с шансом 80% синий, 20% белый.
 /// Псевдослучайность детерминирована по (x, y, time).
 /// </summary>
+[GameSystem(Order = 5)]
 public sealed class RiverFlowSystem : ISystem
 {
     private const char WaterSymbol = '≈';

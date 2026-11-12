@@ -5,6 +5,7 @@ using AsciiFarm.Data;
 using AsciiFarm.Input;
 namespace AsciiFarm.Systems;
 
+[GameSystem(Order = 3)]
 public sealed class PlayerIntentSystem : ISystem
 {
     public void Update(World world)

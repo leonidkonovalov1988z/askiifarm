@@ -17,6 +17,7 @@ public sealed class GameApplication
 
     public GameApplication(GameSettings settings) => _settings = settings;
 
+    // App/GameApplication.cs — только метод Run(), остальное без изменений
     public void Run()
     {
         if (Console.IsInputRedirected)
@@ -31,33 +32,38 @@ public sealed class GameApplication
         using var shutdown = new CancellationTokenSource();
         var errors = new ConcurrentQueue<Exception>();
 
+        // Загружаем привязки из того же источника, что и остальной контент
+        KeyBindings bindings;
+        if (_settings.UseJsonContent && Directory.Exists(_settings.ContentRoot))
+        {
+            bindings = new ContentLoader(_settings.ContentRoot).LoadKeyBindings();
+        }
+        else
+        {
+            bindings = GameContent.CreateKeyBindings();
+        }
+
         var simulation = new SimulationLoop(world, channel, SystemPipeline.CreateSimulationSystems(),
             new SnapshotSystem(frames), frames, shutdown);
         var render = new RenderLoop(console, frames,
             new ConsolePresentSystem(console, frames), 1000 / _settings.RenderFps);
-        var input = new InputLoop(channel, GameContent.CreateKeyBindings(), _settings.InputPollMs);
+        var input = new InputLoop(channel, bindings, _settings.InputPollMs);
 
         var threads = new[]
         {
-            Start("Simulation", () => simulation.Run(shutdown.Token), shutdown, errors),
-            Start("Render",     () => render.Run(shutdown.Token),     shutdown, errors),
-            Start("Input",      () => input.Run(shutdown.Token),      shutdown, errors),
-        };
+        Start("Simulation", () => simulation.Run(shutdown.Token), shutdown, errors),
+        Start("Render",     () => render.Run(shutdown.Token),     shutdown, errors),
+        Start("Input",      () => input.Run(shutdown.Token),      shutdown, errors),
+    };
 
         foreach (var thread in threads) thread.Join();
         channel.Close();
-
         if (!errors.IsEmpty) throw new AggregateException("Сбой игрового потока.", errors);
 
-        // Симуляция завершилась — снимаем блокировку, World больше не модифицируется
         world.Guard.Detach();
-
-        // Сохранение при выходе
         var state = world.Resource<GameState>();
-        if (state.NeedsSave)
-            SaveGame(world);
+        if (state.NeedsSave) SaveGame(world);
     }
-
     private void SaveGame(World world)
     {
         var mapEntity = world.Query<TileMapComponent>()[0];
