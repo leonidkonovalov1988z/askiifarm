@@ -1,5 +1,4 @@
-﻿// App/GameWorldBuilder.cs
-using AsciiFarm.Components;
+﻿using AsciiFarm.Components;
 using AsciiFarm.Content;
 using AsciiFarm.Core;
 using AsciiFarm.Data;
@@ -11,10 +10,9 @@ public static class GameWorldBuilder
     public static World Build(GameSettings settings)
     {
         var storage = new GameStorage();
-        var data = storage.LoadAndConvert<GameDataV0_0_1>(settings.MapPath, new Version(0, 0, 1));
+        var data = storage.LoadLatest<GameDataV0_0_3>(settings.MapPath);
 
         var world = new World();
-
         var palette = GameContent.CreatePalette();
         var charPalette = GameContent.CreateCharacterPalette();
         world.SetResource(palette);
@@ -23,12 +21,13 @@ public static class GameWorldBuilder
         world.SetResource(new CommandBuffer());
         world.SetResource(new FpsCounter());
         world.SetResource(new FpsLimiter(settings.SimulationFps));
+        world.SetResource(settings);
 
         var map = world.CreateEntity();
         world.Add(map, new TileMapComponent { Tiles = data.Map });
 
         var player = world.CreateEntity();
-        world.Add(player, new Position(settings.PlayerStartX, settings.PlayerStartY));
+        world.Add(player, new Position(data.PlayerX, data.PlayerY));
         world.Add(player, new PlayerTag());
         world.Add(player, charPalette.Get(settings.PlayerCharacterKey));
 

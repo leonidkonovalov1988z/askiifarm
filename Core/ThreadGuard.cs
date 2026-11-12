@@ -42,4 +42,13 @@ public sealed class ThreadGuard
         internal Scope(ThreadGuard guard) => _guard = guard;
         public void Dispose() => _guard.Release();
     }
+    /// <summary>
+    /// Сбрасывает владельца и флаг занятости.
+    /// Вызывать после завершения потока-владельца, если данные больше не модифицируются.
+    /// </summary>
+    public void Detach()
+    {
+        Volatile.Write(ref _busy, 0);
+        Volatile.Write(ref _ownerThreadId, 0);
+    }
 }

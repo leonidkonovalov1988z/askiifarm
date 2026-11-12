@@ -130,14 +130,16 @@ internal static class Program
 //конец Program.cs
 
 //начало App\GameApplication.cs
-﻿// App/GameApplication.cs
+﻿using AsciiFarm.Components;
 using AsciiFarm.Content;
 using AsciiFarm.Core;
+using AsciiFarm.Data;
 using AsciiFarm.Input;
 using AsciiFarm.Rendering;
 using AsciiFarm.Systems;
 using askiifarm;
 using askiifarm.Rendering;
+using askiifarm.Serialization;
 using System.Collections.Concurrent;
 namespace AsciiFarm.App;
 
@@ -162,7 +164,7 @@ public sealed class GameApplication
         var errors = new ConcurrentQueue<Exception>();
 
         var simulation = new SimulationLoop(world, channel, SystemPipeline.CreateSimulationSystems(),
-            new SnapshotSystem(frames), frames, 1000 / _settings.SimulationFps, shutdown);
+            new SnapshotSystem(frames), frames, shutdown);
         var render = new RenderLoop(console, frames,
             new ConsolePresentSystem(console, frames), 1000 / _settings.RenderFps);
         var input = new InputLoop(channel, GameContent.CreateKeyBindings(), _settings.InputPollMs);
@@ -174,10 +176,35 @@ public sealed class GameApplication
             Start("Input",      () => input.Run(shutdown.Token),      shutdown, errors),
         };
 
-        foreach (var thread in threads) thread.Join();   // консоль освобождаем только после остановки рендера
+        foreach (var thread in threads) thread.Join();
         channel.Close();
 
         if (!errors.IsEmpty) throw new AggregateException("Сбой игрового потока.", errors);
+
+        // Сохранение при выходе
+        var state = world.Resource<GameState>();
+        if (state.NeedsSave)
+            SaveGame(world);
+    }
+
+    private void SaveGame(World world)
+    {
+        var mapEntity = world.Query<TileMapComponent>()[0];
+        var map = world.Store<TileMapComponent>().Get(mapEntity);
+
+        var playerEntity = world.Query<PlayerTag, Position>()[0];
+        var playerPos = world.Store<Position>().Get(playerEntity);
+
+        var data = new GameDataV0_0_3
+        {
+            Map = map.Tiles,
+            PlayerX = playerPos.X,
+            PlayerY = playerPos.Y,
+            TileColors = new Dictionary<char, TileColorData>()
+        };
+
+        var storage = new GameStorage();
+        storage.SaveSmart(_settings.MapPath, GameStorage.LatestVersion, data);
     }
 
     private static Thread Start(string name, Action body,
@@ -204,18 +231,18 @@ public sealed class GameSettings
     public string MapPath { get; init; } = "map_raw.txt";
     public int ScreenWidth { get; init; } = 80;
     public int ScreenHeight { get; init; } = 25;
-    public int SimulationFps { get; init; } = 30;
-    public int RenderFps { get; init; } = 60;
+    public int SimulationFps { get; init; } = 12;
+    public int RenderFps { get; init; } = 24;
     public int InputPollMs { get; init; } = 10;
     public int CommandQueueCapacity { get; init; } = 32;
     public int PlayerStartX { get; init; } = 28;
     public int PlayerStartY { get; init; } = 12;
+    public string PlayerCharacterKey { get; init; } = "player";
 }.
 //конец App\GameSettings.cs
 .
 //начало App\GameWorldBuilder.cs
-﻿// App/GameWorldBuilder.cs
-using AsciiFarm.Components;
+﻿using AsciiFarm.Components;
 using AsciiFarm.Content;
 using AsciiFarm.Core;
 using AsciiFarm.Data;
@@ -227,20 +254,27 @@ public static class GameWorldBuilder
     public static World Build(GameSettings settings)
     {
         var storage = new GameStorage();
-        var data = storage.LoadAndConvert<GameDataV0_0_1>(settings.MapPath, new Version(0, 0, 1));
+        var data = storage.LoadLatest<GameDataV0_0_3>(settings.MapPath);
 
         var world = new World();
-        world.SetResource(GameContent.CreatePalette());
+
+        var palette = GameContent.CreatePalette();
+        var charPalette = GameContent.CreateCharacterPalette();
+        world.SetResource(palette);
+        world.SetResource(charPalette);
         world.SetResource(new GameState());
         world.SetResource(new CommandBuffer());
+        world.SetResource(new FpsCounter());
+        world.SetResource(new FpsLimiter(settings.SimulationFps));
+        world.SetResource(settings);
 
         var map = world.CreateEntity();
         world.Add(map, new TileMapComponent { Tiles = data.Map });
 
         var player = world.CreateEntity();
-        world.Add(player, new Position(settings.PlayerStartX, settings.PlayerStartY));
-        world.Add(player, GameContent.PlayerGlyph);
+        world.Add(player, new Position(data.PlayerX, data.PlayerY));
         world.Add(player, new PlayerTag());
+        world.Add(player, charPalette.Get(settings.PlayerCharacterKey));
 
         return world;
     }
@@ -284,7 +318,6 @@ public sealed class RenderLoop
 .
 //начало App\SimulationLoop.cs
 ﻿// App/SimulationLoop.cs
-using System.Diagnostics;
 using AsciiFarm.Core;
 using AsciiFarm.Data;
 using AsciiFarm.Input;
@@ -299,43 +332,44 @@ public sealed class SimulationLoop
     private readonly ISystem[] _systems;
     private readonly SnapshotSystem _snapshot;
     private readonly FrameExchange<RenderFrame> _frames;
-    private readonly int _tickMs;
     private readonly CancellationTokenSource _shutdown;
 
     public SimulationLoop(World world, CommandChannel channel, ISystem[] systems,
                           SnapshotSystem snapshot, FrameExchange<RenderFrame> frames,
-                          int tickMs, CancellationTokenSource shutdown)
+                          CancellationTokenSource shutdown)
     {
         _world = world; _channel = channel; _systems = systems;
-        _snapshot = snapshot; _frames = frames; _tickMs = tickMs; _shutdown = shutdown;
+        _snapshot = snapshot; _frames = frames; _shutdown = shutdown;
     }
 
     public void Run(CancellationToken token)
     {
-        _world.Guard.AttachToCurrentThread();   // с этой минуты World — только наш
+        _world.Guard.AttachToCurrentThread();
         _frames.AttachWriter();
 
         var state = _world.Resource<GameState>();
         var buffer = _world.Resource<CommandBuffer>();
-        var clock = Stopwatch.StartNew();
+        var limiter = _world.Resource<FpsLimiter>();
 
         while (!token.IsCancellationRequested && state.IsRunning)
         {
-            long startedAt = clock.ElapsedMilliseconds;
-
-            using (_world.Guard.Enter())        // блокиратор «данные изменяются»
+            while (!limiter.BeginTick())
             {
-                _channel.DrainTo(buffer.Items); // единственная точка чтения чужих данных
-                foreach (var system in _systems) system.Update(_world);
-                state.Tick++;
-                _snapshot.Update(_world);       // публикация кадра
+                Thread.Sleep(1);
+                if (token.IsCancellationRequested || !state.IsRunning) break;
             }
 
-            int delay = _tickMs - (int)(clock.ElapsedMilliseconds - startedAt);
-            if (delay > 0) Thread.Sleep(delay);
+            if (token.IsCancellationRequested || !state.IsRunning) break;
+
+            using (_world.Guard.Enter())
+            {
+                _channel.DrainTo(buffer.Items);
+                foreach (var system in _systems) system.Update(_world);
+                _snapshot.Update(_world);
+            }
         }
 
-        _shutdown.Cancel();                     // гасим ввод и рендер
+        _shutdown.Cancel();
     }
 }.
 //конец App\SimulationLoop.cs
@@ -385,7 +419,6 @@ using AsciiFarm.Input;
 using askiifarm;
 namespace AsciiFarm.Content;
 
-/// <summary>Контент = данные. Заменяет switch'и из GameRenderer и MapPhysics.</summary>
 public static class GameContent
 {
     public static TilePalette CreatePalette()
@@ -400,9 +433,9 @@ public static class GameContent
         Set(".,'`;", ConsoleColor.Green);
         Set("\"", ConsoleColor.Yellow);
         Set("♣♠", ConsoleColor.DarkGreen, blocks: true);
-        Set("≈", ConsoleColor.Cyan);
+        Set("≈", ConsoleColor.Cyan); // базовый, переопределяется RiverFlowSystem
         Set("┌┐└┘─│┬┴├┤▒#", ConsoleColor.DarkYellow, blocks: true);
-        Set("┼╪", ConsoleColor.DarkYellow);                       // проёмы — проходимы
+        Set("┼╪", ConsoleColor.DarkYellow);
         Set("Θ", ConsoleColor.Red, blocks: true);
         Set("≡", ConsoleColor.White, ConsoleColor.DarkBlue, blocks: true);
         Set("╔╗╚╝═║╠╣╦╩╬", ConsoleColor.Gray, blocks: true);
@@ -424,6 +457,37 @@ public static class GameContent
         Bind(GameCommand.MoveRight, ConsoleKey.D, ConsoleKey.RightArrow);
         Bind(GameCommand.Exit, ConsoleKey.Escape);
         return b;
+    }
+
+    public static CharacterPalette CreateCharacterPalette()
+    {
+        var palette = new CharacterPalette();
+
+        palette.Characters["player"] = new Glyph
+        {
+            Symbol = Cp437Symbols.WhiteSmilingFace,
+            Foreground = ConsoleColor.Yellow,
+            Background = ConsoleColor.Black,
+            Layer = 10
+        };
+
+        palette.Characters["warrior"] = new Glyph
+        {
+            Symbol = Cp437Symbols.BlackSpadeSuit,
+            Foreground = ConsoleColor.White,
+            Background = ConsoleColor.Black,
+            Layer = 10
+        };
+
+        palette.Characters["mage"] = new Glyph
+        {
+            Symbol = Cp437Symbols.EighthNote,
+            Foreground = ConsoleColor.Magenta,
+            Background = ConsoleColor.Black,
+            Layer = 10
+        };
+
+        return palette;
     }
 
     public static Glyph PlayerGlyph => new()
@@ -470,6 +534,48 @@ namespace AsciiFarm.Core;
 
 public readonly record struct Entity(int Id);.
 //конец Core\Entity.cs
+.
+//начало Core\FpsLimiter.cs
+﻿// Core/FpsLimiter.cs
+using System.Diagnostics;
+namespace AsciiFarm.Core;
+
+/// <summary>
+/// Ограничитель частоты кадров через дельта-время.
+/// </summary>
+public sealed class FpsLimiter
+{
+    private readonly double _targetFrameTimeSeconds;
+    private readonly Stopwatch _stopwatch = new();
+    private double _lastAccumulatedTime;
+
+    public int TargetFps { get; }
+    public float DeltaTime { get; private set; }
+    public double ElapsedTime => _stopwatch.Elapsed.TotalSeconds;
+
+    public FpsLimiter(int targetFps)
+    {
+        TargetFps = targetFps > 0 ? targetFps
+            : throw new ArgumentOutOfRangeException(nameof(targetFps));
+        _targetFrameTimeSeconds = 1.0 / targetFps;
+    }
+
+    /// <summary>Возвращает true, когда пора делать тик.</summary>
+    public bool BeginTick()
+    {
+        if (!_stopwatch.IsRunning) _stopwatch.Start();
+
+        double now = _stopwatch.Elapsed.TotalSeconds;
+        double delta = now - _lastAccumulatedTime;
+
+        if (delta < _targetFrameTimeSeconds * 0.95) return false;
+
+        DeltaTime = (float)Math.Min(delta, _targetFrameTimeSeconds * 2);
+        _lastAccumulatedTime = now;
+        return true;
+    }
+}.
+//конец Core\FpsLimiter.cs
 .
 //начало Core\ISystem.cs
 ﻿// Core/ISystem.cs
@@ -595,6 +701,25 @@ public sealed class World
 }.
 //конец Core\World.cs
 .
+//начало Data\CharacterPalette.cs
+﻿// Data/CharacterPalette.cs
+using System.Collections.Generic;
+using AsciiFarm.Components;
+namespace AsciiFarm.Data;
+
+/// <summary>Палитра символов персонажей. Чистые данные.</summary>
+public sealed class CharacterPalette
+{
+    public Dictionary<string, Glyph> Characters { get; } = new();
+    public string DefaultPlayerKey { get; set; } = "player";
+
+    public Glyph Get(string key) =>
+        Characters.TryGetValue(key, out var glyph)
+            ? glyph
+            : throw new KeyNotFoundException($"Символ '{key}' не найден");
+}.
+//конец Data\CharacterPalette.cs
+.
 //начало Data\CommandBuffer.cs
 ﻿// Data/CommandBuffer.cs
 using AsciiFarm.Input;
@@ -607,15 +732,61 @@ public sealed class CommandBuffer
 }.
 //конец Data\CommandBuffer.cs
 .
-//начало Data\GameState.cs
-﻿// Data/GameState.cs
+//начало Data\FpsCounter.cs
+﻿// Data/FpsCounter.cs
+using System.Collections.Generic;
 namespace AsciiFarm.Data;
 
-/// <summary>Читает/пишет только поток симуляции. Остальные видят CancellationToken.</summary>
+/// <summary>Счётчик FPS (скользящее окно + экспоненциальное сглаживание).</summary>
+public sealed class FpsCounter
+{
+    private const int SampleSize = 60;
+    private readonly Queue<double> _frameTimes = new();
+    private readonly object _gate = new();
+
+    public float CurrentFps { get; private set; }
+    public float AverageFps { get; private set; }
+
+    public void RecordFrame(double timestampSeconds)
+    {
+        lock (_gate)
+        {
+            _frameTimes.Enqueue(timestampSeconds);
+            if (_frameTimes.Count > SampleSize) _frameTimes.Dequeue();
+
+            if (_frameTimes.Count >= 2)
+            {
+                var first = _frameTimes.Peek();
+                var last = _frameTimes.ToArray()[^1];
+                double duration = last - first;
+                if (duration > 0.001)
+                    CurrentFps = (float)((_frameTimes.Count - 1) / duration);
+            }
+        }
+    }
+
+    public void UpdateAverage(float instantFps)
+    {
+        lock (_gate)
+        {
+            AverageFps = AverageFps == 0
+                ? instantFps
+                : AverageFps * 0.9f + instantFps * 0.1f;
+        }
+    }
+}.
+//конец Data\FpsCounter.cs
+.
+//начало Data\GameState.cs
+﻿namespace AsciiFarm.Data;
+
 public sealed class GameState
 {
     public bool IsRunning { get; set; } = true;
+    public bool NeedsSave { get; set; } = false;
     public long Tick { get; set; }
+    public float DeltaTime { get; set; }
+    public double ElapsedTime { get; set; }
 }.
 //конец Data\GameState.cs
 .
@@ -1402,29 +1573,124 @@ public sealed class RenderFrame
 }.
 //конец Rendering\RenderFrame.cs
 .
+//начало Serialization\Converters.cs
+﻿// Serialization/Converters.cs
+using System;
+using System.Collections.Generic;
+namespace askiifarm.Serialization;
+
+// Конвертер 0.0.2 → 0.0.3 (добавляет дефолтные значения)
+public class ConverterV0_0_2ToV0_0_3 : IVersionConverter
+{
+    public Version SourceVersion => new Version(0, 0, 2);
+    public Version TargetVersion => new Version(0, 0, 3);
+
+    public object Convert(object previousVersionData)
+    {
+        if (previousVersionData is not GameDataV0_0_1 v2)
+            throw new ArgumentException($"Ожидался тип {nameof(GameDataV0_0_1)}");
+
+        // Дефолтная позиция игрока
+        int playerX = 28;
+        int playerY = 12;
+
+        // Дефолтные цвета для стандартных тайлов
+        var tileColors = new Dictionary<char, TileColorData>
+        {
+            ['.'] = new TileColorData { Foreground = (int)ConsoleColor.Green, Background = (int)ConsoleColor.Black },
+            [','] = new TileColorData { Foreground = (int)ConsoleColor.Green, Background = (int)ConsoleColor.Black },
+            ['\''] = new TileColorData { Foreground = (int)ConsoleColor.Green, Background = (int)ConsoleColor.Black },
+            ['`'] = new TileColorData { Foreground = (int)ConsoleColor.Green, Background = (int)ConsoleColor.Black },
+            [';'] = new TileColorData { Foreground = (int)ConsoleColor.Green, Background = (int)ConsoleColor.Black },
+            ['"'] = new TileColorData { Foreground = (int)ConsoleColor.Yellow, Background = (int)ConsoleColor.Black },
+            ['♣'] = new TileColorData { Foreground = (int)ConsoleColor.DarkGreen, Background = (int)ConsoleColor.Black },
+            ['♠'] = new TileColorData { Foreground = (int)ConsoleColor.DarkGreen, Background = (int)ConsoleColor.Black },
+            ['≈'] = new TileColorData { Foreground = (int)ConsoleColor.Cyan, Background = (int)ConsoleColor.Black },
+            ['┌'] = new TileColorData { Foreground = (int)ConsoleColor.DarkYellow, Background = (int)ConsoleColor.Black },
+            ['┐'] = new TileColorData { Foreground = (int)ConsoleColor.DarkYellow, Background = (int)ConsoleColor.Black },
+            ['└'] = new TileColorData { Foreground = (int)ConsoleColor.DarkYellow, Background = (int)ConsoleColor.Black },
+            ['┘'] = new TileColorData { Foreground = (int)ConsoleColor.DarkYellow, Background = (int)ConsoleColor.Black },
+            ['─'] = new TileColorData { Foreground = (int)ConsoleColor.DarkYellow, Background = (int)ConsoleColor.Black },
+            ['│'] = new TileColorData { Foreground = (int)ConsoleColor.DarkYellow, Background = (int)ConsoleColor.Black },
+            ['┬'] = new TileColorData { Foreground = (int)ConsoleColor.DarkYellow, Background = (int)ConsoleColor.Black },
+            ['┴'] = new TileColorData { Foreground = (int)ConsoleColor.DarkYellow, Background = (int)ConsoleColor.Black },
+            ['├'] = new TileColorData { Foreground = (int)ConsoleColor.DarkYellow, Background = (int)ConsoleColor.Black },
+            ['┤'] = new TileColorData { Foreground = (int)ConsoleColor.DarkYellow, Background = (int)ConsoleColor.Black },
+            ['┼'] = new TileColorData { Foreground = (int)ConsoleColor.DarkYellow, Background = (int)ConsoleColor.Black },
+            ['╪'] = new TileColorData { Foreground = (int)ConsoleColor.DarkYellow, Background = (int)ConsoleColor.Black },
+            ['▒'] = new TileColorData { Foreground = (int)ConsoleColor.DarkYellow, Background = (int)ConsoleColor.Black },
+            ['#'] = new TileColorData { Foreground = (int)ConsoleColor.DarkYellow, Background = (int)ConsoleColor.Black },
+            ['Θ'] = new TileColorData { Foreground = (int)ConsoleColor.Red, Background = (int)ConsoleColor.Black },
+            ['≡'] = new TileColorData { Foreground = (int)ConsoleColor.White, Background = (int)ConsoleColor.DarkBlue },
+            ['╔'] = new TileColorData { Foreground = (int)ConsoleColor.Gray, Background = (int)ConsoleColor.Black },
+            ['╗'] = new TileColorData { Foreground = (int)ConsoleColor.Gray, Background = (int)ConsoleColor.Black },
+            ['╚'] = new TileColorData { Foreground = (int)ConsoleColor.Gray, Background = (int)ConsoleColor.Black },
+            ['╝'] = new TileColorData { Foreground = (int)ConsoleColor.Gray, Background = (int)ConsoleColor.Black },
+            ['═'] = new TileColorData { Foreground = (int)ConsoleColor.Gray, Background = (int)ConsoleColor.Black },
+            ['║'] = new TileColorData { Foreground = (int)ConsoleColor.Gray, Background = (int)ConsoleColor.Black },
+            ['╠'] = new TileColorData { Foreground = (int)ConsoleColor.Gray, Background = (int)ConsoleColor.Black },
+            ['╣'] = new TileColorData { Foreground = (int)ConsoleColor.Gray, Background = (int)ConsoleColor.Black },
+            ['╦'] = new TileColorData { Foreground = (int)ConsoleColor.Gray, Background = (int)ConsoleColor.Black },
+            ['╩'] = new TileColorData { Foreground = (int)ConsoleColor.Gray, Background = (int)ConsoleColor.Black },
+            ['╬'] = new TileColorData { Foreground = (int)ConsoleColor.Gray, Background = (int)ConsoleColor.Black },
+        };
+
+        return new GameDataV0_0_3
+        {
+            Map = (char[,])v2.Map.Clone(),
+            PlayerX = playerX,
+            PlayerY = playerY,
+            TileColors = tileColors
+        };
+    }
+}
+
+// Конвертер 0.0.3 → 0.0.2 (удаляет новые поля)
+public class ConverterV0_0_3ToV0_0_2 : IVersionConverter
+{
+    public Version SourceVersion => new Version(0, 0, 3);
+    public Version TargetVersion => new Version(0, 0, 2);
+
+    public object Convert(object previousVersionData)
+    {
+        if (previousVersionData is not GameDataV0_0_3 v3)
+            throw new ArgumentException($"Ожидался тип {nameof(GameDataV0_0_3)}");
+
+        return new GameDataV0_0_2
+        {
+            Map = (char[,])v3.Map.Clone()
+        };
+    }
+}.
+//конец Serialization\Converters.cs
+.
 //начало Serialization\GameStorage.cs
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
-
 namespace askiifarm.Serialization
 {
     public class GameStorage
     {
-        // Магическая сигнатура для бинарных файлов (начиная с версии 0.0.1)
         private static readonly byte[] BinarySignature = Encoding.ASCII.GetBytes("AFARM");
-
         private readonly Dictionary<Version, IVersionFormatHandler> _handlers = new();
         private readonly Dictionary<Version, IVersionConverter> _converters = new();
+
+        public static Version LatestVersion => new Version(0, 0, 3);
 
         public GameStorage()
         {
             RegisterHandler(new FormatHandlerV0_0_0());
             RegisterHandler(new FormatHandlerV0_0_1());
+            RegisterHandler(new FormatHandlerV0_0_2());
+            RegisterHandler(new FormatHandlerV0_0_3());
 
             RegisterConverter(new ConverterV0_0_0ToV0_0_1());
+            RegisterConverter(new ConverterV0_0_1ToV0_0_2());
+            RegisterConverter(new ConverterV0_0_2ToV0_0_3());
+            RegisterConverter(new ConverterV0_0_3ToV0_0_2());
         }
 
         public void RegisterHandler(IVersionFormatHandler handler) =>
@@ -1433,17 +1699,12 @@ namespace askiifarm.Serialization
         public void RegisterConverter(IVersionConverter converter) =>
             _converters[converter.SourceVersion] = converter;
 
-        /// <summary>
-        /// Сохраняет данные указанной версии на диск.
-        /// </summary>
         public void Save(string filePath, Version version, object data)
         {
             if (!_handlers.TryGetValue(version, out var handler))
                 throw new NotSupportedException($"Обработчик для версии {version} не найден.");
 
             using var stream = new FileStream(filePath, FileMode.Create, FileAccess.Write);
-
-            // Если версия >= 0.0.1, пишем бинарный заголовок и номер версии
             if (version > new Version(0, 0, 0))
             {
                 using var headerWriter = new BinaryWriter(stream, Encoding.UTF8, leaveOpen: true);
@@ -1452,20 +1713,14 @@ namespace askiifarm.Serialization
                 headerWriter.Write(version.Minor);
                 headerWriter.Write(version.Build);
             }
-
             handler.Save(stream, data);
         }
 
-        /// <summary>
-        /// Читает файл, автоматически определяет его версию и распаковывает в соответствующий класс.
-        /// </summary>
         public (Version Version, object Data) Load(string filePath)
         {
             using var stream = new FileStream(filePath, FileMode.Open, FileAccess.Read);
-
             Version detectedVersion;
 
-            // Проверяем, начинается ли файл с бинарной сигнатуры "AFARM"
             if (HasBinarySignature(stream))
             {
                 using var headerReader = new BinaryReader(stream, Encoding.UTF8, leaveOpen: true);
@@ -1476,7 +1731,6 @@ namespace askiifarm.Serialization
             }
             else
             {
-                // Если сигнатуры нет — считаем, что это сырой текстовый файл версии 0.0.0
                 stream.Position = 0;
                 detectedVersion = new Version(0, 0, 0);
             }
@@ -1488,20 +1742,13 @@ namespace askiifarm.Serialization
             return (detectedVersion, data);
         }
 
-        /// <summary>
-        /// Конвертирует данные из версии X-1 в версию X.
-        /// </summary>
         public object ConvertStep(Version currentVersion, object data)
         {
             if (!_converters.TryGetValue(currentVersion, out var converter))
                 throw new InvalidOperationException($"Нет конвертера для перехода с версии {currentVersion}.");
-
             return converter.Convert(data);
         }
 
-        /// <summary>
-        /// Загружает файл любой старой версии и прогоняет через цепочку конвертеров до целевой версии.
-        /// </summary>
         public T LoadAndConvert<T>(string filePath, Version targetVersion) where T : class
         {
             var (currentVersion, currentData) = Load(filePath);
@@ -1510,7 +1757,6 @@ namespace askiifarm.Serialization
             {
                 if (!_converters.TryGetValue(currentVersion, out var converter))
                     throw new InvalidOperationException($"Не найден конвертер для версии {currentVersion}.");
-
                 currentData = converter.Convert(currentData);
                 currentVersion = converter.TargetVersion;
             }
@@ -1522,56 +1768,106 @@ namespace askiifarm.Serialization
                 ?? throw new InvalidCastException($"Данные версии {targetVersion} не соответствуют типу {typeof(T).Name}.");
         }
 
+        /// <summary>
+        /// Загружает файл, автоматически конвертируя до последней версии.
+        /// </summary>
+        public T LoadLatest<T>(string filePath) where T : class
+        {
+            return LoadAndConvert<T>(filePath, LatestVersion);
+        }
+
+        /// <summary>
+        /// Сохраняет данные, перезаписывая файл только если версия совпадает.
+        /// Иначе создаёт новый файл с суффиксом версии.
+        /// </summary>
+        public void SaveSmart(string filePath, Version version, object data)
+        {
+            if (!File.Exists(filePath))
+            {
+                Save(filePath, version, data);
+                return;
+            }
+
+            var (existingVersion, _) = Load(filePath);
+
+            if (existingVersion == version)
+            {
+                Save(filePath, version, data);
+            }
+            else
+            {
+                string dir = Path.GetDirectoryName(filePath) ?? ".";
+                string name = Path.GetFileNameWithoutExtension(filePath);
+                string ext = Path.GetExtension(filePath);
+                string newFilePath = Path.Combine(dir, $"{name}_v{version.Major}.{version.Minor}.{version.Build}{ext}");
+                Save(newFilePath, version, data);
+            }
+        }
+
         private static bool HasBinarySignature(Stream stream)
         {
             if (stream.Length < BinarySignature.Length)
                 return false;
-
             byte[] buffer = new byte[BinarySignature.Length];
             int bytesRead = stream.Read(buffer, 0, buffer.Length);
-
             return bytesRead == BinarySignature.Length && buffer.SequenceEqual(BinarySignature);
         }
     }
-}
-.
+}.
 //конец Serialization\GameStorage.cs
 .
 //начало Serialization\Serialization.cs
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
-using System.IO;   // ← добавить
-
 namespace askiifarm.Serialization
 {
     // --- Модели данных ---
-
-    /// <summary>
-    /// Версия 0.0.0: Карта, загруженная из сырого текстового файла.
-    /// </summary>
-    /// 
 
     public class GameDataV0_0_0
     {
         public char[,] Map { get; set; } = new char[0, 0];
     }
 
-    /// <summary>
-    /// Версия 0.0.1: Та же карта, но уже в стандарте бинарного сохранения.
-    /// </summary>
     public class GameDataV0_0_1
     {
         public char[,] Map { get; set; } = new char[0, 0];
     }
 
-    // --- Интерфейсы ---
+    /// <summary>
+    /// Версия 0.0.2: Карта + позиция игрока.
+    /// </summary>
+    public class GameDataV0_0_2
+    {
+        public char[,] Map { get; set; } = new char[0, 0];
+        public int PlayerX { get; set; }
+        public int PlayerY { get; set; }
+    }
 
     /// <summary>
-    /// Общий интерфейс для чтения/записи конкретной версии.
+    /// Версия 0.0.3: Карта + позиция игрока + цвета тайлов.
     /// </summary>
+    public class GameDataV0_0_3
+    {
+        public char[,] Map { get; set; } = new char[0, 0];
+        public int PlayerX { get; set; }
+        public int PlayerY { get; set; }
+        public Dictionary<char, TileColorData> TileColors { get; set; } = new();
+    }
+
+    /// <summary>
+    /// Цвета одного тайла (сериализуемая версия).
+    /// </summary>
+    public class TileColorData
+    {
+        public int Foreground { get; set; }
+        public int Background { get; set; }
+    }
+
+    // --- Интерфейсы ---
+
     public interface IVersionFormatHandler
     {
         Version Version { get; }
@@ -1579,9 +1875,6 @@ namespace askiifarm.Serialization
         object Load(Stream stream);
     }
 
-    /// <summary>
-    /// Интерфейс конвертера из версии X-1 в версию X.
-    /// </summary>
     public interface IVersionConverter
     {
         Version SourceVersion { get; }
@@ -1589,7 +1882,8 @@ namespace askiifarm.Serialization
         object Convert(object previousVersionData);
     }
 
-    // --- Обработчик версии 0.0.0 (Текстовый файл с картой) ---
+    // --- Обработчик версии 0.0.0 ---
+
     public class FormatHandlerV0_0_0 : IVersionFormatHandler
     {
         public Version Version => new Version(0, 0, 0);
@@ -1599,18 +1893,14 @@ namespace askiifarm.Serialization
             if (data is not GameDataV0_0_0 state)
                 throw new ArgumentException($"Ожидался тип {nameof(GameDataV0_0_0)}");
 
-            // Сохраняем в обычный текст (UTF-8), если понадобится выгрузить обратно
             using var writer = new StreamWriter(stream, Encoding.UTF8, leaveOpen: true);
             int width = state.Map.GetLength(0);
             int height = state.Map.GetLength(1);
-
             for (int y = 0; y < height; y++)
             {
                 char[] row = new char[width];
                 for (int x = 0; x < width; x++)
-                {
                     row[x] = state.Map[x, y];
-                }
                 writer.WriteLine(row);
             }
         }
@@ -1619,45 +1909,34 @@ namespace askiifarm.Serialization
         {
             using var reader = new StreamReader(stream, Encoding.UTF8, leaveOpen: true);
             string content = reader.ReadToEnd();
-
-            // Разбиваем на строки, убирая символы переноса \r и \n
             string[] lines = content.Split(new[] { "\r\n", "\n", "\r" }, StringSplitOptions.None);
 
-            // Убираем пустые строки в самом конце файла (если при копировании остался лишний Enter)
             int height = lines.Length;
             while (height > 0 && string.IsNullOrEmpty(lines[height - 1]))
-            {
                 height--;
-            }
 
             if (height == 0)
                 return new GameDataV0_0_0 { Map = new char[0, 0] };
 
-            // Находим максимальную ширину строки
             int width = 0;
             for (int y = 0; y < height; y++)
-            {
                 if (lines[y].Length > width)
                     width = lines[y].Length;
-            }
 
-            // Заполняем двумерный массив [x, y]
             char[,] map = new char[width, height];
             for (int y = 0; y < height; y++)
             {
                 string line = lines[y];
                 for (int x = 0; x < width; x++)
-                {
-                    // Если строка короче максимальной ширины, добиваем пробелом
                     map[x, y] = x < line.Length ? line[x] : ' ';
-                }
             }
 
             return new GameDataV0_0_0 { Map = map };
         }
     }
 
-    // --- Обработчик версии 0.0.1 (Бинарный формат с заголовком версии) ---
+    // --- Обработчик версии 0.0.1 ---
+
     public class FormatHandlerV0_0_1 : IVersionFormatHandler
     {
         public Version Version => new Version(0, 0, 1);
@@ -1668,43 +1947,128 @@ namespace askiifarm.Serialization
                 throw new ArgumentException($"Ожидался тип {nameof(GameDataV0_0_1)}");
 
             using var writer = new BinaryWriter(stream, Encoding.UTF8, leaveOpen: true);
-
             int width = state.Map.GetLength(0);
             int height = state.Map.GetLength(1);
-
             writer.Write(width);
             writer.Write(height);
-
             for (int y = 0; y < height; y++)
-            {
                 for (int x = 0; x < width; x++)
-                {
                     writer.Write(state.Map[x, y]);
-                }
+        }
+
+        public object Load(Stream stream)
+        {
+            using var reader = new BinaryReader(stream, Encoding.UTF8, leaveOpen: true);
+            int width = reader.ReadInt32();
+            int height = reader.ReadInt32();
+            char[,] map = new char[width, height];
+            for (int y = 0; y < height; y++)
+                for (int x = 0; x < width; x++)
+                    map[x, y] = reader.ReadChar();
+            return new GameDataV0_0_1 { Map = map };
+        }
+    }
+
+    // --- Обработчик версии 0.0.2 ---
+
+    public class FormatHandlerV0_0_2 : IVersionFormatHandler
+    {
+        public Version Version => new Version(0, 0, 2);
+
+        public void Save(Stream stream, object data)
+        {
+            if (data is not GameDataV0_0_2 state)
+                throw new ArgumentException($"Ожидался тип {nameof(GameDataV0_0_2)}");
+
+            using var writer = new BinaryWriter(stream, Encoding.UTF8, leaveOpen: true);
+            int width = state.Map.GetLength(0);
+            int height = state.Map.GetLength(1);
+            writer.Write(width);
+            writer.Write(height);
+            for (int y = 0; y < height; y++)
+                for (int x = 0; x < width; x++)
+                    writer.Write(state.Map[x, y]);
+            writer.Write(state.PlayerX);
+            writer.Write(state.PlayerY);
+        }
+
+        public object Load(Stream stream)
+        {
+            using var reader = new BinaryReader(stream, Encoding.UTF8, leaveOpen: true);
+            int width = reader.ReadInt32();
+            int height = reader.ReadInt32();
+            char[,] map = new char[width, height];
+            for (int y = 0; y < height; y++)
+                for (int x = 0; x < width; x++)
+                    map[x, y] = reader.ReadChar();
+            int playerX = reader.ReadInt32();
+            int playerY = reader.ReadInt32();
+            return new GameDataV0_0_2 { Map = map, PlayerX = playerX, PlayerY = playerY };
+        }
+    }
+
+    // --- Обработчик версии 0.0.3 ---
+
+    public class FormatHandlerV0_0_3 : IVersionFormatHandler
+    {
+        public Version Version => new Version(0, 0, 3);
+
+        public void Save(Stream stream, object data)
+        {
+            if (data is not GameDataV0_0_3 state)
+                throw new ArgumentException($"Ожидался тип {nameof(GameDataV0_0_3)}");
+
+            using var writer = new BinaryWriter(stream, Encoding.UTF8, leaveOpen: true);
+            int width = state.Map.GetLength(0);
+            int height = state.Map.GetLength(1);
+            writer.Write(width);
+            writer.Write(height);
+            for (int y = 0; y < height; y++)
+                for (int x = 0; x < width; x++)
+                    writer.Write(state.Map[x, y]);
+            writer.Write(state.PlayerX);
+            writer.Write(state.PlayerY);
+            writer.Write(state.TileColors.Count);
+            foreach (var kvp in state.TileColors)
+            {
+                writer.Write(kvp.Key);
+                writer.Write(kvp.Value.Foreground);
+                writer.Write(kvp.Value.Background);
             }
         }
 
         public object Load(Stream stream)
         {
             using var reader = new BinaryReader(stream, Encoding.UTF8, leaveOpen: true);
-
             int width = reader.ReadInt32();
             int height = reader.ReadInt32();
-
             char[,] map = new char[width, height];
             for (int y = 0; y < height; y++)
-            {
                 for (int x = 0; x < width; x++)
-                {
                     map[x, y] = reader.ReadChar();
-                }
+            int playerX = reader.ReadInt32();
+            int playerY = reader.ReadInt32();
+            int colorCount = reader.ReadInt32();
+            var tileColors = new Dictionary<char, TileColorData>();
+            for (int i = 0; i < colorCount; i++)
+            {
+                char key = reader.ReadChar();
+                int fg = reader.ReadInt32();
+                int bg = reader.ReadInt32();
+                tileColors[key] = new TileColorData { Foreground = fg, Background = bg };
             }
-
-            return new GameDataV0_0_1 { Map = map };
+            return new GameDataV0_0_3
+            {
+                Map = map,
+                PlayerX = playerX,
+                PlayerY = playerY,
+                TileColors = tileColors
+            };
         }
     }
 
-    // --- Конвертер из версии 0.0.0 в версию 0.0.1 ---
+    // --- Конвертеры ---
+
     public class ConverterV0_0_0ToV0_0_1 : IVersionConverter
     {
         public Version SourceVersion => new Version(0, 0, 0);
@@ -1714,16 +2078,28 @@ namespace askiifarm.Serialization
         {
             if (previousVersionData is not GameDataV0_0_0 v0)
                 throw new ArgumentException($"Ожидался тип {nameof(GameDataV0_0_0)}");
+            return new GameDataV0_0_1 { Map = (char[,])v0.Map.Clone() };
+        }
+    }
 
-            // Клонируем массив карты, чтобы данные были независимыми
-            char[,] clonedMap = (char[,])v0.Map.Clone();
+    public class ConverterV0_0_1ToV0_0_2 : IVersionConverter
+    {
+        public Version SourceVersion => new Version(0, 0, 1);
+        public Version TargetVersion => new Version(0, 0, 2);
 
-            return new GameDataV0_0_1
+        public object Convert(object previousVersionData)
+        {
+            if (previousVersionData is not GameDataV0_0_1 v1)
+                throw new ArgumentException($"Ожидался тип {nameof(GameDataV0_0_1)}");
+            return new GameDataV0_0_2
             {
-                Map = clonedMap
+                Map = (char[,])v1.Map.Clone(),
+                PlayerX = 28,
+                PlayerY = 12
             };
         }
     }
+
 }.
 //конец Serialization\Serialization.cs
 .
@@ -1764,6 +2140,48 @@ public sealed class ConsolePresentSystem
     }
 }.
 //конец Systems\ConsolePresentSystem.cs
+.
+//начало Systems\ElapsedTimeSystem.cs
+﻿// Systems/ElapsedTimeSystem.cs
+using AsciiFarm.Core;
+using AsciiFarm.Data;
+namespace AsciiFarm.Systems;
+
+/// <summary>Накапливает игровое время из дельты.</summary>
+public sealed class ElapsedTimeSystem : ISystem
+{
+    public void Update(World world)
+    {
+        var state = world.Resource<GameState>();
+        var limiter = world.Resource<FpsLimiter>();
+
+        state.DeltaTime = limiter.DeltaTime;
+        state.ElapsedTime += limiter.DeltaTime;
+        state.Tick++;
+    }
+}.
+//конец Systems\ElapsedTimeSystem.cs
+.
+//начало Systems\FpsUpdateSystem.cs
+﻿// Systems/FpsUpdateSystem.cs
+using AsciiFarm.Core;
+using AsciiFarm.Data;
+namespace AsciiFarm.Systems;
+
+/// <summary>Записывает замер FPS каждый тик.</summary>
+public sealed class FpsUpdateSystem : ISystem
+{
+    public void Update(World world)
+    {
+        var fpsCounter = world.Resource<FpsCounter>();
+        var limiter = world.Resource<FpsLimiter>();
+
+        float instantFps = limiter.DeltaTime > 0 ? 1.0f / limiter.DeltaTime : 0;
+        fpsCounter.RecordFrame(limiter.ElapsedTime);
+        fpsCounter.UpdateAverage(instantFps);
+    }
+}.
+//конец Systems\FpsUpdateSystem.cs
 .
 //начало Systems\MovementSystem.cs
 ﻿// Systems/MovementSystem.cs
@@ -1808,14 +2226,12 @@ public sealed class MovementSystem : ISystem
 //конец Systems\MovementSystem.cs
 .
 //начало Systems\PlayerIntentSystem.cs
-﻿// Systems/PlayerIntentSystem.cs
-using AsciiFarm.Components;
+﻿using AsciiFarm.Components;
 using AsciiFarm.Core;
 using AsciiFarm.Data;
 using AsciiFarm.Input;
 namespace AsciiFarm.Systems;
 
-/// <summary>Команды → намерение движения. Про клавиши больше никто не знает.</summary>
 public sealed class PlayerIntentSystem : ISystem
 {
     public void Update(World world)
@@ -1827,7 +2243,12 @@ public sealed class PlayerIntentSystem : ISystem
 
         foreach (var command in commands)
         {
-            if (command == GameCommand.Exit) { state.IsRunning = false; continue; }
+            if (command == GameCommand.Exit)
+            {
+                state.IsRunning = false;
+                state.NeedsSave = true;
+                continue;
+            }
 
             var (dx, dy) = command switch
             {
@@ -1837,15 +2258,76 @@ public sealed class PlayerIntentSystem : ISystem
                 GameCommand.MoveRight => (1, 0),
                 _ => (0, 0)
             };
+
             if (dx == 0 && dy == 0) continue;
 
-            foreach (var entity in players) intents.Set(entity, new MoveIntent(dx, dy));
+            foreach (var entity in players)
+                intents.Set(entity, new MoveIntent(dx, dy));
         }
 
         commands.Clear();
     }
 }.
 //конец Systems\PlayerIntentSystem.cs
+.
+//начало Systems\RiverFlowSystem.cs
+﻿// Systems/RiverFlowSystem.cs
+using System.Collections.Generic;
+using AsciiFarm.Components;
+using AsciiFarm.Core;
+using AsciiFarm.Data;
+namespace AsciiFarm.Systems;
+
+/// <summary>
+/// Анимация реки: каждый водный тайл с шансом 80% синий, 20% белый.
+/// Псевдослучайность детерминирована по (x, y, time).
+/// </summary>
+public sealed class RiverFlowSystem : ISystem
+{
+    private const char WaterSymbol = '≈';
+    private const float AnimationSpeed = 1f;
+    private const float BlueProbability = 0.5f;
+
+    public void Update(World world)
+    {
+        var state = world.Resource<GameState>();
+        var maps = world.Query<TileMapComponent>();
+        if (maps.Length == 0) return;
+
+        var map = world.Store<TileMapComponent>().Get(maps[0]);
+        float time = (float)state.ElapsedTime;
+
+        var waterColors = new Dictionary<(int, int), TileStyle>();
+
+        for (int y = 0; y < map.Height; y++)
+        {
+            for (int x = 0; x < map.Width; x++)
+            {
+                if (map.Tiles[x, y] != WaterSymbol) continue;
+
+                // Детерминированный псевдослучайный выбор цвета
+                int hash = HashCode.Combine(x, y, (int)(time * AnimationSpeed));
+                float randomValue = (hash & 0xFFFF) / (float)0xFFFF;
+
+                ConsoleColor fg = randomValue < BlueProbability
+                    ? ConsoleColor.Cyan
+                    : ConsoleColor.White;
+
+                waterColors[(x, y)] = new TileStyle(fg, ConsoleColor.Black, false);
+            }
+        }
+
+        world.SetResource(new WaterColorCache(waterColors));
+    }
+}
+
+/// <summary>Кэш цветов воды на текущий кадр. Данные.</summary>
+public sealed class WaterColorCache
+{
+    public Dictionary<(int, int), TileStyle> Colors { get; }
+    public WaterColorCache(Dictionary<(int, int), TileStyle> colors) => Colors = colors;
+}.
+//конец Systems\RiverFlowSystem.cs
 .
 //начало Systems\SnapshotSystem.cs
 ﻿// Systems/SnapshotSystem.cs
@@ -1855,10 +2337,6 @@ using AsciiFarm.Data;
 using AsciiFarm.Rendering;
 namespace AsciiFarm.Systems;
 
-/// <summary>
-/// Работает в потоке симуляции: читает World, пишет в СВОЙ write-буфер и публикует его.
-/// Заменяет GameRenderer, но ничего не знает о консоли.
-/// </summary>
 public sealed class SnapshotSystem
 {
     private readonly FrameExchange<RenderFrame> _frames;
@@ -1869,37 +2347,73 @@ public sealed class SnapshotSystem
     {
         var frame = _frames.WriteBuffer;
         var palette = world.Resource<TilePalette>();
+        var gameState = world.Resource<GameState>();
+        var characterPalette = world.Resource<CharacterPalette>();
+        var fpsCounter = world.Resource<FpsCounter>();
+
+        WaterColorCache? waterCache = null;
+        try { waterCache = world.Resource<WaterColorCache>(); } catch { /* первый кадр */ }
 
         Array.Fill(frame.Symbols, ' ');
         Array.Fill(frame.Foreground, palette.Fallback.Foreground);
         Array.Fill(frame.Background, palette.Fallback.Background);
 
         foreach (var entity in world.Query<TileMapComponent>())
-            DrawTiles(frame, world.Store<TileMapComponent>().Get(entity), palette);
+            DrawTiles(frame, world.Store<TileMapComponent>().Get(entity), palette, waterCache);
 
         var glyphs = world.Store<Glyph>();
         var positions = world.Store<Position>();
+        var playerTags = world.Store<PlayerTag>();
+
         foreach (var entity in world.Query<Glyph, Position>().OrderBy(e => glyphs.Get(e).Layer))
         {
             var glyph = glyphs.Get(entity);
             var pos = positions.Get(entity);
+
+            if (playerTags.Has(entity))
+                glyph = characterPalette.Get(characterPalette.DefaultPlayerKey);
+
             Put(frame, pos.X, pos.Y, glyph.Symbol, glyph.Foreground, glyph.Background);
         }
 
-        frame.Tick = world.Resource<GameState>().Tick;
+        DrawUI(frame, gameState, fpsCounter);
+
+        frame.Tick = gameState.Tick;
         _frames.Publish();
     }
 
-    private static void DrawTiles(RenderFrame frame, TileMapComponent map, TilePalette palette)
+    private static void DrawTiles(RenderFrame frame, TileMapComponent map,
+                                  TilePalette palette, WaterColorCache? waterCache)
     {
         int width = Math.Min(map.Width, frame.Width);
         int height = Math.Min(map.Height, frame.Height);
         for (int y = 0; y < height; y++)
             for (int x = 0; x < width; x++)
             {
-                var style = palette.Resolve(map.Tiles[x, y]);
-                Put(frame, x, y, map.Tiles[x, y], style.Foreground, style.Background);
+                char tile = map.Tiles[x, y];
+                var style = waterCache != null && waterCache.Colors.TryGetValue((x, y), out var ws)
+                    ? ws
+                    : palette.Resolve(tile);
+
+                Put(frame, x, y, tile, style.Foreground, style.Background);
             }
+    }
+
+    private static void DrawUI(RenderFrame frame, GameState state, FpsCounter fpsCounter)
+    {
+        var elapsed = TimeSpan.FromSeconds(state.ElapsedTime);
+        string timeStr = $"{elapsed.Hours:D2}:{elapsed.Minutes:D2}:{elapsed.Seconds:D2}";
+        string fpsStr = $"FPS: {fpsCounter.CurrentFps:F0}";
+
+        int startX = frame.Width - Math.Max(timeStr.Length, fpsStr.Length) - 1;
+
+        for (int i = 0; i < timeStr.Length; i++)
+            if (startX + i < frame.Width)
+                Put(frame, startX + i, 0, timeStr[i], ConsoleColor.Yellow, ConsoleColor.Black);
+
+        for (int i = 0; i < fpsStr.Length; i++)
+            if (startX + i < frame.Width && 1 < frame.Height)
+                Put(frame, startX + i, 1, fpsStr[i], ConsoleColor.Green, ConsoleColor.Black);
     }
 
     private static void Put(RenderFrame frame, int x, int y, char symbol, ConsoleColor fg, ConsoleColor bg)
@@ -1922,9 +2436,11 @@ public static class SystemPipeline
 {
     public static ISystem[] CreateSimulationSystems() => new ISystem[]
     {
-        new PlayerIntentSystem(),
-        new MovementSystem(),
-        // сюда позже: GrowthSystem, HungerSystem, AISystem... без правок остальных файлов
+        new ElapsedTimeSystem(),     // 1. Время
+        new FpsUpdateSystem(),       // 2. Счётчик FPS
+        new PlayerIntentSystem(),    // 3. Ввод → намерения
+        new MovementSystem(),        // 4. Физика
+        new RiverFlowSystem(),       // 5. Анимация воды
     };
 }.
 //конец Systems\SystemPipeline.cs

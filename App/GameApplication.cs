@@ -1,11 +1,13 @@
-﻿// App/GameApplication.cs
+﻿using AsciiFarm.Components;
 using AsciiFarm.Content;
 using AsciiFarm.Core;
+using AsciiFarm.Data;
 using AsciiFarm.Input;
 using AsciiFarm.Rendering;
 using AsciiFarm.Systems;
 using askiifarm;
 using askiifarm.Rendering;
+using askiifarm.Serialization;
 using System.Collections.Concurrent;
 namespace AsciiFarm.App;
 
@@ -46,6 +48,34 @@ public sealed class GameApplication
         channel.Close();
 
         if (!errors.IsEmpty) throw new AggregateException("Сбой игрового потока.", errors);
+
+        // Симуляция завершилась — снимаем блокировку, World больше не модифицируется
+        world.Guard.Detach();
+
+        // Сохранение при выходе
+        var state = world.Resource<GameState>();
+        if (state.NeedsSave)
+            SaveGame(world);
+    }
+
+    private void SaveGame(World world)
+    {
+        var mapEntity = world.Query<TileMapComponent>()[0];
+        var map = world.Store<TileMapComponent>().Get(mapEntity);
+
+        var playerEntity = world.Query<PlayerTag, Position>()[0];
+        var playerPos = world.Store<Position>().Get(playerEntity);
+
+        var data = new GameDataV0_0_3
+        {
+            Map = map.Tiles,
+            PlayerX = playerPos.X,
+            PlayerY = playerPos.Y,
+            TileColors = new Dictionary<char, TileColorData>()
+        };
+
+        var storage = new GameStorage();
+        storage.SaveSmart(_settings.MapPath, GameStorage.LatestVersion, data);
     }
 
     private static Thread Start(string name, Action body,

@@ -1,11 +1,9 @@
-﻿// Systems/PlayerIntentSystem.cs
-using AsciiFarm.Components;
+﻿using AsciiFarm.Components;
 using AsciiFarm.Core;
 using AsciiFarm.Data;
 using AsciiFarm.Input;
 namespace AsciiFarm.Systems;
 
-/// <summary>Команды → намерение движения. Про клавиши больше никто не знает.</summary>
 public sealed class PlayerIntentSystem : ISystem
 {
     public void Update(World world)
@@ -17,7 +15,12 @@ public sealed class PlayerIntentSystem : ISystem
 
         foreach (var command in commands)
         {
-            if (command == GameCommand.Exit) { state.IsRunning = false; continue; }
+            if (command == GameCommand.Exit)
+            {
+                state.IsRunning = false;
+                state.NeedsSave = true;
+                continue;
+            }
 
             var (dx, dy) = command switch
             {
@@ -27,9 +30,11 @@ public sealed class PlayerIntentSystem : ISystem
                 GameCommand.MoveRight => (1, 0),
                 _ => (0, 0)
             };
+
             if (dx == 0 && dy == 0) continue;
 
-            foreach (var entity in players) intents.Set(entity, new MoveIntent(dx, dy));
+            foreach (var entity in players)
+                intents.Set(entity, new MoveIntent(dx, dy));
         }
 
         commands.Clear();
