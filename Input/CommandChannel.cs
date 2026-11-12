@@ -1,10 +1,6 @@
 ﻿// Input/CommandChannel.cs
 namespace AsciiFarm.Input;
 
-/// <summary>
-/// Единственная точка обмена между потоком ввода и потоком симуляции.
-/// Lock + ограниченная ёмкость: ввод никогда не ждёт симуляцию.
-/// </summary>
 public sealed class CommandChannel
 {
     private readonly Queue<GameCommand> _queue = new();
@@ -19,7 +15,7 @@ public sealed class CommandChannel
         lock (_gate)
         {
             if (_closed || command == GameCommand.None) return;
-            if (_queue.Count >= _capacity) _queue.Dequeue();   // защита от залипания клавиши
+            if (_queue.Count >= _capacity) _queue.Dequeue();
             _queue.Enqueue(command);
         }
     }

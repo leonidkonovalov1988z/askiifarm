@@ -1,4 +1,5 @@
-﻿using AsciiFarm.Components;
+﻿// Systems/PlayerIntentSystem.cs
+using AsciiFarm.Components;
 using AsciiFarm.Core;
 using AsciiFarm.Data;
 using AsciiFarm.Input;
@@ -13,12 +14,20 @@ public sealed class PlayerIntentSystem : ISystem
         var intents = world.Store<MoveIntent>();
         var players = world.Query<PlayerTag, Position>();
 
+        // Сбрасываем все предыдущие намерения
+        foreach (var entity in intents.Entities.ToArray())
+            intents.Remove(entity);
+
+        // Накапливаем вектор движения из всех команд за тик
+        int totalDx = 0;
+        int totalDy = 0;
+        bool exitRequested = false;
+
         foreach (var command in commands)
         {
             if (command == GameCommand.Exit)
             {
-                state.IsRunning = false;
-                state.NeedsSave = true;
+                exitRequested = true;
                 continue;
             }
 
@@ -30,11 +39,25 @@ public sealed class PlayerIntentSystem : ISystem
                 GameCommand.MoveRight => (1, 0),
                 _ => (0, 0)
             };
+            totalDx += dx;
+            totalDy += dy;
+        }
 
-            if (dx == 0 && dy == 0) continue;
+        // Ограничиваем каждый компонент значением [-1, 1]
+        totalDx = Math.Clamp(totalDx, -1, 1);
+        totalDy = Math.Clamp(totalDy, -1, 1);
 
+        // Если есть движение, устанавливаем намерение
+        if (totalDx != 0 || totalDy != 0)
+        {
             foreach (var entity in players)
-                intents.Set(entity, new MoveIntent(dx, dy));
+                intents.Set(entity, new MoveIntent(totalDx, totalDy));
+        }
+
+        if (exitRequested)
+        {
+            state.IsRunning = false;
+            state.NeedsSave = true;
         }
 
         commands.Clear();
