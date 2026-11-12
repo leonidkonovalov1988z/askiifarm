@@ -1,0 +1,1931 @@
+//начало Cp437Symbols.cs
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace askiifarm
+{
+    public static class Cp437Symbols
+    {
+        // --- Лица, масти и знаки ---
+        public const char WhiteSmilingFace = '\u263A';      // ☺
+        public const char BlackSmilingFace = '\u263B';      // ☻
+        public const char BlackHeartSuit = '\u2665';        // ♥
+        public const char BlackDiamondSuit = '\u2666';      // ♦
+        public const char BlackClubSuit = '\u2663';         // ♣
+        public const char BlackSpadeSuit = '\u2660';        // ♠
+        public const char Bullet = '\u2022';                // •
+        public const char InverseBullet = '\u25D8';         // ◘
+        public const char WhiteCircle = '\u25CB';           // ○
+        public const char InverseWhiteCircle = '\u25D9';    // ◙
+        public const char MaleSign = '\u2642';              // ♂
+        public const char FemaleSign = '\u2640';            // ♀
+        public const char EighthNote = '\u266A';            // ♪
+        public const char BeamedEighthNotes = '\u266B';     // ♫
+        public const char WhiteSunWithRays = '\u263C';      // ☼
+        public const char PilcrowSign = '\u00B6';           // ¶
+        public const char SectionSign = '\u00A7';           // §
+        public const char House = '\u2302';                 // ⌂
+
+        // --- Стрелки и указатели ---
+        public const char BlackRightPointingPointer = '\u25BA'; // ►
+        public const char BlackLeftPointingPointer = '\u25C4';  // ◄
+        public const char UpDownArrow = '\u2195';               // ↕
+        public const char UpDownArrowWithBase = '\u21A8';       // ↨
+        public const char UpwardsArrow = '\u2191';              // ↑
+        public const char DownwardsArrow = '\u2193';            // ↓
+        public const char RightwardsArrow = '\u2192';           // →
+        public const char LeftwardsArrow = '\u2190';            // ←
+        public const char LeftRightArrow = '\u2194';            // ↔
+        public const char BlackUpPointingTriangle = '\u25B2';   // ▲
+        public const char BlackDownPointingTriangle = '\u25BC'; // ▼
+
+        // --- Блоки и градиенты ---
+        public const char LightShade = '\u2591';        // ░
+        public const char MediumShade = '\u2592';       // ▒
+        public const char DarkShade = '\u2593';         // ▓
+        public const char FullBlock = '\u2588';         // █
+        public const char LowerHalfBlock = '\u2584';    // ▄
+        public const char LeftHalfBlock = '\u258C';     // ▌
+        public const char RightHalfBlock = '\u2590';    // ▐
+        public const char UpperHalfBlock = '\u2580';    // ▀
+        public const char BlackSquare = '\u25A0';       // ■
+        public const char BlackRectangle = '\u25AC';    // ▬
+
+        // --- Одинарные рамки (Box Drawings Light) ---
+        public const char BoxDrawingsLightHorizontal = '\u2500';          // ─
+        public const char BoxDrawingsLightVertical = '\u2502';            // │
+        public const char BoxDrawingsLightDownAndRight = '\u250C';        // ┌
+        public const char BoxDrawingsLightDownAndLeft = '\u2510';         // ┐
+        public const char BoxDrawingsLightUpAndRight = '\u2514';          // └
+        public const char BoxDrawingsLightUpAndLeft = '\u2518';           // ┘
+        public const char BoxDrawingsLightVerticalAndRight = '\u251C';    // ├
+        public const char BoxDrawingsLightVerticalAndLeft = '\u2524';     // ┤
+        public const char BoxDrawingsLightDownAndHorizontal = '\u252C';   // ┬
+        public const char BoxDrawingsLightUpAndHorizontal = '\u2534';     // ┴
+        public const char BoxDrawingsLightVerticalAndHorizontal = '\u253C'; // ┼
+
+        // --- Двойные рамки (Box Drawings Double) ---
+        public const char BoxDrawingsDoubleHorizontal = '\u2550';          // ═
+        public const char BoxDrawingsDoubleVertical = '\u2551';            // ║
+        public const char BoxDrawingsDoubleDownAndRight = '\u2554';        // ╔
+        public const char BoxDrawingsDoubleDownAndLeft = '\u2557';         // ╗
+        public const char BoxDrawingsDoubleUpAndRight = '\u255A';          // ╚
+        public const char BoxDrawingsDoubleUpAndLeft = '\u255D';           // ╝
+        public const char BoxDrawingsDoubleVerticalAndRight = '\u2560';    // ╠
+        public const char BoxDrawingsDoubleVerticalAndLeft = '\u2563';     // ╣
+        public const char BoxDrawingsDoubleDownAndHorizontal = '\u2566';   // ╦
+        public const char BoxDrawingsDoubleUpAndHorizontal = '\u2569';     // ╩
+        public const char BoxDrawingsDoubleVerticalAndHorizontal = '\u256C'; // ╬
+
+        // --- Комбинированные рамки (Single & Double) ---
+        public const char BoxDrawingsDownSingleAndRightDouble = '\u2552'; // ╒
+        public const char BoxDrawingsDownDoubleAndRightSingle = '\u2553'; // ╓
+        public const char BoxDrawingsDownSingleAndLeftDouble = '\u2555';  // ╕
+        public const char BoxDrawingsDownDoubleAndLeftSingle = '\u2556';  // ╖
+        public const char BoxDrawingsUpSingleAndRightDouble = '\u2558';   // ╘
+        public const char BoxDrawingsUpDoubleAndRightSingle = '\u2559';   // ╙
+        public const char BoxDrawingsUpSingleAndLeftDouble = '\u255B';    // ╛
+        public const char BoxDrawingsUpDoubleAndLeftSingle = '\u255C';    // ╜
+        public const char BoxDrawingsVerticalSingleAndRightDouble = '\u255E'; // ╞
+        public const char BoxDrawingsVerticalDoubleAndRightSingle = '\u255F'; // ╟
+        public const char BoxDrawingsVerticalSingleAndLeftDouble = '\u2561';  // ╡
+        public const char BoxDrawingsVerticalDoubleAndLeftSingle = '\u2562';  // ╢
+        public const char BoxDrawingsDownSingleAndHorizontalDouble = '\u2564'; // ╤
+        public const char BoxDrawingsDownDoubleAndHorizontalSingle = '\u2565'; // ╥
+        public const char BoxDrawingsUpSingleAndHorizontalDouble = '\u2567';   // ╧
+        public const char BoxDrawingsUpDoubleAndHorizontalSingle = '\u2568';   // ╨
+        public const char BoxDrawingsVerticalSingleAndHorizontalDouble = '\u256A'; // ╪
+        public const char BoxDrawingsVerticalDoubleAndHorizontalSingle = '\u256B'; // ╫
+
+        // --- Математические и прочие символы ---
+        public const char DoubleExclamationMark = '\u203C';    // ‼
+        public const char RightAngle = '\u221F';               // ∟
+        public const char IdenticalTo = '\u2261';              // ≡
+        public const char PlusMinusSign = '\u00B1';            // ±
+        public const char GreaterThanOrEqualTo = '\u2265';     // ≥
+        public const char LessThanOrEqualTo = '\u2264';        // ≤
+        public const char DivisionSign = '\u00F7';             // ÷
+        public const char AlmostEqualTo = '\u2248';            // ≈
+        public const char DegreeSign = '\u00B0';               // °
+        public const char BulletOperator = '\u2219';           // ∙
+        public const char MiddleDot = '\u00B7';                // ·
+        public const char SquareRoot = '\u221A';               // √
+    }
+}
+
+//конец Cp437Symbols.cs
+
+//начало Program.cs
+﻿// Program.cs
+using AsciiFarm.App;
+namespace askiifarm;
+
+internal static class Program
+{
+    private static void Main() => new GameApplication(new GameSettings()).Run();
+}
+//конец Program.cs
+
+//начало App\GameApplication.cs
+﻿// App/GameApplication.cs
+using AsciiFarm.Content;
+using AsciiFarm.Core;
+using AsciiFarm.Input;
+using AsciiFarm.Rendering;
+using AsciiFarm.Systems;
+using askiifarm;
+using askiifarm.Rendering;
+using System.Collections.Concurrent;
+namespace AsciiFarm.App;
+
+public sealed class GameApplication
+{
+    private readonly GameSettings _settings;
+
+    public GameApplication(GameSettings settings) => _settings = settings;
+
+    public void Run()
+    {
+        if (Console.IsInputRedirected)
+            throw new InvalidOperationException("Нужна настоящая консоль: ввод перенаправлен.");
+
+        var world = GameWorldBuilder.Build(_settings);
+        var channel = new CommandChannel(_settings.CommandQueueCapacity);
+        var frames = new FrameExchange<RenderFrame>(
+            () => new RenderFrame(_settings.ScreenWidth, _settings.ScreenHeight));
+
+        using var console = new DoubleBufferedConsole(_settings.ScreenWidth, _settings.ScreenHeight);
+        using var shutdown = new CancellationTokenSource();
+        var errors = new ConcurrentQueue<Exception>();
+
+        var simulation = new SimulationLoop(world, channel, SystemPipeline.CreateSimulationSystems(),
+            new SnapshotSystem(frames), frames, 1000 / _settings.SimulationFps, shutdown);
+        var render = new RenderLoop(console, frames,
+            new ConsolePresentSystem(console, frames), 1000 / _settings.RenderFps);
+        var input = new InputLoop(channel, GameContent.CreateKeyBindings(), _settings.InputPollMs);
+
+        var threads = new[]
+        {
+            Start("Simulation", () => simulation.Run(shutdown.Token), shutdown, errors),
+            Start("Render",     () => render.Run(shutdown.Token),     shutdown, errors),
+            Start("Input",      () => input.Run(shutdown.Token),      shutdown, errors),
+        };
+
+        foreach (var thread in threads) thread.Join();   // консоль освобождаем только после остановки рендера
+        channel.Close();
+
+        if (!errors.IsEmpty) throw new AggregateException("Сбой игрового потока.", errors);
+    }
+
+    private static Thread Start(string name, Action body,
+                                CancellationTokenSource shutdown, ConcurrentQueue<Exception> errors)
+    {
+        var thread = new Thread(() =>
+        {
+            try { body(); }
+            catch (Exception ex) { errors.Enqueue(ex); shutdown.Cancel(); }
+        })
+        { Name = name, IsBackground = true };
+        thread.Start();
+        return thread;
+    }
+}.
+//конец App\GameApplication.cs
+.
+//начало App\GameSettings.cs
+﻿// App/GameSettings.cs
+namespace AsciiFarm.App;
+
+public sealed class GameSettings
+{
+    public string MapPath { get; init; } = "map_raw.txt";
+    public int ScreenWidth { get; init; } = 80;
+    public int ScreenHeight { get; init; } = 25;
+    public int SimulationFps { get; init; } = 30;
+    public int RenderFps { get; init; } = 60;
+    public int InputPollMs { get; init; } = 10;
+    public int CommandQueueCapacity { get; init; } = 32;
+    public int PlayerStartX { get; init; } = 28;
+    public int PlayerStartY { get; init; } = 12;
+}.
+//конец App\GameSettings.cs
+.
+//начало App\GameWorldBuilder.cs
+﻿// App/GameWorldBuilder.cs
+using AsciiFarm.Components;
+using AsciiFarm.Content;
+using AsciiFarm.Core;
+using AsciiFarm.Data;
+using askiifarm.Serialization;
+namespace AsciiFarm.App;
+
+public static class GameWorldBuilder
+{
+    public static World Build(GameSettings settings)
+    {
+        var storage = new GameStorage();
+        var data = storage.LoadAndConvert<GameDataV0_0_1>(settings.MapPath, new Version(0, 0, 1));
+
+        var world = new World();
+        world.SetResource(GameContent.CreatePalette());
+        world.SetResource(new GameState());
+        world.SetResource(new CommandBuffer());
+
+        var map = world.CreateEntity();
+        world.Add(map, new TileMapComponent { Tiles = data.Map });
+
+        var player = world.CreateEntity();
+        world.Add(player, new Position(settings.PlayerStartX, settings.PlayerStartY));
+        world.Add(player, GameContent.PlayerGlyph);
+        world.Add(player, new PlayerTag());
+
+        return world;
+    }
+}.
+//конец App\GameWorldBuilder.cs
+.
+//начало App\RenderLoop.cs
+﻿// App/RenderLoop.cs
+using AsciiFarm.Rendering;
+using AsciiFarm.Systems;
+using askiifarm;
+using askiifarm.Rendering;
+namespace AsciiFarm.App;
+
+public sealed class RenderLoop
+{
+    private readonly DoubleBufferedConsole _console;
+    private readonly FrameExchange<RenderFrame> _frames;
+    private readonly ConsolePresentSystem _present;
+    private readonly int _frameMs;
+
+    public RenderLoop(DoubleBufferedConsole console, FrameExchange<RenderFrame> frames,
+                      ConsolePresentSystem present, int frameMs)
+    {
+        _console = console; _frames = frames; _present = present; _frameMs = frameMs;
+    }
+
+    public void Run(CancellationToken token)
+    {
+        _console.AttachToCurrentThread();       // консоль — только наша
+        _frames.AttachReader();
+
+        while (!token.IsCancellationRequested)
+        {
+            _present.Present();
+            Thread.Sleep(_frameMs);
+        }
+    }
+}.
+//конец App\RenderLoop.cs
+.
+//начало App\SimulationLoop.cs
+﻿// App/SimulationLoop.cs
+using System.Diagnostics;
+using AsciiFarm.Core;
+using AsciiFarm.Data;
+using AsciiFarm.Input;
+using AsciiFarm.Rendering;
+using AsciiFarm.Systems;
+namespace AsciiFarm.App;
+
+public sealed class SimulationLoop
+{
+    private readonly World _world;
+    private readonly CommandChannel _channel;
+    private readonly ISystem[] _systems;
+    private readonly SnapshotSystem _snapshot;
+    private readonly FrameExchange<RenderFrame> _frames;
+    private readonly int _tickMs;
+    private readonly CancellationTokenSource _shutdown;
+
+    public SimulationLoop(World world, CommandChannel channel, ISystem[] systems,
+                          SnapshotSystem snapshot, FrameExchange<RenderFrame> frames,
+                          int tickMs, CancellationTokenSource shutdown)
+    {
+        _world = world; _channel = channel; _systems = systems;
+        _snapshot = snapshot; _frames = frames; _tickMs = tickMs; _shutdown = shutdown;
+    }
+
+    public void Run(CancellationToken token)
+    {
+        _world.Guard.AttachToCurrentThread();   // с этой минуты World — только наш
+        _frames.AttachWriter();
+
+        var state = _world.Resource<GameState>();
+        var buffer = _world.Resource<CommandBuffer>();
+        var clock = Stopwatch.StartNew();
+
+        while (!token.IsCancellationRequested && state.IsRunning)
+        {
+            long startedAt = clock.ElapsedMilliseconds;
+
+            using (_world.Guard.Enter())        // блокиратор «данные изменяются»
+            {
+                _channel.DrainTo(buffer.Items); // единственная точка чтения чужих данных
+                foreach (var system in _systems) system.Update(_world);
+                state.Tick++;
+                _snapshot.Update(_world);       // публикация кадра
+            }
+
+            int delay = _tickMs - (int)(clock.ElapsedMilliseconds - startedAt);
+            if (delay > 0) Thread.Sleep(delay);
+        }
+
+        _shutdown.Cancel();                     // гасим ввод и рендер
+    }
+}.
+//конец App\SimulationLoop.cs
+.
+//начало Components\Components.cs
+﻿// Components/Components.cs
+namespace AsciiFarm.Components;
+
+public struct Position
+{
+    public int X;
+    public int Y;
+    public Position(int x, int y) { X = x; Y = y; }
+}
+
+public struct MoveIntent
+{
+    public int Dx;
+    public int Dy;
+    public MoveIntent(int dx, int dy) { Dx = dx; Dy = dy; }
+}
+
+public struct Glyph
+{
+    public char Symbol;
+    public ConsoleColor Foreground;
+    public ConsoleColor Background;
+    public int Layer;           // 0 — карта, 10 — акторы, 20 — UI
+}
+
+/// <summary>Маркер «управляется игроком». Данных нет.</summary>
+public struct PlayerTag { }
+
+public struct TileMapComponent
+{
+    public char[,] Tiles;
+    public int Width => Tiles.GetLength(0);
+    public int Height => Tiles.GetLength(1);
+}.
+//конец Components\Components.cs
+.
+//начало Content\GameContent.cs
+﻿// Content/GameContent.cs
+using AsciiFarm.Components;
+using AsciiFarm.Data;
+using AsciiFarm.Input;
+using askiifarm;
+namespace AsciiFarm.Content;
+
+/// <summary>Контент = данные. Заменяет switch'и из GameRenderer и MapPhysics.</summary>
+public static class GameContent
+{
+    public static TilePalette CreatePalette()
+    {
+        var p = new TilePalette { Fallback = new TileStyle(ConsoleColor.Gray, ConsoleColor.Black, false) };
+
+        void Set(string chars, ConsoleColor fg, ConsoleColor bg = ConsoleColor.Black, bool blocks = false)
+        {
+            foreach (char c in chars) p.Tiles[c] = new TileStyle(fg, bg, blocks);
+        }
+
+        Set(".,'`;", ConsoleColor.Green);
+        Set("\"", ConsoleColor.Yellow);
+        Set("♣♠", ConsoleColor.DarkGreen, blocks: true);
+        Set("≈", ConsoleColor.Cyan);
+        Set("┌┐└┘─│┬┴├┤▒#", ConsoleColor.DarkYellow, blocks: true);
+        Set("┼╪", ConsoleColor.DarkYellow);                       // проёмы — проходимы
+        Set("Θ", ConsoleColor.Red, blocks: true);
+        Set("≡", ConsoleColor.White, ConsoleColor.DarkBlue, blocks: true);
+        Set("╔╗╚╝═║╠╣╦╩╬", ConsoleColor.Gray, blocks: true);
+
+        return p;
+    }
+
+    public static KeyBindings CreateKeyBindings()
+    {
+        var b = new KeyBindings();
+        void Bind(GameCommand command, params ConsoleKey[] keys)
+        {
+            foreach (var k in keys) b.Map[k] = command;
+        }
+
+        Bind(GameCommand.MoveUp, ConsoleKey.W, ConsoleKey.UpArrow);
+        Bind(GameCommand.MoveDown, ConsoleKey.S, ConsoleKey.DownArrow);
+        Bind(GameCommand.MoveLeft, ConsoleKey.A, ConsoleKey.LeftArrow);
+        Bind(GameCommand.MoveRight, ConsoleKey.D, ConsoleKey.RightArrow);
+        Bind(GameCommand.Exit, ConsoleKey.Escape);
+        return b;
+    }
+
+    public static Glyph PlayerGlyph => new()
+    {
+        Symbol = Cp437Symbols.WhiteSmilingFace,
+        Foreground = ConsoleColor.Yellow,
+        Background = ConsoleColor.Black,
+        Layer = 10
+    };
+}.
+//конец Content\GameContent.cs
+.
+//начало Core\ComponentStore.cs
+﻿// Core/ComponentStore.cs
+namespace AsciiFarm.Core;
+
+public interface IComponentStore
+{
+    int Count { get; }
+    IReadOnlyCollection<Entity> Entities { get; }
+    bool Has(Entity entity);
+    void Remove(Entity entity);
+}
+
+/// <summary>Только хранилище данных. Никакой игровой логики.</summary>
+public sealed class ComponentStore<T> : IComponentStore where T : struct
+{
+    private readonly Dictionary<Entity, T> _items = new();
+
+    public int Count => _items.Count;
+    public IReadOnlyCollection<Entity> Entities => _items.Keys;
+
+    public bool Has(Entity entity) => _items.ContainsKey(entity);
+    public void Set(Entity entity, T component) => _items[entity] = component;
+    public T Get(Entity entity) => _items[entity];
+    public bool TryGet(Entity entity, out T component) => _items.TryGetValue(entity, out component);
+    public void Remove(Entity entity) => _items.Remove(entity);
+}.
+//конец Core\ComponentStore.cs
+.
+//начало Core\Entity.cs
+﻿// Core/Entity.cs
+namespace AsciiFarm.Core;
+
+public readonly record struct Entity(int Id);.
+//конец Core\Entity.cs
+.
+//начало Core\ISystem.cs
+﻿// Core/ISystem.cs
+namespace AsciiFarm.Core;
+
+/// <summary>Обработчик. Всё поведение игры — здесь, а не в данных.</summary>
+public interface ISystem
+{
+    void Update(World world);
+}.
+//конец Core\ISystem.cs
+.
+//начало Core\ThreadGuard.cs
+﻿// Core/ThreadGuard.cs
+namespace AsciiFarm.Core;
+
+/// <summary>
+/// Блокиратор потока-владельца. AttachToCurrentThread() вызывается в начале потока,
+/// после чего любой доступ из другого потока — исключение, а не гонка.
+/// </summary>
+public sealed class ThreadGuard
+{
+    private readonly string _name;
+    private int _ownerThreadId;   // 0 = ещё не привязан
+    private int _busy;            // 1 = данные прямо сейчас модифицируются
+
+    public ThreadGuard(string name) => _name = name;
+
+    public void AttachToCurrentThread() =>
+        Interlocked.Exchange(ref _ownerThreadId, Environment.CurrentManagedThreadId);
+
+    public void Validate()
+    {
+        int owner = Volatile.Read(ref _ownerThreadId);
+        if (owner != 0 && owner != Environment.CurrentManagedThreadId)
+            throw new InvalidOperationException(
+                $"«{_name}»: данные принадлежат потоку {owner}, " +
+                $"доступ из потока {Environment.CurrentManagedThreadId} запрещён.");
+    }
+
+    /// <summary>Критическая секция изменения данных (запрещает повторный вход).</summary>
+    public Scope Enter()
+    {
+        Validate();
+        if (Interlocked.Exchange(ref _busy, 1) != 0)
+            throw new InvalidOperationException($"«{_name}»: данные ещё модифицируются.");
+        return new Scope(this);
+    }
+
+    private void Release() => Volatile.Write(ref _busy, 0);
+
+    public readonly struct Scope : IDisposable
+    {
+        private readonly ThreadGuard _guard;
+        internal Scope(ThreadGuard guard) => _guard = guard;
+        public void Dispose() => _guard.Release();
+    }
+}.
+//конец Core\ThreadGuard.cs
+.
+//начало Core\World.cs
+﻿// Core/World.cs
+namespace AsciiFarm.Core;
+
+/// <summary>
+/// Данные мира. Принадлежит РОВНО ОДНОМУ потоку (симуляции).
+/// Render- и Input-потоки ссылки на World не получают вообще.
+/// </summary>
+public sealed class World
+{
+    private readonly Dictionary<Type, IComponentStore> _stores = new();
+    private readonly Dictionary<Type, object> _resources = new();
+    private int _nextEntityId;
+
+    public ThreadGuard Guard { get; } = new("World");
+
+    public Entity CreateEntity()
+    {
+        Guard.Validate();
+        return new Entity(_nextEntityId++);
+    }
+
+    public ComponentStore<T> Store<T>() where T : struct
+    {
+        Guard.Validate();
+        if (!_stores.TryGetValue(typeof(T), out var store))
+        {
+            store = new ComponentStore<T>();
+            _stores[typeof(T)] = store;
+        }
+        return (ComponentStore<T>)store;
+    }
+
+    public void Add<T>(Entity entity, T component) where T : struct => Store<T>().Set(entity, component);
+
+    // Запросы материализуются в массив: системы могут спокойно удалять компоненты в цикле.
+    public Entity[] Query<TA>() where TA : struct => Store<TA>().Entities.ToArray();
+
+    public Entity[] Query<TA, TB>() where TA : struct where TB : struct
+    {
+        IComponentStore a = Store<TA>(), b = Store<TB>();
+        var (small, large) = a.Count <= b.Count ? (a, b) : (b, a);
+        return small.Entities.Where(large.Has).ToArray();
+    }
+
+    public Entity[] Query<TA, TB, TC>() where TA : struct where TB : struct where TC : struct
+    {
+        IComponentStore c = Store<TC>();
+        return Query<TA, TB>().Where(c.Has).ToArray();
+    }
+
+    public T Resource<T>() where T : class
+    {
+        Guard.Validate();
+        return (T)_resources[typeof(T)];
+    }
+
+    public void SetResource<T>(T resource) where T : class
+    {
+        Guard.Validate();
+        _resources[typeof(T)] = resource;
+    }
+}.
+//конец Core\World.cs
+.
+//начало Data\CommandBuffer.cs
+﻿// Data/CommandBuffer.cs
+using AsciiFarm.Input;
+namespace AsciiFarm.Data;
+
+/// <summary>Локальный (не разделяемый) буфер команд на один тик.</summary>
+public sealed class CommandBuffer
+{
+    public List<GameCommand> Items { get; } = new();
+}.
+//конец Data\CommandBuffer.cs
+.
+//начало Data\GameState.cs
+﻿// Data/GameState.cs
+namespace AsciiFarm.Data;
+
+/// <summary>Читает/пишет только поток симуляции. Остальные видят CancellationToken.</summary>
+public sealed class GameState
+{
+    public bool IsRunning { get; set; } = true;
+    public long Tick { get; set; }
+}.
+//конец Data\GameState.cs
+.
+//начало Data\KeyBindings.cs
+﻿// Data/KeyBindings.cs
+using AsciiFarm.Input;
+
+namespace AsciiFarm.Data;
+
+/// <summary>Заполняется при старте, дальше только читается потоком ввода.</summary>
+public sealed class KeyBindings
+{
+    public Dictionary<ConsoleKey, GameCommand> Map { get; } = new();
+}.
+//конец Data\KeyBindings.cs
+.
+//начало Data\TilePalette.cs
+﻿// Data/TilePalette.cs
+namespace AsciiFarm.Data;
+
+public readonly record struct TileStyle(ConsoleColor Foreground, ConsoleColor Background, bool BlocksMovement);
+
+/// <summary>Одна таблица вместо двух switch в рендере и физике.</summary>
+public sealed class TilePalette
+{
+    public Dictionary<char, TileStyle> Tiles { get; } = new();
+    public TileStyle Fallback { get; set; }
+}.
+//конец Data\TilePalette.cs
+.
+//начало Data\TilePaletteExtensions.cs
+﻿// Data/TilePaletteExtensions.cs
+namespace AsciiFarm.Data;
+
+/// <summary>Логика рядом с данными, но не внутри них.</summary>
+public static class TilePaletteExtensions
+{
+    public static TileStyle Resolve(this TilePalette palette, char tile) =>
+        palette.Tiles.TryGetValue(tile, out var style) ? style : palette.Fallback;
+}.
+//конец Data\TilePaletteExtensions.cs
+.
+//начало Input\CommandChannel.cs
+﻿// Input/CommandChannel.cs
+namespace AsciiFarm.Input;
+
+/// <summary>
+/// Единственная точка обмена между потоком ввода и потоком симуляции.
+/// Lock + ограниченная ёмкость: ввод никогда не ждёт симуляцию.
+/// </summary>
+public sealed class CommandChannel
+{
+    private readonly Queue<GameCommand> _queue = new();
+    private readonly object _gate = new();
+    private readonly int _capacity;
+    private bool _closed;
+
+    public CommandChannel(int capacity) => _capacity = capacity;
+
+    public void Post(GameCommand command)
+    {
+        lock (_gate)
+        {
+            if (_closed || command == GameCommand.None) return;
+            if (_queue.Count >= _capacity) _queue.Dequeue();   // защита от залипания клавиши
+            _queue.Enqueue(command);
+        }
+    }
+
+    public void DrainTo(List<GameCommand> target)
+    {
+        lock (_gate)
+        {
+            while (_queue.Count > 0) target.Add(_queue.Dequeue());
+        }
+    }
+
+    public void Close()
+    {
+        lock (_gate) { _closed = true; _queue.Clear(); }
+    }
+}.
+//конец Input\CommandChannel.cs
+.
+//начало Input\GameCommand.cs
+﻿// Input/GameCommand.cs
+namespace AsciiFarm.Input;
+
+public enum GameCommand { None, MoveUp, MoveDown, MoveLeft, MoveRight, Exit }.
+//конец Input\GameCommand.cs
+.
+//начало Input\InputLoop.cs
+﻿// Input/InputLoop.cs
+using AsciiFarm.Data;
+namespace AsciiFarm.Input;
+
+/// <summary>Тело потока ввода. Ссылки на World нет по построению.</summary>
+public sealed class InputLoop
+{
+    private readonly CommandChannel _channel;
+    private readonly KeyBindings _bindings;
+    private readonly int _pollDelayMs;
+
+    public InputLoop(CommandChannel channel, KeyBindings bindings, int pollDelayMs)
+    {
+        _channel = channel;
+        _bindings = bindings;
+        _pollDelayMs = pollDelayMs;
+    }
+
+    public void Run(CancellationToken token)
+    {
+        while (!token.IsCancellationRequested)
+        {
+            bool worked = false;
+            while (Console.KeyAvailable)                       // не блокируемся → выходим по токену
+            {
+                var key = Console.ReadKey(intercept: true).Key;
+                if (_bindings.Map.TryGetValue(key, out var command))
+                {
+                    _channel.Post(command);
+                    worked = true;
+                }
+            }
+            if (!worked) Thread.Sleep(_pollDelayMs);
+        }
+    }
+}.
+//конец Input\InputLoop.cs
+.
+//начало Rendering\DoubleBufferedConsole.cs
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using System;
+using System.ComponentModel;
+using System.Runtime.InteropServices;
+using Microsoft.Win32.SafeHandles;
+
+namespace askiifarm.Rendering
+{
+
+
+    public sealed class DoubleBufferedConsole : IDisposable
+    {
+        private const int STD_OUTPUT_HANDLE = -11;
+
+        private const uint GENERIC_READ = 0x80000000;
+        private const uint GENERIC_WRITE = 0x40000000;
+        private const uint FILE_SHARE_READ = 0x00000001;
+        private const uint FILE_SHARE_WRITE = 0x00000002;
+        private const uint CONSOLE_TEXTMODE_BUFFER = 1;
+
+        // добавить поле
+        private readonly AsciiFarm.Core.ThreadGuard _guard = new("Console");
+
+        /// <summary>Вызывается один раз в потоке рендера.</summary>
+        public void AttachToCurrentThread() => _guard.AttachToCurrentThread();
+
+        [StructLayout(LayoutKind.Sequential)]
+        private struct COORD
+        {
+            public short X;
+            public short Y;
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        private struct SMALL_RECT
+        {
+            public short Left;
+            public short Top;
+            public short Right;
+            public short Bottom;
+        }
+
+        [StructLayout(LayoutKind.Explicit, CharSet = CharSet.Unicode)]
+        private struct CHAR_INFO
+        {
+            [FieldOffset(0)]
+            public char UnicodeChar;
+
+            [FieldOffset(0)]
+            public byte AsciiChar;
+
+            [FieldOffset(2)]
+            public short Attributes;
+        }
+
+
+        [DllImport("kernel32.dll", SetLastError = true)]
+        private static extern nint GetStdHandle(int nStdHandle);
+
+        [DllImport("kernel32.dll", SetLastError = true)]
+        private static extern COORD GetLargestConsoleWindowSize(SafeFileHandle hConsoleOutput);
+
+        [DllImport("kernel32.dll", SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        private static extern bool SetConsoleScreenBufferSize(
+            SafeFileHandle hConsoleOutput,
+            COORD dwSize);
+
+        [DllImport("kernel32.dll", SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        private static extern bool SetConsoleWindowInfo(
+            SafeFileHandle hConsoleOutput,
+            [MarshalAs(UnmanagedType.Bool)] bool bAbsolute,
+            ref SMALL_RECT lpConsoleWindow);
+
+        [DllImport("kernel32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        private static extern bool WriteConsoleOutput(
+            SafeFileHandle hConsoleOutput,
+            CHAR_INFO[] lpBuffer,
+            COORD dwBufferSize,
+            COORD dwBufferCoord,
+            ref SMALL_RECT lpConsoleWriteRegion);
+
+        [DllImport("kernel32.dll", SetLastError = true)]
+        private static extern SafeFileHandle CreateConsoleScreenBuffer(
+            uint dwDesiredAccess,
+            uint dwShareMode,
+            nint lpSecurityAttributes,
+            uint dwFlags,
+            nint lpScreenBufferData);
+
+        [DllImport("kernel32.dll", SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        private static extern bool SetConsoleActiveScreenBuffer(
+            SafeFileHandle hConsoleOutput);
+
+        private readonly SafeFileHandle _stdout;
+
+        private SafeFileHandle _front;
+        private SafeFileHandle _back;
+
+        private CHAR_INFO[] _cells;
+
+        private int _width;
+        private int _height;
+
+        private bool _dirty;
+        private bool _disposed;
+
+        public int Width => _width;
+        public int Height => _height;
+
+        /// <summary>
+        /// Цвет текста по умолчанию для Clear().
+        /// </summary>
+        public ConsoleColor DefaultForeground { get; set; }
+
+        /// <summary>
+        /// Цвет фона по умолчанию для Clear().
+        /// </summary>
+        public ConsoleColor DefaultBackground { get; set; }
+
+        public DoubleBufferedConsole(
+            int width,
+            int height,
+            ConsoleColor defaultForeground = ConsoleColor.Gray,
+            ConsoleColor defaultBackground = ConsoleColor.Black)
+        {
+            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                throw new PlatformNotSupportedException("Поддерживается только Windows.");
+
+            if (Console.IsOutputRedirected)
+                throw new InvalidOperationException("Вывод консоли перенаправлен. Нужна настоящая консоль.");
+
+            ValidateSize(width, height);
+
+            _width = width;
+            _height = height;
+
+            DefaultForeground = defaultForeground;
+            DefaultBackground = defaultBackground;
+
+            _stdout = OpenStandardOutput();
+
+            try
+            {
+                ValidateAgainstLargestWindowSize(width, height);
+
+                _front = CreateBuffer(width, height);
+                _back = CreateBuffer(width, height);
+
+                _cells = new CHAR_INFO[width * height];
+
+                FillCells(
+                    _cells,
+                    ' ',
+                    MakeAttribute(DefaultForeground, DefaultBackground));
+
+                // Показываем начальный пустой кадр.
+                WriteBuffer(_front, _cells, width, height);
+                SetActiveBuffer(_front);
+
+                _dirty = false;
+
+                try
+                {
+                    Console.CursorVisible = false;
+                }
+                catch
+                {
+                    // Не критично, если консоль не позволяет управлять курсором.
+                }
+            }
+            catch
+            {
+                _front?.Dispose();
+                _back?.Dispose();
+                _stdout.Dispose();
+                throw;
+            }
+        }
+
+        /// <summary>
+        /// Добавляет один символ в буфер.
+        /// Если координаты вне диапазона, вызов игнорируется.
+        /// </summary>
+        public void PutChar(
+            int x,
+            int y,
+            char character,
+            ConsoleColor foreground,
+            ConsoleColor background)
+        {
+            _guard.Validate();
+            CheckNotDisposed();
+
+            if ((uint)x >= (uint)_width || (uint)y >= (uint)_height)
+                return;
+
+            int index = y * _width + x;
+
+            _cells[index].UnicodeChar = character;
+            _cells[index].Attributes = MakeAttribute(foreground, background);
+
+            _dirty = true;
+        }
+
+        /// <summary>
+        /// Рисует текущий буфер.
+        /// Если изменений не было, ничего не делает, если не задан force = true.
+        /// </summary>
+        public void Draw(bool force = false)
+        {
+            _guard.Validate();
+            CheckNotDisposed();
+
+            if (!_dirty && !force)
+                return;
+
+            // Пишем кадр в скрытый буфер и делаем его активным.
+            WriteBuffer(_back, _cells, _width, _height);
+            SetActiveBuffer(_back);
+
+            SafeFileHandle temp = _front;
+            _front = _back;
+            _back = temp;
+
+            _dirty = false;
+        }
+
+        /// <summary>
+        /// Очищает буфер пробелами и цветами по умолчанию.
+        /// </summary>
+        public void Clear()
+        {
+            _guard.Validate();
+            CheckNotDisposed();
+            Fill(' ', DefaultForeground, DefaultBackground);
+        }
+
+        /// <summary>
+        /// Заливает весь буфер одним символом и цветами.
+        /// </summary>
+        public void Fill(
+            char character,
+            ConsoleColor foreground,
+            ConsoleColor background)
+        {
+            _guard.Validate();
+            CheckNotDisposed();
+
+            short attributes = MakeAttribute(foreground, background);
+            FillCells(_cells, character, attributes);
+
+            _dirty = true;
+        }
+
+        /// <summary>
+        /// Заливает прямоугольник.
+        /// Координаты — верхний левый угол.
+        /// Прямоугольник автоматически обрезается по границам буфера.
+        /// </summary>
+        public void FillRect(
+            int x,
+            int y,
+            int width,
+            int height,
+            char character,
+            ConsoleColor foreground,
+            ConsoleColor background)
+        {
+            _guard.Validate();
+            CheckNotDisposed();
+
+            if (width < 0 || height < 0)
+                throw new ArgumentOutOfRangeException(nameof(width), "Размер не может быть отрицательным.");
+
+            if (width == 0 || height == 0)
+                return;
+
+            int left = Math.Max(0, x);
+            int top = Math.Max(0, y);
+
+            int right = (int)Math.Min(_width, (long)x + width);
+            int bottom = (int)Math.Min(_height, (long)y + height);
+
+            if (left >= right || top >= bottom)
+                return;
+
+            short attributes = MakeAttribute(foreground, background);
+
+            for (int yy = top; yy < bottom; yy++)
+            {
+                int rowStart = yy * _width;
+
+                for (int xx = left; xx < right; xx++)
+                {
+                    int index = rowStart + xx;
+
+                    _cells[index].UnicodeChar = character;
+                    _cells[index].Attributes = attributes;
+                }
+            }
+
+            _dirty = true;
+        }
+
+        /// <summary>
+        /// Меняет размер буфера и окна консоли.
+        /// Текущий кадр при этом сбрасывается.
+        /// </summary>
+        public void Resize(int width, int height)
+        {
+            _guard.Validate();
+            CheckNotDisposed();
+            ValidateSize(width, height);
+
+            if (width == _width && height == _height)
+                return;
+
+            ValidateAgainstLargestWindowSize(width, height);
+
+            SafeFileHandle newFront = CreateBuffer(width, height);
+            SafeFileHandle newBack = null;
+
+            try
+            {
+                newBack = CreateBuffer(width, height);
+
+                CHAR_INFO[] newCells = new CHAR_INFO[width * height];
+
+                FillCells(
+                    newCells,
+                    ' ',
+                    MakeAttribute(DefaultForeground, DefaultBackground));
+
+                WriteBuffer(newFront, newCells, width, height);
+                SetActiveBuffer(newFront);
+
+                SafeFileHandle oldFront = _front;
+                SafeFileHandle oldBack = _back;
+
+                _front = newFront;
+                _back = newBack;
+                _cells = newCells;
+
+                _width = width;
+                _height = height;
+
+                _dirty = false;
+
+                oldFront?.Dispose();
+                oldBack?.Dispose();
+            }
+            catch
+            {
+                newFront.Dispose();
+                newBack?.Dispose();
+                throw;
+            }
+        }
+
+        public void Dispose()
+        {
+            if (_disposed)
+                return;
+
+            _disposed = true;
+
+            try
+            {
+                // Возвращаем исходный консольный буфер.
+                if (_stdout != null && !_stdout.IsInvalid)
+                    SetConsoleActiveScreenBuffer(_stdout);
+            }
+            catch
+            {
+                // Если не удалось вернуть исходный буфер, игнорируем.
+            }
+
+            _front?.Dispose();
+            _back?.Dispose();
+            _stdout?.Dispose();
+
+            try
+            {
+                Console.CursorVisible = true;
+            }
+            catch
+            {
+                // Не критично.
+            }
+        }
+
+        private void CheckNotDisposed()
+        {
+            if (_disposed)
+                throw new ObjectDisposedException(nameof(DoubleBufferedConsole));
+        }
+
+        private static void ValidateSize(int width, int height)
+        {
+            if (width <= 0 || height <= 0)
+                throw new ArgumentOutOfRangeException(nameof(width), "Размеры должны быть положительными.");
+
+            if (width > short.MaxValue || height > short.MaxValue)
+                throw new ArgumentOutOfRangeException(nameof(width), "Размеры слишком большие для COORD.");
+
+            if ((long)width * height > int.MaxValue)
+                throw new ArgumentOutOfRangeException(nameof(width), "Слишком много ячеек.");
+        }
+
+        private void ValidateAgainstLargestWindowSize(int width, int height)
+        {
+            COORD largest = GetLargestConsoleWindowSize(_stdout);
+
+            if (largest.X > 0 && largest.Y > 0 && (width > largest.X || height > largest.Y))
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(width),
+                    $"Размер окна консоли не может быть больше {largest.X}x{largest.Y}.");
+            }
+        }
+
+        private static SafeFileHandle OpenStandardOutput()
+        {
+            SafeFileHandle handle = new SafeFileHandle(GetStdHandle(STD_OUTPUT_HANDLE), false);
+
+            if (handle.IsInvalid)
+                throw new Win32Exception(Marshal.GetLastWin32Error());
+
+            return handle;
+        }
+
+        private static SafeFileHandle CreateBuffer(int width, int height)
+        {
+            SafeFileHandle handle = CreateConsoleScreenBuffer(
+                GENERIC_READ | GENERIC_WRITE,
+                FILE_SHARE_READ | FILE_SHARE_WRITE,
+                nint.Zero,
+                CONSOLE_TEXTMODE_BUFFER,
+                nint.Zero);
+
+            if (handle.IsInvalid)
+                throw new Win32Exception(Marshal.GetLastWin32Error());
+
+            try
+            {
+                COORD size = new COORD
+                {
+                    X = (short)width,
+                    Y = (short)height
+                };
+
+                SMALL_RECT target = new SMALL_RECT
+                {
+                    Left = 0,
+                    Top = 0,
+                    Right = (short)(width - 1),
+                    Bottom = (short)(height - 1)
+                };
+
+                // Если окно можно сразу сделать нужного размера — делаем.
+                // Если нет, сначала уменьшаем до 1x1, затем меняем размер буфера.
+                if (!SetConsoleWindowInfo(handle, true, ref target))
+                {
+                    SMALL_RECT tiny = new SMALL_RECT
+                    {
+                        Left = 0,
+                        Top = 0,
+                        Right = 0,
+                        Bottom = 0
+                    };
+
+                    if (!SetConsoleWindowInfo(handle, true, ref tiny))
+                        throw new Win32Exception(Marshal.GetLastWin32Error());
+
+                    if (!SetConsoleScreenBufferSize(handle, size))
+                        throw new Win32Exception(Marshal.GetLastWin32Error());
+
+                    if (!SetConsoleWindowInfo(handle, true, ref target))
+                        throw new Win32Exception(Marshal.GetLastWin32Error());
+                }
+                else
+                {
+                    if (!SetConsoleScreenBufferSize(handle, size))
+                        throw new Win32Exception(Marshal.GetLastWin32Error());
+                }
+
+                return handle;
+            }
+            catch
+            {
+                handle.Dispose();
+                throw;
+            }
+        }
+
+        private static void WriteBuffer(
+            SafeFileHandle handle,
+            CHAR_INFO[] cells,
+            int width,
+            int height)
+        {
+            COORD bufferSize = new COORD
+            {
+                X = (short)width,
+                Y = (short)height
+            };
+
+            COORD bufferCoord = new COORD
+            {
+                X = 0,
+                Y = 0
+            };
+
+            SMALL_RECT region = new SMALL_RECT
+            {
+                Left = 0,
+                Top = 0,
+                Right = (short)(width - 1),
+                Bottom = (short)(height - 1)
+            };
+
+            if (!WriteConsoleOutput(handle, cells, bufferSize, bufferCoord, ref region))
+                throw new Win32Exception(Marshal.GetLastWin32Error());
+        }
+
+        private static void SetActiveBuffer(SafeFileHandle handle)
+        {
+            if (!SetConsoleActiveScreenBuffer(handle))
+                throw new Win32Exception(Marshal.GetLastWin32Error());
+        }
+
+        private static void FillCells(
+            CHAR_INFO[] cells,
+            char character,
+            short attributes)
+        {
+            for (int i = 0; i < cells.Length; i++)
+            {
+                cells[i].UnicodeChar = character;
+                cells[i].Attributes = attributes;
+            }
+        }
+
+        private static short MakeAttribute(ConsoleColor foreground, ConsoleColor background)
+        {
+            int fg = (int)foreground;
+            int bg = (int)background;
+
+            if ((fg & ~0xF) != 0 || (bg & ~0xF) != 0)
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(foreground),
+                    "ConsoleColor должен быть в диапазоне 0..15.");
+            }
+
+            return (short)(fg | bg << 4);
+        }
+    }
+}
+.
+//конец Rendering\DoubleBufferedConsole.cs
+.
+//начало Rendering\FrameExchange.cs
+﻿// Rendering/FrameExchange.cs
+using AsciiFarm.Core;
+namespace AsciiFarm.Rendering;
+
+/// <summary>
+/// Тройная буферизация: write-буфер принадлежит симуляции, read-буфер — рендеру,
+/// средний слот меняется только под lock. Одновременного доступа к содержимому нет физически.
+/// </summary>
+public sealed class FrameExchange<T> where T : class
+{
+    private readonly T[] _buffers;
+    private readonly object _gate = new();
+    private readonly ThreadGuard _writerGuard = new("FrameExchange.Writer");
+    private readonly ThreadGuard _readerGuard = new("FrameExchange.Reader");
+
+    private int _writeIndex;        // трогает только писатель
+    private int _readIndex = 1;     // трогает только читатель
+    private int _readyIndex = 2;    // только под _gate
+    private bool _hasFreshFrame;    // флаг готовности, только под _gate
+
+    public FrameExchange(Func<T> factory) => _buffers = new[] { factory(), factory(), factory() };
+
+    public void AttachWriter() => _writerGuard.AttachToCurrentThread();
+    public void AttachReader() => _readerGuard.AttachToCurrentThread();
+
+    public T WriteBuffer
+    {
+        get { _writerGuard.Validate(); return _buffers[_writeIndex]; }
+    }
+
+    public void Publish()
+    {
+        _writerGuard.Validate();
+        lock (_gate)
+        {
+            (_writeIndex, _readyIndex) = (_readyIndex, _writeIndex);
+            _hasFreshFrame = true;
+        }
+    }
+
+    public bool TryAcquireFresh(out T frame)
+    {
+        _readerGuard.Validate();
+        lock (_gate)
+        {
+            if (_hasFreshFrame)
+            {
+                (_readIndex, _readyIndex) = (_readyIndex, _readIndex);
+                _hasFreshFrame = false;
+                frame = _buffers[_readIndex];
+                return true;
+            }
+        }
+        frame = _buffers[_readIndex];
+        return false;
+    }
+}.
+//конец Rendering\FrameExchange.cs
+.
+//начало Rendering\RenderFrame.cs
+﻿// Rendering/RenderFrame.cs
+namespace AsciiFarm.Rendering;
+
+/// <summary>Данные кадра. Ни одного обработчика (очистку делает система).</summary>
+public sealed class RenderFrame
+{
+    public int Width { get; }
+    public int Height { get; }
+    public char[] Symbols { get; }
+    public ConsoleColor[] Foreground { get; }
+    public ConsoleColor[] Background { get; }
+    public long Tick { get; set; }
+
+    public RenderFrame(int width, int height)
+    {
+        Width = width;
+        Height = height;
+        Symbols = new char[width * height];
+        Foreground = new ConsoleColor[width * height];
+        Background = new ConsoleColor[width * height];
+    }
+}.
+//конец Rendering\RenderFrame.cs
+.
+//начало Serialization\GameStorage.cs
+﻿using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Text;
+
+namespace askiifarm.Serialization
+{
+    public class GameStorage
+    {
+        // Магическая сигнатура для бинарных файлов (начиная с версии 0.0.1)
+        private static readonly byte[] BinarySignature = Encoding.ASCII.GetBytes("AFARM");
+
+        private readonly Dictionary<Version, IVersionFormatHandler> _handlers = new();
+        private readonly Dictionary<Version, IVersionConverter> _converters = new();
+
+        public GameStorage()
+        {
+            RegisterHandler(new FormatHandlerV0_0_0());
+            RegisterHandler(new FormatHandlerV0_0_1());
+
+            RegisterConverter(new ConverterV0_0_0ToV0_0_1());
+        }
+
+        public void RegisterHandler(IVersionFormatHandler handler) =>
+            _handlers[handler.Version] = handler;
+
+        public void RegisterConverter(IVersionConverter converter) =>
+            _converters[converter.SourceVersion] = converter;
+
+        /// <summary>
+        /// Сохраняет данные указанной версии на диск.
+        /// </summary>
+        public void Save(string filePath, Version version, object data)
+        {
+            if (!_handlers.TryGetValue(version, out var handler))
+                throw new NotSupportedException($"Обработчик для версии {version} не найден.");
+
+            using var stream = new FileStream(filePath, FileMode.Create, FileAccess.Write);
+
+            // Если версия >= 0.0.1, пишем бинарный заголовок и номер версии
+            if (version > new Version(0, 0, 0))
+            {
+                using var headerWriter = new BinaryWriter(stream, Encoding.UTF8, leaveOpen: true);
+                headerWriter.Write(BinarySignature);
+                headerWriter.Write(version.Major);
+                headerWriter.Write(version.Minor);
+                headerWriter.Write(version.Build);
+            }
+
+            handler.Save(stream, data);
+        }
+
+        /// <summary>
+        /// Читает файл, автоматически определяет его версию и распаковывает в соответствующий класс.
+        /// </summary>
+        public (Version Version, object Data) Load(string filePath)
+        {
+            using var stream = new FileStream(filePath, FileMode.Open, FileAccess.Read);
+
+            Version detectedVersion;
+
+            // Проверяем, начинается ли файл с бинарной сигнатуры "AFARM"
+            if (HasBinarySignature(stream))
+            {
+                using var headerReader = new BinaryReader(stream, Encoding.UTF8, leaveOpen: true);
+                int major = headerReader.ReadInt32();
+                int minor = headerReader.ReadInt32();
+                int build = headerReader.ReadInt32();
+                detectedVersion = new Version(major, minor, build);
+            }
+            else
+            {
+                // Если сигнатуры нет — считаем, что это сырой текстовый файл версии 0.0.0
+                stream.Position = 0;
+                detectedVersion = new Version(0, 0, 0);
+            }
+
+            if (!_handlers.TryGetValue(detectedVersion, out var handler))
+                throw new NotSupportedException($"Неизвестная версия сохранения: {detectedVersion}");
+
+            object data = handler.Load(stream);
+            return (detectedVersion, data);
+        }
+
+        /// <summary>
+        /// Конвертирует данные из версии X-1 в версию X.
+        /// </summary>
+        public object ConvertStep(Version currentVersion, object data)
+        {
+            if (!_converters.TryGetValue(currentVersion, out var converter))
+                throw new InvalidOperationException($"Нет конвертера для перехода с версии {currentVersion}.");
+
+            return converter.Convert(data);
+        }
+
+        /// <summary>
+        /// Загружает файл любой старой версии и прогоняет через цепочку конвертеров до целевой версии.
+        /// </summary>
+        public T LoadAndConvert<T>(string filePath, Version targetVersion) where T : class
+        {
+            var (currentVersion, currentData) = Load(filePath);
+
+            while (currentVersion < targetVersion)
+            {
+                if (!_converters.TryGetValue(currentVersion, out var converter))
+                    throw new InvalidOperationException($"Не найден конвертер для версии {currentVersion}.");
+
+                currentData = converter.Convert(currentData);
+                currentVersion = converter.TargetVersion;
+            }
+
+            if (currentVersion != targetVersion)
+                throw new InvalidOperationException($"Версия файла ({currentVersion}) выше целевой ({targetVersion}).");
+
+            return currentData as T
+                ?? throw new InvalidCastException($"Данные версии {targetVersion} не соответствуют типу {typeof(T).Name}.");
+        }
+
+        private static bool HasBinarySignature(Stream stream)
+        {
+            if (stream.Length < BinarySignature.Length)
+                return false;
+
+            byte[] buffer = new byte[BinarySignature.Length];
+            int bytesRead = stream.Read(buffer, 0, buffer.Length);
+
+            return bytesRead == BinarySignature.Length && buffer.SequenceEqual(BinarySignature);
+        }
+    }
+}
+.
+//конец Serialization\GameStorage.cs
+.
+//начало Serialization\Serialization.cs
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using System.IO;   // ← добавить
+
+namespace askiifarm.Serialization
+{
+    // --- Модели данных ---
+
+    /// <summary>
+    /// Версия 0.0.0: Карта, загруженная из сырого текстового файла.
+    /// </summary>
+    /// 
+
+    public class GameDataV0_0_0
+    {
+        public char[,] Map { get; set; } = new char[0, 0];
+    }
+
+    /// <summary>
+    /// Версия 0.0.1: Та же карта, но уже в стандарте бинарного сохранения.
+    /// </summary>
+    public class GameDataV0_0_1
+    {
+        public char[,] Map { get; set; } = new char[0, 0];
+    }
+
+    // --- Интерфейсы ---
+
+    /// <summary>
+    /// Общий интерфейс для чтения/записи конкретной версии.
+    /// </summary>
+    public interface IVersionFormatHandler
+    {
+        Version Version { get; }
+        void Save(Stream stream, object data);
+        object Load(Stream stream);
+    }
+
+    /// <summary>
+    /// Интерфейс конвертера из версии X-1 в версию X.
+    /// </summary>
+    public interface IVersionConverter
+    {
+        Version SourceVersion { get; }
+        Version TargetVersion { get; }
+        object Convert(object previousVersionData);
+    }
+
+    // --- Обработчик версии 0.0.0 (Текстовый файл с картой) ---
+    public class FormatHandlerV0_0_0 : IVersionFormatHandler
+    {
+        public Version Version => new Version(0, 0, 0);
+
+        public void Save(Stream stream, object data)
+        {
+            if (data is not GameDataV0_0_0 state)
+                throw new ArgumentException($"Ожидался тип {nameof(GameDataV0_0_0)}");
+
+            // Сохраняем в обычный текст (UTF-8), если понадобится выгрузить обратно
+            using var writer = new StreamWriter(stream, Encoding.UTF8, leaveOpen: true);
+            int width = state.Map.GetLength(0);
+            int height = state.Map.GetLength(1);
+
+            for (int y = 0; y < height; y++)
+            {
+                char[] row = new char[width];
+                for (int x = 0; x < width; x++)
+                {
+                    row[x] = state.Map[x, y];
+                }
+                writer.WriteLine(row);
+            }
+        }
+
+        public object Load(Stream stream)
+        {
+            using var reader = new StreamReader(stream, Encoding.UTF8, leaveOpen: true);
+            string content = reader.ReadToEnd();
+
+            // Разбиваем на строки, убирая символы переноса \r и \n
+            string[] lines = content.Split(new[] { "\r\n", "\n", "\r" }, StringSplitOptions.None);
+
+            // Убираем пустые строки в самом конце файла (если при копировании остался лишний Enter)
+            int height = lines.Length;
+            while (height > 0 && string.IsNullOrEmpty(lines[height - 1]))
+            {
+                height--;
+            }
+
+            if (height == 0)
+                return new GameDataV0_0_0 { Map = new char[0, 0] };
+
+            // Находим максимальную ширину строки
+            int width = 0;
+            for (int y = 0; y < height; y++)
+            {
+                if (lines[y].Length > width)
+                    width = lines[y].Length;
+            }
+
+            // Заполняем двумерный массив [x, y]
+            char[,] map = new char[width, height];
+            for (int y = 0; y < height; y++)
+            {
+                string line = lines[y];
+                for (int x = 0; x < width; x++)
+                {
+                    // Если строка короче максимальной ширины, добиваем пробелом
+                    map[x, y] = x < line.Length ? line[x] : ' ';
+                }
+            }
+
+            return new GameDataV0_0_0 { Map = map };
+        }
+    }
+
+    // --- Обработчик версии 0.0.1 (Бинарный формат с заголовком версии) ---
+    public class FormatHandlerV0_0_1 : IVersionFormatHandler
+    {
+        public Version Version => new Version(0, 0, 1);
+
+        public void Save(Stream stream, object data)
+        {
+            if (data is not GameDataV0_0_1 state)
+                throw new ArgumentException($"Ожидался тип {nameof(GameDataV0_0_1)}");
+
+            using var writer = new BinaryWriter(stream, Encoding.UTF8, leaveOpen: true);
+
+            int width = state.Map.GetLength(0);
+            int height = state.Map.GetLength(1);
+
+            writer.Write(width);
+            writer.Write(height);
+
+            for (int y = 0; y < height; y++)
+            {
+                for (int x = 0; x < width; x++)
+                {
+                    writer.Write(state.Map[x, y]);
+                }
+            }
+        }
+
+        public object Load(Stream stream)
+        {
+            using var reader = new BinaryReader(stream, Encoding.UTF8, leaveOpen: true);
+
+            int width = reader.ReadInt32();
+            int height = reader.ReadInt32();
+
+            char[,] map = new char[width, height];
+            for (int y = 0; y < height; y++)
+            {
+                for (int x = 0; x < width; x++)
+                {
+                    map[x, y] = reader.ReadChar();
+                }
+            }
+
+            return new GameDataV0_0_1 { Map = map };
+        }
+    }
+
+    // --- Конвертер из версии 0.0.0 в версию 0.0.1 ---
+    public class ConverterV0_0_0ToV0_0_1 : IVersionConverter
+    {
+        public Version SourceVersion => new Version(0, 0, 0);
+        public Version TargetVersion => new Version(0, 0, 1);
+
+        public object Convert(object previousVersionData)
+        {
+            if (previousVersionData is not GameDataV0_0_0 v0)
+                throw new ArgumentException($"Ожидался тип {nameof(GameDataV0_0_0)}");
+
+            // Клонируем массив карты, чтобы данные были независимыми
+            char[,] clonedMap = (char[,])v0.Map.Clone();
+
+            return new GameDataV0_0_1
+            {
+                Map = clonedMap
+            };
+        }
+    }
+}.
+//конец Serialization\Serialization.cs
+.
+//начало Systems\ConsolePresentSystem.cs
+﻿// Systems/ConsolePresentSystem.cs
+using AsciiFarm.Rendering;
+using askiifarm;
+using askiifarm.Rendering;
+namespace AsciiFarm.Systems;
+
+/// <summary>
+/// Работает в потоке рендера. Метод намеренно НЕ принимает World:
+/// у рендера нет и не может быть доступа к игровым данным.
+/// </summary>
+public sealed class ConsolePresentSystem
+{
+    private readonly DoubleBufferedConsole _console;
+    private readonly FrameExchange<RenderFrame> _frames;
+
+    public ConsolePresentSystem(DoubleBufferedConsole console, FrameExchange<RenderFrame> frames)
+    {
+        _console = console;
+        _frames = frames;
+    }
+
+    public void Present()
+    {
+        if (!_frames.TryAcquireFresh(out var frame)) return;   // нового кадра нет — не перерисовываем
+
+        for (int y = 0; y < frame.Height; y++)
+            for (int x = 0; x < frame.Width; x++)
+            {
+                int i = y * frame.Width + x;
+                _console.PutChar(x, y, frame.Symbols[i], frame.Foreground[i], frame.Background[i]);
+            }
+
+        _console.Draw();
+    }
+}.
+//конец Systems\ConsolePresentSystem.cs
+.
+//начало Systems\MovementSystem.cs
+﻿// Systems/MovementSystem.cs
+using AsciiFarm.Components;
+using AsciiFarm.Core;
+using AsciiFarm.Data;
+namespace AsciiFarm.Systems;
+
+/// <summary>Бывший MapPhysics: проходимость берётся из данных палитры, а не из switch.</summary>
+public sealed class MovementSystem : ISystem
+{
+    public void Update(World world)
+    {
+        var maps = world.Query<TileMapComponent>();
+        if (maps.Length == 0) return;
+
+        var map = world.Store<TileMapComponent>().Get(maps[0]);
+        var palette = world.Resource<TilePalette>();
+        var positions = world.Store<Position>();
+        var intents = world.Store<MoveIntent>();
+
+        foreach (var entity in world.Query<Position, MoveIntent>())
+        {
+            var intent = intents.Get(entity);
+            var position = positions.Get(entity);
+            int targetX = position.X + intent.Dx;
+            int targetY = position.Y + intent.Dy;
+
+            if (IsWalkable(map, palette, targetX, targetY))
+                positions.Set(entity, new Position(targetX, targetY));
+
+            intents.Remove(entity);   // намерение одноразовое
+        }
+    }
+
+    private static bool IsWalkable(TileMapComponent map, TilePalette palette, int x, int y)
+    {
+        if (x < 0 || y < 0 || x >= map.Width || y >= map.Height) return false;
+        return !palette.Resolve(map.Tiles[x, y]).BlocksMovement;
+    }
+}.
+//конец Systems\MovementSystem.cs
+.
+//начало Systems\PlayerIntentSystem.cs
+﻿// Systems/PlayerIntentSystem.cs
+using AsciiFarm.Components;
+using AsciiFarm.Core;
+using AsciiFarm.Data;
+using AsciiFarm.Input;
+namespace AsciiFarm.Systems;
+
+/// <summary>Команды → намерение движения. Про клавиши больше никто не знает.</summary>
+public sealed class PlayerIntentSystem : ISystem
+{
+    public void Update(World world)
+    {
+        var state = world.Resource<GameState>();
+        var commands = world.Resource<CommandBuffer>().Items;
+        var intents = world.Store<MoveIntent>();
+        var players = world.Query<PlayerTag, Position>();
+
+        foreach (var command in commands)
+        {
+            if (command == GameCommand.Exit) { state.IsRunning = false; continue; }
+
+            var (dx, dy) = command switch
+            {
+                GameCommand.MoveUp => (0, -1),
+                GameCommand.MoveDown => (0, 1),
+                GameCommand.MoveLeft => (-1, 0),
+                GameCommand.MoveRight => (1, 0),
+                _ => (0, 0)
+            };
+            if (dx == 0 && dy == 0) continue;
+
+            foreach (var entity in players) intents.Set(entity, new MoveIntent(dx, dy));
+        }
+
+        commands.Clear();
+    }
+}.
+//конец Systems\PlayerIntentSystem.cs
+.
+//начало Systems\SnapshotSystem.cs
+﻿// Systems/SnapshotSystem.cs
+using AsciiFarm.Components;
+using AsciiFarm.Core;
+using AsciiFarm.Data;
+using AsciiFarm.Rendering;
+namespace AsciiFarm.Systems;
+
+/// <summary>
+/// Работает в потоке симуляции: читает World, пишет в СВОЙ write-буфер и публикует его.
+/// Заменяет GameRenderer, но ничего не знает о консоли.
+/// </summary>
+public sealed class SnapshotSystem
+{
+    private readonly FrameExchange<RenderFrame> _frames;
+
+    public SnapshotSystem(FrameExchange<RenderFrame> frames) => _frames = frames;
+
+    public void Update(World world)
+    {
+        var frame = _frames.WriteBuffer;
+        var palette = world.Resource<TilePalette>();
+
+        Array.Fill(frame.Symbols, ' ');
+        Array.Fill(frame.Foreground, palette.Fallback.Foreground);
+        Array.Fill(frame.Background, palette.Fallback.Background);
+
+        foreach (var entity in world.Query<TileMapComponent>())
+            DrawTiles(frame, world.Store<TileMapComponent>().Get(entity), palette);
+
+        var glyphs = world.Store<Glyph>();
+        var positions = world.Store<Position>();
+        foreach (var entity in world.Query<Glyph, Position>().OrderBy(e => glyphs.Get(e).Layer))
+        {
+            var glyph = glyphs.Get(entity);
+            var pos = positions.Get(entity);
+            Put(frame, pos.X, pos.Y, glyph.Symbol, glyph.Foreground, glyph.Background);
+        }
+
+        frame.Tick = world.Resource<GameState>().Tick;
+        _frames.Publish();
+    }
+
+    private static void DrawTiles(RenderFrame frame, TileMapComponent map, TilePalette palette)
+    {
+        int width = Math.Min(map.Width, frame.Width);
+        int height = Math.Min(map.Height, frame.Height);
+        for (int y = 0; y < height; y++)
+            for (int x = 0; x < width; x++)
+            {
+                var style = palette.Resolve(map.Tiles[x, y]);
+                Put(frame, x, y, map.Tiles[x, y], style.Foreground, style.Background);
+            }
+    }
+
+    private static void Put(RenderFrame frame, int x, int y, char symbol, ConsoleColor fg, ConsoleColor bg)
+    {
+        if ((uint)x >= (uint)frame.Width || (uint)y >= (uint)frame.Height) return;
+        int index = y * frame.Width + x;
+        frame.Symbols[index] = symbol;
+        frame.Foreground[index] = fg;
+        frame.Background[index] = bg;
+    }
+}.
+//конец Systems\SnapshotSystem.cs
+.
+//начало Systems\SystemPipeline.cs
+﻿// Systems/SystemPipeline.cs
+using AsciiFarm.Core;
+namespace AsciiFarm.Systems;
+
+public static class SystemPipeline
+{
+    public static ISystem[] CreateSimulationSystems() => new ISystem[]
+    {
+        new PlayerIntentSystem(),
+        new MovementSystem(),
+        // сюда позже: GrowthSystem, HungerSystem, AISystem... без правок остальных файлов
+    };
+}.
+//конец Systems\SystemPipeline.cs
+.

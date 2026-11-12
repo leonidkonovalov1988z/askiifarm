@@ -8,7 +8,7 @@ using System.ComponentModel;
 using System.Runtime.InteropServices;
 using Microsoft.Win32.SafeHandles;
 
-namespace askiifarm
+namespace askiifarm.Rendering
 {
 
 
@@ -21,6 +21,12 @@ namespace askiifarm
         private const uint FILE_SHARE_READ = 0x00000001;
         private const uint FILE_SHARE_WRITE = 0x00000002;
         private const uint CONSOLE_TEXTMODE_BUFFER = 1;
+
+        // добавить поле
+        private readonly AsciiFarm.Core.ThreadGuard _guard = new("Console");
+
+        /// <summary>Вызывается один раз в потоке рендера.</summary>
+        public void AttachToCurrentThread() => _guard.AttachToCurrentThread();
 
         [StructLayout(LayoutKind.Sequential)]
         private struct COORD
@@ -38,15 +44,22 @@ namespace askiifarm
             public short Bottom;
         }
 
-        [StructLayout(LayoutKind.Sequential)]
+        [StructLayout(LayoutKind.Explicit, CharSet = CharSet.Unicode)]
         private struct CHAR_INFO
         {
+            [FieldOffset(0)]
             public char UnicodeChar;
+
+            [FieldOffset(0)]
+            public byte AsciiChar;
+
+            [FieldOffset(2)]
             public short Attributes;
         }
 
+
         [DllImport("kernel32.dll", SetLastError = true)]
-        private static extern IntPtr GetStdHandle(int nStdHandle);
+        private static extern nint GetStdHandle(int nStdHandle);
 
         [DllImport("kernel32.dll", SetLastError = true)]
         private static extern COORD GetLargestConsoleWindowSize(SafeFileHandle hConsoleOutput);
@@ -77,9 +90,9 @@ namespace askiifarm
         private static extern SafeFileHandle CreateConsoleScreenBuffer(
             uint dwDesiredAccess,
             uint dwShareMode,
-            IntPtr lpSecurityAttributes,
+            nint lpSecurityAttributes,
             uint dwFlags,
-            IntPtr lpScreenBufferData);
+            nint lpScreenBufferData);
 
         [DllImport("kernel32.dll", SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
@@ -183,6 +196,7 @@ namespace askiifarm
             ConsoleColor foreground,
             ConsoleColor background)
         {
+            _guard.Validate();
             CheckNotDisposed();
 
             if ((uint)x >= (uint)_width || (uint)y >= (uint)_height)
@@ -202,6 +216,7 @@ namespace askiifarm
         /// </summary>
         public void Draw(bool force = false)
         {
+            _guard.Validate();
             CheckNotDisposed();
 
             if (!_dirty && !force)
@@ -223,6 +238,7 @@ namespace askiifarm
         /// </summary>
         public void Clear()
         {
+            _guard.Validate();
             CheckNotDisposed();
             Fill(' ', DefaultForeground, DefaultBackground);
         }
@@ -235,6 +251,7 @@ namespace askiifarm
             ConsoleColor foreground,
             ConsoleColor background)
         {
+            _guard.Validate();
             CheckNotDisposed();
 
             short attributes = MakeAttribute(foreground, background);
@@ -257,6 +274,7 @@ namespace askiifarm
             ConsoleColor foreground,
             ConsoleColor background)
         {
+            _guard.Validate();
             CheckNotDisposed();
 
             if (width < 0 || height < 0)
@@ -268,8 +286,8 @@ namespace askiifarm
             int left = Math.Max(0, x);
             int top = Math.Max(0, y);
 
-            int right = (int)Math.Min((long)_width, (long)x + width);
-            int bottom = (int)Math.Min((long)_height, (long)y + height);
+            int right = (int)Math.Min(_width, (long)x + width);
+            int bottom = (int)Math.Min(_height, (long)y + height);
 
             if (left >= right || top >= bottom)
                 return;
@@ -298,6 +316,7 @@ namespace askiifarm
         /// </summary>
         public void Resize(int width, int height)
         {
+            _guard.Validate();
             CheckNotDisposed();
             ValidateSize(width, height);
 
@@ -423,9 +442,9 @@ namespace askiifarm
             SafeFileHandle handle = CreateConsoleScreenBuffer(
                 GENERIC_READ | GENERIC_WRITE,
                 FILE_SHARE_READ | FILE_SHARE_WRITE,
-                IntPtr.Zero,
+                nint.Zero,
                 CONSOLE_TEXTMODE_BUFFER,
-                IntPtr.Zero);
+                nint.Zero);
 
             if (handle.IsInvalid)
                 throw new Win32Exception(Marshal.GetLastWin32Error());
@@ -542,7 +561,7 @@ namespace askiifarm
                     "ConsoleColor должен быть в диапазоне 0..15.");
             }
 
-            return (short)(fg | (bg << 4));
+            return (short)(fg | bg << 4);
         }
     }
 }
