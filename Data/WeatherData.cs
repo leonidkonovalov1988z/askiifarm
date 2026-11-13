@@ -15,8 +15,4 @@ public readonly struct WeatherData
     public float SolarEnergyMj { get; init; }    // МДж/м² за час
     public float EffectiveSnowCm { get; init; }  // см, с коррекцией
     public float PrecipitationMm { get; init; }  // мм за час
-    public float GroundTempMin { get; init; }  // НОВОЕ
-    public float GroundTempMax { get; init; }  // НОВОЕ
-    public float AirTempMin { get; init; }  // НОВОЕ
-    public float AirTempMax { get; init; }  // НОВОЕ
 }

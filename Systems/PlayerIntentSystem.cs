@@ -42,21 +42,25 @@ public sealed class PlayerIntentSystem : ISystem
         // Обработка команд управления временем
         foreach (var command in commands)
         {
+            // Systems/PlayerIntentSystem.cs
+            // ... внутри foreach (var command in commands)
             switch (command)
             {
-                // Относительные коэффициенты к DefaultTimeSpeed
-                case GameCommand.Speed1: state.TimeSpeed = state.DefaultTimeSpeed; break;
-                case GameCommand.Speed2: state.TimeSpeed = state.DefaultTimeSpeed * 2; break;
-                case GameCommand.Speed3: state.TimeSpeed = state.DefaultTimeSpeed * 3; break;
-                case GameCommand.Speed4: state.TimeSpeed = state.DefaultTimeSpeed * 4; break;
-                case GameCommand.Speed5: state.TimeSpeed = state.DefaultTimeSpeed * 5; break;
+                // Относительные скорости (от базовой DefaultTimeSpeed, например 48)
+                case GameCommand.Speed1: state.TimeSpeed = state.DefaultTimeSpeed; break;          // x1 от базы (48x)
+                case GameCommand.Speed2: state.TimeSpeed = state.DefaultTimeSpeed * 10; break;     // x10 от базы (480x)
 
-                // Абсолютные значения для перемотки (не меняются)
-                case GameCommand.FastForward1: state.FastForwardUntil = state.GameTimeElapsed + 3600.0; break;
-                case GameCommand.FastForward2: state.FastForwardUntil = state.GameTimeElapsed + 86400.0; break;
-                case GameCommand.FastForward3: state.FastForwardUntil = state.GameTimeElapsed + 604800.0; break;
-                case GameCommand.FastForward4: state.FastForwardUntil = state.GameTimeElapsed + 2592000.0; break;
-                case GameCommand.FastForward5: state.FastForwardUntil = state.GameTimeElapsed + 31536000.0; break;
+                // Абсолютные скорости для масштабного ускорения
+                case GameCommand.Speed3: state.TimeSpeed = 1440.0; break;      // 1 игровой день за 1 реальную минуту
+                case GameCommand.Speed4: state.TimeSpeed = 43200.0; break;     // 1 игровой месяц за 1 реальную минуту
+                case GameCommand.Speed5: state.TimeSpeed = 518400.0; break;    // 1 игровой год за 1 реальную минуту
+
+                // Промотка (абсолютные значения в секундах)
+                case GameCommand.FastForward1: state.FastForwardUntil = state.GameTimeElapsed + 3600.0; break;       // +1 час
+                case GameCommand.FastForward2: state.FastForwardUntil = state.GameTimeElapsed + 86400.0; break;      // +1 день
+                case GameCommand.FastForward3: state.FastForwardUntil = state.GameTimeElapsed + 604800.0; break;     // +1 неделя
+                case GameCommand.FastForward4: state.FastForwardUntil = state.GameTimeElapsed + 2592000.0; break;    // +1 месяц
+                case GameCommand.FastForward5: state.FastForwardUntil = state.GameTimeElapsed + 31536000.0; break;   // +1 год
             }
         }
 

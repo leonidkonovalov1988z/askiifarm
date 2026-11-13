@@ -23,5 +23,5 @@ public sealed class GameSettings
     public double DefaultTimeSpeed { get; init; } = 48.0;
 
     // НОВОЕ: дней в месяце (0 = реальный календарь, иначе настраиваемый)
-    public int DaysPerMonth { get; init; } = 9;
+    public int DaysPerMonth { get; init; } = 3;
 }

@@ -135,10 +135,9 @@ public sealed class SnapshotSystem
     // В методе DrawGameTime:
     private static void DrawGameTime(RenderFrame frame, GameState state)
     {
-        // Игровое время = GameStartDate + GameTimeElapsed
-        DateTime gameTime = state.GameStartDate.AddSeconds(state.GameTimeElapsed);
-        string dateStr = gameTime.ToString("dd.MM.yyyy");
-        string timeStr = gameTime.ToString("HH:mm:ss");
+        // Используем CalendarHelper для правильного отображения
+        string gameTimeStr = CalendarHelper.FormatGameTime(
+            state.GameStartDate, state.GameTimeElapsed, state.DaysPerMonth);
         string speedStr = $"x{state.TimeSpeed:F0}";
 
         // Реальное время, прошедшее с запуска
@@ -148,12 +147,24 @@ public sealed class SnapshotSystem
         int startX = frame.Width - 12;  // Сдвинуто вправо
         int startY = frame.Height - 4;
 
+        // Разделяем "dd.MM.yyyy HH:mm:ss" на дату и время
+        string[] timeParts = gameTimeStr.Split(' ');
+        string dateStr = timeParts.Length > 0 ? timeParts[0] : "";
+        string timeOfDayStr = timeParts.Length > 1 ? timeParts[1] : "";
+
+        // 1. Дата игры
         for (int i = 0; i < dateStr.Length && startX + i < frame.Width; i++)
             Put(frame, startX + i, startY, dateStr[i], ConsoleColor.White, ConsoleColor.Black);
-        for (int i = 0; i < timeStr.Length && startX + i < frame.Width; i++)
-            Put(frame, startX + i, startY + 1, timeStr[i], ConsoleColor.Yellow, ConsoleColor.Black);
+
+        // 2. Время игры
+        for (int i = 0; i < timeOfDayStr.Length && startX + i < frame.Width; i++)
+            Put(frame, startX + i, startY + 1, timeOfDayStr[i], ConsoleColor.Yellow, ConsoleColor.Black);
+
+        // 3. Скорость времени
         for (int i = 0; i < speedStr.Length && startX + i < frame.Width; i++)
             Put(frame, startX + i, startY + 2, speedStr[i], ConsoleColor.Green, ConsoleColor.Black);
+
+        // 4. Реальное время
         for (int i = 0; i < realTimeStr.Length && startX + i < frame.Width; i++)
             Put(frame, startX + i, startY + 3, realTimeStr[i], ConsoleColor.DarkGray, ConsoleColor.Black);
     }

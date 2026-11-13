@@ -245,9 +245,13 @@ public sealed class GameSettings
     public string PlayerCharacterKey { get; init; } = "player";
     public bool UseJsonContent { get; init; } = true;
     public double MaxTimeStep { get; init; } = 3600.0;
-
-    // НОВОЕ: дата и время начала игры
     public DateTime GameStartDate { get; init; } = new DateTime(2000, 5, 1, 8, 0, 0);
+
+    // НОВОЕ: базовая скорость игрового времени (по умолчанию x48)
+    public double DefaultTimeSpeed { get; init; } = 48.0;
+
+    // НОВОЕ: дней в месяце (0 = реальный календарь, иначе настраиваемый)
+    public int DaysPerMonth { get; init; } = 9;
 }.
 //конец App\GameSettings.cs
 .
@@ -322,23 +326,34 @@ public static class GameWorldBuilder
         world.SetResource(new FpsLimiter(settings.SimulationFps));
         world.SetResource(settings);
 
-        // Загрузка погоды
+
+
+        // В методе Build(), после загрузки погоды:
         var weatherData = WeatherCsvLoader.Load(settings.WeatherCsvPath, out var weatherError);
+        // Загрузка погоды
         int startIndex = WeatherCsvLoader.FindStartIndex(weatherData, settings.GameStartDate);
+        // Сжимаем данные если календарь нестандартный
+        if (settings.DaysPerMonth != 0)
+        {
+            weatherData = WeatherCsvLoader.CompressWeatherData(weatherData, settings.DaysPerMonth);
+        }
 
         world.SetResource(new WeatherDataSource
         {
             HourlyData = weatherData,
             LoadError = weatherError,
-            StartIndex = startIndex  // НОВОЕ
+            StartIndex = startIndex
         });
         world.SetResource(new WeatherCurrent());
 
         // Инициализация GameState с датой из настроек
+        // В методе Build(), при создании GameState:
         var gameState = world.Resource<GameState>();
-        gameState.GameStartDate = settings.GameStartDate;  // НОВОЕ
-        gameState.TimeSpeed = 1.0f;
+        gameState.GameStartDate = settings.GameStartDate;
+        gameState.TimeSpeed = settings.DefaultTimeSpeed;
+        gameState.DefaultTimeSpeed = settings.DefaultTimeSpeed;
         gameState.MaxTimeStep = settings.MaxTimeStep;
+        gameState.DaysPerMonth = settings.DaysPerMonth;
 
         return world;
     }
@@ -892,6 +907,99 @@ public static class WeatherCsvLoader
         // Если не нашли, начинаем с 0
         return 0;
     }
+    // Content/WeatherCsvLoader.cs — добавить метод
+    // Content/WeatherCsvLoader.cs — заменить метод CompressWeatherData
+    // Content/WeatherCsvLoader.cs
+    // Content/WeatherCsvLoader.cs
+    // Content/WeatherCsvLoader.cs
+    // Content/WeatherCsvLoader.cs
+
+    public static List<WeatherData> CompressWeatherData(List<WeatherData> original, int daysPerMonth)
+    {
+        if (daysPerMonth == 0 || original.Count == 0) return original;
+
+        // Группируем данные по годам
+        var byYear = original.GroupBy(d => d.Timestamp.Year)
+                             .OrderBy(g => g.Key)
+                             .ToList();
+
+        var result = new List<WeatherData>();
+
+        // Сжимаем каждый год отдельно
+        foreach (var yearGroup in byYear)
+        {
+            var yearData = yearGroup.ToList();
+            var compressed = CompressSingleYear(yearData, yearGroup.Key, daysPerMonth);
+            result.AddRange(compressed);
+        }
+
+
+        return result;
+    }
+
+    // Content/WeatherCsvLoader.cs
+
+    // Content/WeatherCsvLoader.cs
+
+    // Content/WeatherCsvLoader.cs
+
+    // Content/WeatherCsvLoader.cs
+
+    private static List<WeatherData> CompressSingleYear(List<WeatherData> yearData, int year, int daysPerMonth)
+    {
+        int newDays = CalendarHelper.GetDaysInYear(daysPerMonth);
+
+        var byDay = yearData.GroupBy(d => d.Timestamp.Date)
+                            .OrderBy(g => g.Key)
+                            .ToList();
+
+        int originalDays = byDay.Count;
+        double compressionRatio = (double)originalDays / newDays;
+
+        var result = new List<WeatherData>();
+
+        for (int targetDay = 0; targetDay < newDays; targetDay++)
+        {
+            // 1. Центр окна в координатах исходного года
+            double center = targetDay * compressionRatio;
+
+            // 2. Радиус окна = половина коэффициента сжатия.
+            // Таким образом, полная ширина окна всегда равна compressionRatio.
+            double windowRadius = compressionRatio / 2.0;
+
+            // 3. Границы окна (симметрично вокруг центра)
+            int startDayIndex = (int)Math.Max(0, Math.Floor(center - windowRadius));
+            int endDayIndex = (int)Math.Min(originalDays, Math.Ceiling(center + windowRadius));
+
+            var rangeRecords = new List<WeatherData>();
+            for (int dayIdx = startDayIndex; dayIdx < endDayIndex; dayIdx++)
+            {
+                rangeRecords.AddRange(byDay[dayIdx]);
+            }
+
+            for (int hour = 0; hour < 24; hour++)
+            {
+                var hourRecords = rangeRecords.Where(d => d.Timestamp.Hour == hour).ToList();
+                if (hourRecords.Count == 0) continue;
+
+                var gameTimestamp = new DateTime(year, 1, 1).AddDays(targetDay).AddHours(hour);
+
+                result.Add(new WeatherData
+                {
+                    Timestamp = gameTimestamp,
+                    AirTemp = (float)hourRecords.Average(d => d.AirTemp),
+                    GroundTemp = (float)hourRecords.Average(d => d.GroundTemp),
+                    AirHumidity = (float)hourRecords.Average(d => d.AirHumidity),
+                    SoilMoisture = (float)hourRecords.Average(d => d.SoilMoisture),
+                    SolarEnergyMj = (float)hourRecords.Average(d => d.SolarEnergyMj),
+                    EffectiveSnowCm = (float)hourRecords.Average(d => d.EffectiveSnowCm),
+                    PrecipitationMm = (float)hourRecords.Average(d => d.PrecipitationMm)
+                });
+            }
+        }
+
+        return result;
+    }
 }.
 //конец Content\WeatherCsvLoader.cs
 .
@@ -1261,6 +1369,51 @@ public sealed class World
 }.
 //конец Core\World.cs
 .
+//начало Data\CalendarHelper.cs
+﻿// Data/CalendarHelper.cs
+using System;
+namespace AsciiFarm.Data;
+
+public static class CalendarHelper
+{
+    /// <summary>
+    /// Количество дней в году для настраиваемого календаря.
+    /// </summary>
+    public static int GetDaysInYear(int daysPerMonth)
+    {
+        if (daysPerMonth == 0) return 365;
+        return daysPerMonth * 12;
+    }
+
+    /// <summary>
+    /// Форматирует игровое время с учётом кастомного календаря.
+    /// </summary>
+    public static string FormatGameTime(DateTime startDate, double gameSeconds, int daysPerMonth)
+    {
+        if (daysPerMonth == 0)
+        {
+            return startDate.AddSeconds(gameSeconds).ToString("dd.MM.yyyy HH:mm:ss");
+        }
+
+        int daysPerYear = daysPerMonth * 12;
+        long totalSeconds = (long)gameSeconds;
+        long totalDays = totalSeconds / 86400;
+        long remainingSeconds = totalSeconds % 86400;
+
+        long years = totalDays / daysPerYear;
+        long remainingDays = totalDays % daysPerYear;
+        int month = (int)(remainingDays / daysPerMonth) + 1;
+        int day = (int)(remainingDays % daysPerMonth) + 1;
+        int hour = (int)(remainingSeconds / 3600);
+        int minute = (int)((remainingSeconds % 3600) / 60);
+        int second = (int)(remainingSeconds % 60);
+
+        int year = startDate.Year + (int)years;
+        return $"{day:D2}.{month:D2}.{year:D4} {hour:D2}:{minute:D2}:{second:D2}";
+    }
+}.
+//конец Data\CalendarHelper.cs
+.
 //начало Data\CharacterPalette.cs
 ﻿// Data/CharacterPalette.cs
 using System.Collections.Generic;
@@ -1369,7 +1522,8 @@ public sealed class FpsCounter
 //конец Data\FpsCounter.cs
 .
 //начало Data\GameState.cs
-﻿namespace AsciiFarm.Data;
+﻿// Data/GameState.cs
+namespace AsciiFarm.Data;
 
 public sealed class GameState
 {
@@ -1378,20 +1532,13 @@ public sealed class GameState
     public long Tick { get; set; }
     public float DeltaTime { get; set; }
     public double ElapsedTime { get; set; }
-
-    // Новое: коэффициент скорости времени (1.0 = реальное время)
-    public float TimeSpeed { get; set; } = 1.0f;
-
-    // Новое: суммарное игровое время (секунды), учитывает TimeSpeed
+    public double TimeSpeed { get; set; }
+    public double DefaultTimeSpeed { get; set; }  // НОВОЕ
     public double GameTimeElapsed { get; set; }
-
-    // Новое: дата начала игры
-    public DateTime GameStartDate { get; set; } = DateTime.Now;
-
-    // Новое: промотка времени
+    public DateTime GameStartDate { get; set; }
     public double? FastForwardUntil { get; set; }
-    public double MaxTimeStep { get; set; } = 3600.0;  // Максимальный шаг времени (1 час)
-
+    public double MaxTimeStep { get; set; } = 3600.0;
+    public int DaysPerMonth { get; set; }  // НОВОЕ
 }.
 //конец Data\GameState.cs
 .
@@ -1522,14 +1669,14 @@ public sealed class CommandChannel
 //конец Input\CommandChannel.cs
 .
 //начало Input\GameCommand.cs
-﻿namespace AsciiFarm.Input;
+﻿// Input/GameCommand.cs
+namespace AsciiFarm.Input;
 
 public enum GameCommand
 {
     None,
     MoveUp, MoveDown, MoveLeft, MoveRight,
     Exit,
-    // Управление временем
     Speed1, Speed2, Speed3, Speed4, Speed5,
     FastForward1, FastForward2, FastForward3, FastForward4, FastForward5
 }.
@@ -3152,20 +3299,12 @@ public sealed class PlayerIntentSystem : ISystem
         var intents = world.Store<MoveIntent>();
         var players = world.Query<PlayerTag, Position>();
 
-        // Сбрасываем все предыдущие намерения
-        foreach (var entity in intents.Entities.ToArray())
-            intents.Remove(entity);
-
-        // Накапливаем вектор движения из всех команд за тик
-        int totalDx = 0;
-        int totalDy = 0;
-        bool exitRequested = false;
-
         foreach (var command in commands)
         {
             if (command == GameCommand.Exit)
             {
-                exitRequested = true;
+                state.IsRunning = false;
+                state.NeedsSave = true;
                 continue;
             }
 
@@ -3177,43 +3316,35 @@ public sealed class PlayerIntentSystem : ISystem
                 GameCommand.MoveRight => (1, 0),
                 _ => (0, 0)
             };
-            totalDx += dx;
-            totalDy += dy;
-        }
 
-        // Ограничиваем каждый компонент значением [-1, 1]
-        totalDx = Math.Clamp(totalDx, -1, 1);
-        totalDy = Math.Clamp(totalDy, -1, 1);
+            if (dx == 0 && dy == 0) continue;
 
-        // Если есть движение, устанавливаем намерение
-        if (totalDx != 0 || totalDy != 0)
-        {
             foreach (var entity in players)
-                intents.Set(entity, new MoveIntent(totalDx, totalDy));
-        }
-
-        if (exitRequested)
-        {
-            state.IsRunning = false;
-            state.NeedsSave = true;
+                intents.Set(entity, new MoveIntent(dx, dy));
         }
 
         // Обработка команд управления временем
         foreach (var command in commands)
         {
+            // Systems/PlayerIntentSystem.cs
+            // ... внутри foreach (var command in commands)
             switch (command)
             {
-                case GameCommand.Speed1: state.TimeSpeed = 1.0f; break;
-                case GameCommand.Speed2: state.TimeSpeed = 30.0f; break;
-                case GameCommand.Speed3: state.TimeSpeed = 1440.0f; break;
-                case GameCommand.Speed4: state.TimeSpeed = 43200.0f; break;
-                case GameCommand.Speed5: state.TimeSpeed = 518400.0f; break;  // 1 год за 1 минуту
-                                                                              // В обработчике команд:
-                case GameCommand.FastForward1: state.FastForwardUntil = state.GameTimeElapsed + 3600.0; break;
-                case GameCommand.FastForward2: state.FastForwardUntil = state.GameTimeElapsed + 86400.0; break;
-                case GameCommand.FastForward3: state.FastForwardUntil = state.GameTimeElapsed + 604800.0; break;
-                case GameCommand.FastForward4: state.FastForwardUntil = state.GameTimeElapsed + 2592000.0; break;
-                case GameCommand.FastForward5: state.FastForwardUntil = state.GameTimeElapsed + 31536000.0; break;
+                // Относительные скорости (от базовой DefaultTimeSpeed, например 48)
+                case GameCommand.Speed1: state.TimeSpeed = state.DefaultTimeSpeed; break;          // x1 от базы (48x)
+                case GameCommand.Speed2: state.TimeSpeed = state.DefaultTimeSpeed * 10; break;     // x10 от базы (480x)
+
+                // Абсолютные скорости для масштабного ускорения
+                case GameCommand.Speed3: state.TimeSpeed = 1440.0; break;      // 1 игровой день за 1 реальную минуту
+                case GameCommand.Speed4: state.TimeSpeed = 43200.0; break;     // 1 игровой месяц за 1 реальную минуту
+                case GameCommand.Speed5: state.TimeSpeed = 518400.0; break;    // 1 игровой год за 1 реальную минуту
+
+                // Промотка (абсолютные значения в секундах)
+                case GameCommand.FastForward1: state.FastForwardUntil = state.GameTimeElapsed + 3600.0; break;       // +1 час
+                case GameCommand.FastForward2: state.FastForwardUntil = state.GameTimeElapsed + 86400.0; break;      // +1 день
+                case GameCommand.FastForward3: state.FastForwardUntil = state.GameTimeElapsed + 604800.0; break;     // +1 неделя
+                case GameCommand.FastForward4: state.FastForwardUntil = state.GameTimeElapsed + 2592000.0; break;    // +1 месяц
+                case GameCommand.FastForward5: state.FastForwardUntil = state.GameTimeElapsed + 31536000.0; break;   // +1 год
             }
         }
 
@@ -3420,10 +3551,9 @@ public sealed class SnapshotSystem
     // В методе DrawGameTime:
     private static void DrawGameTime(RenderFrame frame, GameState state)
     {
-        // Игровое время = GameStartDate + GameTimeElapsed
-        DateTime gameTime = state.GameStartDate.AddSeconds(state.GameTimeElapsed);
-        string dateStr = gameTime.ToString("dd.MM.yyyy");
-        string timeStr = gameTime.ToString("HH:mm:ss");
+        // Используем CalendarHelper для правильного отображения
+        string gameTimeStr = CalendarHelper.FormatGameTime(
+            state.GameStartDate, state.GameTimeElapsed, state.DaysPerMonth);
         string speedStr = $"x{state.TimeSpeed:F0}";
 
         // Реальное время, прошедшее с запуска
@@ -3433,12 +3563,24 @@ public sealed class SnapshotSystem
         int startX = frame.Width - 12;  // Сдвинуто вправо
         int startY = frame.Height - 4;
 
+        // Разделяем "dd.MM.yyyy HH:mm:ss" на дату и время
+        string[] timeParts = gameTimeStr.Split(' ');
+        string dateStr = timeParts.Length > 0 ? timeParts[0] : "";
+        string timeOfDayStr = timeParts.Length > 1 ? timeParts[1] : "";
+
+        // 1. Дата игры
         for (int i = 0; i < dateStr.Length && startX + i < frame.Width; i++)
             Put(frame, startX + i, startY, dateStr[i], ConsoleColor.White, ConsoleColor.Black);
-        for (int i = 0; i < timeStr.Length && startX + i < frame.Width; i++)
-            Put(frame, startX + i, startY + 1, timeStr[i], ConsoleColor.Yellow, ConsoleColor.Black);
+
+        // 2. Время игры
+        for (int i = 0; i < timeOfDayStr.Length && startX + i < frame.Width; i++)
+            Put(frame, startX + i, startY + 1, timeOfDayStr[i], ConsoleColor.Yellow, ConsoleColor.Black);
+
+        // 3. Скорость времени
         for (int i = 0; i < speedStr.Length && startX + i < frame.Width; i++)
             Put(frame, startX + i, startY + 2, speedStr[i], ConsoleColor.Green, ConsoleColor.Black);
+
+        // 4. Реальное время
         for (int i = 0; i < realTimeStr.Length && startX + i < frame.Width; i++)
             Put(frame, startX + i, startY + 3, realTimeStr[i], ConsoleColor.DarkGray, ConsoleColor.Black);
     }

@@ -155,44 +155,104 @@ public static class WeatherCsvLoader
         return 0;
     }
     // Content/WeatherCsvLoader.cs — добавить метод
+    // Content/WeatherCsvLoader.cs — заменить метод CompressWeatherData
+    // Content/WeatherCsvLoader.cs
+    // Content/WeatherCsvLoader.cs
+    // Content/WeatherCsvLoader.cs
+    // Content/WeatherCsvLoader.cs
+
     public static List<WeatherData> CompressWeatherData(List<WeatherData> original, int daysPerMonth)
     {
         if (daysPerMonth == 0 || original.Count == 0) return original;
 
-        int originalDays = 365; // предполагаем год данных
-        int newDays = CalendarHelper.GetDaysInYear(daysPerMonth);
-        double compressionRatio = (double)originalDays / newDays;
+        // Группируем данные по годам
+        var byYear = original.GroupBy(d => d.Timestamp.Year)
+                             .OrderBy(g => g.Key)
+                             .ToList();
 
         var result = new List<WeatherData>();
 
-        for (int i = 0; i < newDays; i++)
+        // Сжимаем каждый год отдельно
+        foreach (var yearGroup in byYear)
         {
-            int startIdx = (int)(i * compressionRatio);
-            int endIdx = (int)((i + 1) * compressionRatio);
-            endIdx = Math.Min(endIdx, original.Count);
+            var yearData = yearGroup.ToList();
+            var compressed = CompressSingleYear(yearData, yearGroup.Key, daysPerMonth);
+            result.AddRange(compressed);
+        }
 
-            if (startIdx >= original.Count) break;
 
-            var range = original.Skip(startIdx).Take(endIdx - startIdx).ToList();
+        return result;
+    }
 
-            // Усредняем данные с сохранением min/max
-            var compressed = new WeatherData
+    // Content/WeatherCsvLoader.cs
+
+    // Content/WeatherCsvLoader.cs
+
+    // Content/WeatherCsvLoader.cs
+
+    // Content/WeatherCsvLoader.cs
+
+    // Content/WeatherCsvLoader.cs
+
+    private static List<WeatherData> CompressSingleYear(List<WeatherData> yearData, int year, int daysPerMonth)
+    {
+        int newDays = CalendarHelper.GetDaysInYear(daysPerMonth);
+
+        var byDay = yearData.GroupBy(d => d.Timestamp.Date)
+                            .OrderBy(g => g.Key)
+                            .ToList();
+
+        int originalDays = byDay.Count;
+        double compressionRatio = (double)originalDays / newDays;
+
+        // Фиксированный размер окна: 3 дня (вчера, сегодня, завтра)
+        // Нечётное число для симметрии
+        const int windowSize = 3;
+        const int windowRadius = windowSize / 2; // = 1
+
+        var result = new List<WeatherData>();
+
+        for (int targetDay = 0; targetDay < newDays; targetDay++)
+        {
+            // Центр окна в координатах исходного года
+            int centerDay = (int)Math.Round(targetDay * compressionRatio);
+
+            // Собираем записи для симметричного окна с заворотом
+            var rangeRecords = new List<WeatherData>();
+
+            for (int offset = -windowRadius; offset <= windowRadius; offset++)
             {
-                Timestamp = range.First().Timestamp,
-                AirTemp = range.Average(d => d.AirTemp),
-                AirTempMin = range.Min(d => d.AirTemp),
-                AirTempMax = range.Max(d => d.AirTemp),
-                GroundTemp = range.Average(d => d.GroundTemp),
-                GroundTempMin = range.Min(d => d.GroundTemp),
-                GroundTempMax = range.Max(d => d.GroundTemp),
-                AirHumidity = range.Average(d => d.AirHumidity),
-                SoilMoisture = range.Average(d => d.SoilMoisture),
-                SolarEnergyMj = range.Average(d => d.SolarEnergyMj),
-                EffectiveSnowCm = range.Average(d => d.EffectiveSnowCm),
-                PrecipitationMm = range.Sum(d => d.PrecipitationMm)  // осадки суммируются
-            };
+                int dayIndex = centerDay + offset;
 
-            result.Add(compressed);
+                // Заворот на границах года
+                if (dayIndex < 0)
+                    dayIndex = originalDays + dayIndex; // Заглядываем в конец года
+                else if (dayIndex >= originalDays)
+                    dayIndex = dayIndex - originalDays; // Заглядываем в начало года
+
+                rangeRecords.AddRange(byDay[dayIndex]);
+            }
+
+            // Для каждого часа в целевом дне
+            for (int hour = 0; hour < 24; hour++)
+            {
+                var hourRecords = rangeRecords.Where(d => d.Timestamp.Hour == hour).ToList();
+                if (hourRecords.Count == 0) continue;
+
+                var gameTimestamp = new DateTime(year, 1, 1).AddDays(targetDay).AddHours(hour);
+
+                result.Add(new WeatherData
+                {
+                    Timestamp = gameTimestamp,
+                    AirTemp = (float)hourRecords.Average(d => d.AirTemp),
+                    GroundTemp = (float)hourRecords.Average(d => d.GroundTemp),
+                    AirHumidity = (float)hourRecords.Average(d => d.AirHumidity),
+                    SoilMoisture = (float)hourRecords.Average(d => d.SoilMoisture),
+                    SolarEnergyMj = (float)hourRecords.Average(d => d.SolarEnergyMj),
+                    EffectiveSnowCm = (float)hourRecords.Average(d => d.EffectiveSnowCm),
+                    PrecipitationMm = (float)hourRecords.Average(d => d.PrecipitationMm)
+                });
+            }
         }
 
         return result;

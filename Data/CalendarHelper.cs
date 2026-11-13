@@ -9,41 +9,55 @@ public static class CalendarHelper
     /// </summary>
     public static int GetDaysInYear(int daysPerMonth)
     {
-        if (daysPerMonth == 0) return 365; // реальный календарь
+        if (daysPerMonth == 0) return 365;
         return daysPerMonth * 12;
     }
 
     /// <summary>
-    /// Преобразует реальную дату в дату настраиваемого календаря.
+    /// Форматирует игровое время с учётом кастомного календаря.
     /// </summary>
-    public static DateTime ConvertToCustomCalendar(DateTime realDate, int daysPerMonth)
+    // Data/CalendarHelper.cs
+    // Data/CalendarHelper.cs
+    public static string FormatGameTime(DateTime startDate, double gameSeconds, int daysPerMonth)
     {
-        if (daysPerMonth == 0) return realDate;
+        if (daysPerMonth == 0)
+        {
+            return startDate.AddSeconds(gameSeconds).ToString("dd.MM.yyyy HH:mm:ss");
+        }
 
-        int year = realDate.Year;
-        int dayOfYear = realDate.DayOfYear;
-        int month = (dayOfYear - 1) / daysPerMonth + 1;
-        int day = (dayOfYear - 1) % daysPerMonth + 1;
+        int daysPerYear = daysPerMonth * 12;
 
-        return new DateTime(year, Math.Min(month, 12), Math.Min(day, daysPerMonth),
-            realDate.Hour, realDate.Minute, realDate.Second);
-    }
+        // Пересчитываем начальную дату в координаты кастомного календаря
+        // startDate.Month и startDate.Day — из реального календаря
+        // Нам нужно преобразовать их в день года кастомного календаря
+        // Для простоты: считаем, что 1 мая реального = 1 мая кастомного (тот же номер месяца и дня)
+        int startMonth = startDate.Month;
+        int startDay = startDate.Day;
 
-    /// <summary>
-    /// Преобразует дату настраиваемого календаря в реальную дату.
-    /// </summary>
-    public static DateTime ConvertFromCustomCalendar(DateTime customDate, int daysPerMonth)
-    {
-        if (daysPerMonth == 0) return customDate;
+        // Ограничиваем в пределах кастомного календаря
+        if (startMonth > 12) startMonth = 12;
+        if (startDay > daysPerMonth) startDay = daysPerMonth;
 
-        int year = customDate.Year;
-        int month = customDate.Month;
-        int day = customDate.Day;
-        int dayOfYear = (month - 1) * daysPerMonth + day;
+        int startDayOfYear = (startMonth - 1) * daysPerMonth + (startDay - 1); // 0-based
+        int startHour = startDate.Hour;
+        int startMinute = startDate.Minute;
+        int startSecond = startDate.Second;
 
-        return new DateTime(year, 1, 1).AddDays(dayOfYear - 1)
-            .AddHours(customDate.Hour)
-            .AddMinutes(customDate.Minute)
-            .AddSeconds(customDate.Second);
+        // Общее время в секундах с начала кастомного года
+        long totalSeconds = (long)gameSeconds + (startDayOfYear * 86400) + (startHour * 3600) + (startMinute * 60) + startSecond;
+
+        long totalDays = totalSeconds / 86400;
+        long remainingSeconds = totalSeconds % 86400;
+
+        long years = totalDays / daysPerYear;
+        long remainingDays = totalDays % daysPerYear;
+        int month = (int)(remainingDays / daysPerMonth) + 1;
+        int day = (int)(remainingDays % daysPerMonth) + 1;
+        int hour = (int)(remainingSeconds / 3600);
+        int minute = (int)((remainingSeconds % 3600) / 60);
+        int second = (int)(remainingSeconds % 60);
+
+        int year = startDate.Year + (int)years;
+        return $"{day:D2}.{month:D2}.{year:D4} {hour:D2}:{minute:D2}:{second:D2}";
     }
 }
