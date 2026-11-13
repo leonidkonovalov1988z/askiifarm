@@ -194,6 +194,8 @@ public static class WeatherCsvLoader
 
     // Content/WeatherCsvLoader.cs
 
+    // Content/WeatherCsvLoader.cs
+
     private static List<WeatherData> CompressSingleYear(List<WeatherData> yearData, int year, int daysPerMonth)
     {
         int newDays = CalendarHelper.GetDaysInYear(daysPerMonth);
@@ -205,19 +207,18 @@ public static class WeatherCsvLoader
         int originalDays = byDay.Count;
         double compressionRatio = (double)originalDays / newDays;
 
-        // Фиксированный размер окна: 3 дня (вчера, сегодня, завтра)
-        // Нечётное число для симметрии
-        const int windowSize = 3;
-        const int windowRadius = windowSize / 2; // = 1
+        // Динамическое окно с гарантированным перекрытием
+        int windowSize = (int)Math.Ceiling(compressionRatio) + 1;
+        if (windowSize % 2 == 0) windowSize++; // Делаем нечётным для симметрии
+        int windowRadius = windowSize / 2;
 
         var result = new List<WeatherData>();
 
         for (int targetDay = 0; targetDay < newDays; targetDay++)
         {
-            // Центр окна в координатах исходного года
+            // Центр окна: равномерно распределяем по исходному году
             int centerDay = (int)Math.Round(targetDay * compressionRatio);
 
-            // Собираем записи для симметричного окна с заворотом
             var rangeRecords = new List<WeatherData>();
 
             for (int offset = -windowRadius; offset <= windowRadius; offset++)
@@ -226,14 +227,13 @@ public static class WeatherCsvLoader
 
                 // Заворот на границах года
                 if (dayIndex < 0)
-                    dayIndex = originalDays + dayIndex; // Заглядываем в конец года
+                    dayIndex = originalDays + dayIndex;
                 else if (dayIndex >= originalDays)
-                    dayIndex = dayIndex - originalDays; // Заглядываем в начало года
+                    dayIndex = dayIndex - originalDays;
 
                 rangeRecords.AddRange(byDay[dayIndex]);
             }
 
-            // Для каждого часа в целевом дне
             for (int hour = 0; hour < 24; hour++)
             {
                 var hourRecords = rangeRecords.Where(d => d.Timestamp.Hour == hour).ToList();
