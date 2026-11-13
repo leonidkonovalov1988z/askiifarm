@@ -15,7 +15,7 @@ public sealed class SimulationLoop
     private readonly FrameExchange<RenderFrame> _frames;
     private readonly CancellationTokenSource _shutdown;
     private readonly int _baseSimulationFps;
-    private const int MaxTps = 1000;  // Разумный максимум
+    private const int MaxTps = 1000;
 
     public SimulationLoop(World world, CommandChannel channel, ISystem[] systems,
                           SnapshotSystem snapshot, FrameExchange<RenderFrame> frames,
@@ -37,18 +37,17 @@ public sealed class SimulationLoop
 
         while (!token.IsCancellationRequested && state.IsRunning)
         {
-            // Промотка времени: крутим максимально быстро, без задержек
+            // Промотка: крутим максимально быстро, добавляем только игровое время
             if (state.FastForwardUntil.HasValue)
             {
-                while (state.ElapsedTime < state.FastForwardUntil.Value
+                while (state.GameTimeElapsed < state.FastForwardUntil.Value
                        && !token.IsCancellationRequested
                        && state.IsRunning)
                 {
-                    double remaining = state.FastForwardUntil.Value - state.ElapsedTime;
+                    double remaining = state.FastForwardUntil.Value - state.GameTimeElapsed;
                     double step = Math.Min(remaining, state.MaxTimeStep);
 
-                    state.ElapsedTime += step;
-                    state.GameTimeElapsed += step;
+                    state.GameTimeElapsed += step;   // ← только игровое время
                     state.Tick++;
 
                     using (_world.Guard.Enter())
@@ -62,8 +61,7 @@ public sealed class SimulationLoop
                 continue;
             }
 
-            // Обычный режим: динамический TPS в зависимости от TimeSpeed
-            // Формула: TPS = max(baseFps, ceil(TimeSpeed / MaxTimeStep))
+            // Обычный режим: динамический TPS
             int targetTps = Math.Max(_baseSimulationFps,
                 (int)Math.Ceiling(state.TimeSpeed / state.MaxTimeStep));
             targetTps = Math.Min(targetTps, MaxTps);

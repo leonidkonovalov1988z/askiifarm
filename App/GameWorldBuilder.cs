@@ -68,23 +68,34 @@ public static class GameWorldBuilder
         world.SetResource(new FpsLimiter(settings.SimulationFps));
         world.SetResource(settings);
 
-        // Загрузка погоды
+
+
+        // В методе Build(), после загрузки погоды:
         var weatherData = WeatherCsvLoader.Load(settings.WeatherCsvPath, out var weatherError);
+        // Загрузка погоды
         int startIndex = WeatherCsvLoader.FindStartIndex(weatherData, settings.GameStartDate);
+        // Сжимаем данные если календарь нестандартный
+        if (settings.DaysPerMonth != 0)
+        {
+            weatherData = WeatherCsvLoader.CompressWeatherData(weatherData, settings.DaysPerMonth);
+        }
 
         world.SetResource(new WeatherDataSource
         {
             HourlyData = weatherData,
             LoadError = weatherError,
-            StartIndex = startIndex  // НОВОЕ
+            StartIndex = startIndex
         });
         world.SetResource(new WeatherCurrent());
 
         // Инициализация GameState с датой из настроек
+        // В методе Build(), при создании GameState:
         var gameState = world.Resource<GameState>();
-        gameState.GameStartDate = settings.GameStartDate;  // НОВОЕ
-        gameState.TimeSpeed = 1.0f;
+        gameState.GameStartDate = settings.GameStartDate;
+        gameState.TimeSpeed = settings.DefaultTimeSpeed;
+        gameState.DefaultTimeSpeed = settings.DefaultTimeSpeed;
         gameState.MaxTimeStep = settings.MaxTimeStep;
+        gameState.DaysPerMonth = settings.DaysPerMonth;
 
         return world;
     }

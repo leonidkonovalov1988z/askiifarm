@@ -176,8 +176,9 @@ public sealed class GameApplication
             bindings = GameContent.CreateKeyBindings();
         }
 
+        // В методе Run(), при создании SimulationLoop:
         var simulation = new SimulationLoop(world, channel, SystemPipeline.CreateSimulationSystems(),
-            new SnapshotSystem(frames), frames, shutdown);
+            new SnapshotSystem(frames), frames, shutdown, _settings.SimulationFps);
         // В методе Run(), при создании ConsolePresentSystem:
         var fpsCounter = world.Resource<FpsCounter>();  // ДОБАВИТЬ
         var render = new RenderLoop(console, frames,
@@ -231,27 +232,28 @@ namespace AsciiFarm.App;
 public sealed class GameSettings
 {
     public string MapPath { get; init; } = "map_raw.txt";
-    public string ContentRoot { get; init; } =
-    System.IO.Path.Combine(AppContext.BaseDirectory, "Content");
+    public string ContentRoot { get; init; } = "Content";
+    public string WeatherCsvPath { get; init; } = "Content/weather.csv";
     public int ScreenWidth { get; init; } = 110;
     public int ScreenHeight { get; init; } = 25;
     public int SimulationFps { get; init; } = 12;
     public int RenderFps { get; init; } = 24;
     public int InputPollMs { get; init; } = 10;
-    public double MaxTimeStep { get; init; } = 3600.0;  // Максимальный шаг времени (1 час)
-
     public int CommandQueueCapacity { get; init; } = 32;
     public int PlayerStartX { get; init; } = 28;
     public int PlayerStartY { get; init; } = 12;
     public string PlayerCharacterKey { get; init; } = "player";
-    public bool UseJsonContent { get; init; } = true;  // ← новое, можно выключить
+    public bool UseJsonContent { get; init; } = true;
+    public double MaxTimeStep { get; init; } = 3600.0;
 
-    public string WeatherCsvPath { get; init; } = "Content/weather.csv";
+    // НОВОЕ: дата и время начала игры
+    public DateTime GameStartDate { get; init; } = new DateTime(2000, 5, 1, 8, 0, 0);
 }.
 //конец App\GameSettings.cs
 .
 //начало App\GameWorldBuilder.cs
-﻿using AsciiFarm.Components;
+﻿// App/GameWorldBuilder.cs
+using AsciiFarm.Components;
 using AsciiFarm.Content;
 using AsciiFarm.Core;
 using AsciiFarm.Data;
@@ -266,18 +268,15 @@ public static class GameWorldBuilder
     {
         var world = new World();
 
-        // Создаём реестр сериализаторов (авто-регистрация из сборки)
         var registry = ComponentSerializerRegistry.AutoRegister(Assembly.GetExecutingAssembly());
         var saveSystem = new ComponentSaveSystem(registry);
 
-        // Загружаем мир из файла сохранения
         if (ComponentSaveSystem.IsNewFormat(settings.MapPath))
         {
             saveSystem.Load(settings.MapPath, world);
         }
         else if (File.Exists(settings.MapPath))
         {
-            // Legacy формат — загружаем и конвертируем
             var legacyStorage = new GameStorage();
             var legacyData = legacyStorage.LoadLatest<GameDataV0_0_3>(settings.MapPath);
 
@@ -295,17 +294,13 @@ public static class GameWorldBuilder
                 Layer = 10
             });
 
-            // Сохраняем в новом формате
             saveSystem.Save(settings.MapPath, world);
         }
         else
         {
-            // Файла нет — создаём мир по умолчанию
-            // (здесь можно загрузить map_raw.txt или создать процедурно)
             throw new FileNotFoundException($"Файл сохранения не найден: {settings.MapPath}");
         }
 
-        // Загружаем ресурсы (не сохраняются, всегда из JSON или хардкода)
         TilePalette palette;
         CharacterPalette charPalette;
 
@@ -319,32 +314,32 @@ public static class GameWorldBuilder
             charPalette = GameContent.CreateCharacterPalette();
         }
 
-        // В методе Build, после инициализации других ресурсов:
-
-        // В методе Build, среди прочих SetResource:
-        var weatherData = WeatherCsvLoader.Load(settings.WeatherCsvPath, out var weatherError);
-        world.SetResource(new WeatherDataSource
-        {
-            HourlyData = weatherData,
-            LoadError = weatherError
-        });
-        world.SetResource(new WeatherCurrent());
-
-        var gameState = new GameState
-        {
-            GameStartDate = DateTime.Now,
-            TimeSpeed = 1.0f,
-            MaxTimeStep = settings.MaxTimeStep
-        };
-        
-
         world.SetResource(palette);
         world.SetResource(charPalette);
-        world.SetResource(gameState);
+        world.SetResource(new GameState());
         world.SetResource(new CommandBuffer());
         world.SetResource(new FpsCounter());
         world.SetResource(new FpsLimiter(settings.SimulationFps));
         world.SetResource(settings);
+
+        // Загрузка погоды
+        var weatherData = WeatherCsvLoader.Load(settings.WeatherCsvPath, out var weatherError);
+        int startIndex = WeatherCsvLoader.FindStartIndex(weatherData, settings.GameStartDate);
+
+        world.SetResource(new WeatherDataSource
+        {
+            HourlyData = weatherData,
+            LoadError = weatherError,
+            StartIndex = startIndex  // НОВОЕ
+        });
+        world.SetResource(new WeatherCurrent());
+
+        // Инициализация GameState с датой из настроек
+        var gameState = world.Resource<GameState>();
+        gameState.GameStartDate = settings.GameStartDate;  // НОВОЕ
+        gameState.TimeSpeed = 1.0f;
+        gameState.MaxTimeStep = settings.MaxTimeStep;
+
         return world;
     }
 }.
@@ -402,13 +397,16 @@ public sealed class SimulationLoop
     private readonly SnapshotSystem _snapshot;
     private readonly FrameExchange<RenderFrame> _frames;
     private readonly CancellationTokenSource _shutdown;
+    private readonly int _baseSimulationFps;
+    private const int MaxTps = 1000;
 
     public SimulationLoop(World world, CommandChannel channel, ISystem[] systems,
                           SnapshotSystem snapshot, FrameExchange<RenderFrame> frames,
-                          CancellationTokenSource shutdown)
+                          CancellationTokenSource shutdown, int baseSimulationFps)
     {
         _world = world; _channel = channel; _systems = systems;
         _snapshot = snapshot; _frames = frames; _shutdown = shutdown;
+        _baseSimulationFps = baseSimulationFps;
     }
 
     public void Run(CancellationToken token)
@@ -422,30 +420,36 @@ public sealed class SimulationLoop
 
         while (!token.IsCancellationRequested && state.IsRunning)
         {
-            // Промотка времени: используем MaxTimeStep
+            // Промотка: крутим максимально быстро, добавляем только игровое время
             if (state.FastForwardUntil.HasValue)
             {
-                double remaining = state.FastForwardUntil.Value - state.ElapsedTime;
-                double step = Math.Min(remaining, state.MaxTimeStep);
-
-                state.ElapsedTime += step;
-                state.GameTimeElapsed += step;
-                state.Tick++;
-
-                using (_world.Guard.Enter())
+                while (state.GameTimeElapsed < state.FastForwardUntil.Value
+                       && !token.IsCancellationRequested
+                       && state.IsRunning)
                 {
-                    _channel.DrainTo(buffer.Items);
-                    foreach (var system in _systems) system.Update(_world);
-                    _snapshot.Update(_world);
+                    double remaining = state.FastForwardUntil.Value - state.GameTimeElapsed;
+                    double step = Math.Min(remaining, state.MaxTimeStep);
+
+                    state.GameTimeElapsed += step;   // ← только игровое время
+                    state.Tick++;
+
+                    using (_world.Guard.Enter())
+                    {
+                        _channel.DrainTo(buffer.Items);
+                        foreach (var system in _systems) system.Update(_world);
+                        _snapshot.Update(_world);
+                    }
                 }
-
-                if (state.ElapsedTime >= state.FastForwardUntil.Value)
-                    state.FastForwardUntil = null;
-
+                state.FastForwardUntil = null;
                 continue;
             }
 
-            // Обычный режим с ограничением FPS
+            // Обычный режим: динамический TPS
+            int targetTps = Math.Max(_baseSimulationFps,
+                (int)Math.Ceiling(state.TimeSpeed / state.MaxTimeStep));
+            targetTps = Math.Min(targetTps, MaxTps);
+            limiter.SetTargetFps(targetTps);
+
             while (!limiter.BeginTick())
             {
                 Thread.Sleep(1);
@@ -876,6 +880,18 @@ public static class WeatherCsvLoader
         return float.TryParse(fields[index], NumberStyles.Float,
             CultureInfo.InvariantCulture, out var v) ? v : 0f;
     }
+    // Content/WeatherCsvLoader.cs — добавить метод
+    public static int FindStartIndex(List<WeatherData> data, DateTime startDate)
+    {
+        // Находим первую запись, которая >= startDate
+        for (int i = 0; i < data.Count; i++)
+        {
+            if (data[i].Timestamp >= startDate)
+                return i;
+        }
+        // Если не нашли, начинаем с 0
+        return 0;
+    }
 }.
 //конец Content\WeatherCsvLoader.cs
 .
@@ -990,16 +1006,13 @@ public readonly record struct Entity(int Id);.
 using System.Diagnostics;
 namespace AsciiFarm.Core;
 
-/// <summary>
-/// Ограничитель частоты кадров через дельта-время.
-/// </summary>
 public sealed class FpsLimiter
 {
-    private readonly double _targetFrameTimeSeconds;
+    private double _targetFrameTimeSeconds;
     private readonly Stopwatch _stopwatch = new();
     private double _lastAccumulatedTime;
 
-    public int TargetFps { get; }
+    public int TargetFps { get; private set; }
     public float DeltaTime { get; private set; }
     public double ElapsedTime => _stopwatch.Elapsed.TotalSeconds;
 
@@ -1010,7 +1023,16 @@ public sealed class FpsLimiter
         _targetFrameTimeSeconds = 1.0 / targetFps;
     }
 
-    /// <summary>Возвращает true, когда пора делать тик.</summary>
+    /// <summary>Изменить целевой FPS на лету (для ускорения времени).</summary>
+    public void SetTargetFps(int targetFps)
+    {
+        if (targetFps <= 0) return;
+        TargetFps = targetFps;
+        _targetFrameTimeSeconds = 1.0 / targetFps;
+        // Сбрасываем накопитель, чтобы не было скачка
+        _lastAccumulatedTime = _stopwatch.Elapsed.TotalSeconds;
+    }
+
     public bool BeginTick()
     {
         if (!_stopwatch.IsRunning) _stopwatch.Start();
@@ -1457,6 +1479,7 @@ public sealed class WeatherDataSource
 {
     public List<WeatherData> HourlyData { get; set; } = new();
     public string? LoadError { get; set; }
+    public int StartIndex { get; set; } = 0;  // НОВОЕ: индекс первой записи, соответствующей GameStartDate
 }.
 //конец Data\WeatherDataSource.cs
 .
@@ -1507,8 +1530,8 @@ public enum GameCommand
     MoveUp, MoveDown, MoveLeft, MoveRight,
     Exit,
     // Управление временем
-    Speed1, Speed2, Speed3, Speed4,
-    FastForward1, FastForward2, FastForward3, FastForward4
+    Speed1, Speed2, Speed3, Speed4, Speed5,
+    FastForward1, FastForward2, FastForward3, FastForward4, FastForward5
 }.
 //конец Input\GameCommand.cs
 .
@@ -1551,7 +1574,7 @@ public sealed class InputLoop
                 if (key == ConsoleKey.P) { _lastModifier = Modifier.FastForward; worked = true; continue; }
 
                 // Цифры 1-4 с модификатором
-                if (key >= ConsoleKey.D1 && key <= ConsoleKey.D4)
+                if (key >= ConsoleKey.D1 && key <= ConsoleKey.D5)
                 {
                     int n = key - ConsoleKey.D1 + 1;
                     if (_lastModifier == Modifier.Speed)
@@ -1562,6 +1585,7 @@ public sealed class InputLoop
                             2 => GameCommand.Speed2,
                             3 => GameCommand.Speed3,
                             4 => GameCommand.Speed4,
+                            5 => GameCommand.Speed5,
                             _ => GameCommand.None
                         };
                         _channel.Post(cmd);
@@ -1577,6 +1601,7 @@ public sealed class InputLoop
                             2 => GameCommand.FastForward2,
                             3 => GameCommand.FastForward3,
                             4 => GameCommand.FastForward4,
+                            5 => GameCommand.FastForward5,
                             _ => GameCommand.None
                         };
                         _channel.Post(cmd);
@@ -3021,21 +3046,25 @@ public sealed class ElapsedTimeSystem : ISystem
         var state = world.Resource<GameState>();
         var fpsCounter = world.Resource<FpsCounter>();
 
+        // Реальное время между тиками — считаем всегда
         double now = _tickTimer.Elapsed.TotalSeconds;
         double realDeltaTime = now - _lastTickTime;
         _lastTickTime = now;
         realDeltaTime = Math.Min(realDeltaTime, 0.1);
 
-        // Игровое время с учётом скорости
+        // Реальное время всегда растёт на реальное время между тиками
+        state.ElapsedTime += realDeltaTime;
+        state.DeltaTime = (float)realDeltaTime;
+        state.Tick++;
+        fpsCounter.RecordTick();
+
+        // При перемотке игровое время уже добавлено в SimulationLoop — не дублируем
+        if (state.FastForwardUntil.HasValue) return;
+
+        // В обычном режиме: игровое время = реальное × скорость, но не более MaxTimeStep
         double effectiveDeltaTime = realDeltaTime * state.TimeSpeed;
         effectiveDeltaTime = Math.Min(effectiveDeltaTime, state.MaxTimeStep);
-
-        state.DeltaTime = (float)realDeltaTime;
-        state.ElapsedTime += realDeltaTime;
         state.GameTimeElapsed += effectiveDeltaTime;
-        state.Tick++;
-
-        fpsCounter.RecordTick();
     }
 }.
 //конец Systems\ElapsedTimeSystem.cs
@@ -3174,30 +3203,17 @@ public sealed class PlayerIntentSystem : ISystem
         {
             switch (command)
             {
-                case GameCommand.Speed1:
-                    state.TimeSpeed = 1.0f;
-                    break;
-                case GameCommand.Speed2:
-                    state.TimeSpeed = 30.0f; // 48 реальных минут = 1 игровой день (24 часа)
-                    break;
-                case GameCommand.Speed3:
-                    state.TimeSpeed = 1440.0f; // 1 реальная минута = 1 игровой день
-                    break;
-                case GameCommand.Speed4:
-                    state.TimeSpeed = 43200.0f; // 1 реальная минута = 1 игровой месяц (30 дней)
-                    break;
-                case GameCommand.FastForward1:
-                    state.FastForwardUntil = state.ElapsedTime + 3600.0; // +1 час реального времени
-                    break;
-                case GameCommand.FastForward2:
-                    state.FastForwardUntil = state.ElapsedTime + 86400.0; // +1 день
-                    break;
-                case GameCommand.FastForward3:
-                    state.FastForwardUntil = state.ElapsedTime + 604800.0; // +1 неделя
-                    break;
-                case GameCommand.FastForward4:
-                    state.FastForwardUntil = state.ElapsedTime + 2592000.0; // +1 месяц (30 дней)
-                    break;
+                case GameCommand.Speed1: state.TimeSpeed = 1.0f; break;
+                case GameCommand.Speed2: state.TimeSpeed = 30.0f; break;
+                case GameCommand.Speed3: state.TimeSpeed = 1440.0f; break;
+                case GameCommand.Speed4: state.TimeSpeed = 43200.0f; break;
+                case GameCommand.Speed5: state.TimeSpeed = 518400.0f; break;  // 1 год за 1 минуту
+                                                                              // В обработчике команд:
+                case GameCommand.FastForward1: state.FastForwardUntil = state.GameTimeElapsed + 3600.0; break;
+                case GameCommand.FastForward2: state.FastForwardUntil = state.GameTimeElapsed + 86400.0; break;
+                case GameCommand.FastForward3: state.FastForwardUntil = state.GameTimeElapsed + 604800.0; break;
+                case GameCommand.FastForward4: state.FastForwardUntil = state.GameTimeElapsed + 2592000.0; break;
+                case GameCommand.FastForward5: state.FastForwardUntil = state.GameTimeElapsed + 31536000.0; break;
             }
         }
 
@@ -3404,7 +3420,7 @@ public sealed class SnapshotSystem
     // В методе DrawGameTime:
     private static void DrawGameTime(RenderFrame frame, GameState state)
     {
-        // Игровое время из GameTimeElapsed
+        // Игровое время = GameStartDate + GameTimeElapsed
         DateTime gameTime = state.GameStartDate.AddSeconds(state.GameTimeElapsed);
         string dateStr = gameTime.ToString("dd.MM.yyyy");
         string timeStr = gameTime.ToString("HH:mm:ss");
@@ -3415,7 +3431,7 @@ public sealed class SnapshotSystem
         string realTimeStr = $"{(int)realTime.TotalHours:D2}:{realTime.Minutes:D2}:{realTime.Seconds:D2}";
 
         int startX = frame.Width - 12;  // Сдвинуто вправо
-        int startY = frame.Height - 3;
+        int startY = frame.Height - 4;
 
         for (int i = 0; i < dateStr.Length && startX + i < frame.Width; i++)
             Put(frame, startX + i, startY, dateStr[i], ConsoleColor.White, ConsoleColor.Black);
@@ -3471,7 +3487,7 @@ namespace AsciiFarm.Systems;
 [GameSystem(Order = 6)]
 public sealed class WeatherSystem : ISystem
 {
-    private int _lastGameHour = -1;
+    private int _lastWeatherIndex = -1;
 
     public void Update(World world)
     {
@@ -3481,19 +3497,18 @@ public sealed class WeatherSystem : ISystem
 
         if (source.HourlyData.Count == 0) return;
 
-        // Вычисляем игровое время
-        DateTime gameTime = state.GameStartDate.AddSeconds(state.GameTimeElapsed);
+        // Вычисляем индекс погоды: StartIndex + количество игровых часов, по модулю длины CSV
+        int hoursPassed = (int)(state.GameTimeElapsed / 3600.0);
+        int weatherIndex = (source.StartIndex + hoursPassed) % source.HourlyData.Count;
 
-        // Индекс часа = час суток (0-23), по модулю количества записей в CSV
-        int gameHour = gameTime.Hour % source.HourlyData.Count;
-
-        if (gameHour != _lastGameHour)
+        if (weatherIndex != _lastWeatherIndex)
         {
-            weather.Current = source.HourlyData[gameHour];
-            weather.HourIndex = gameHour;
+            weather.Current = source.HourlyData[weatherIndex];
+            weather.HourIndex = weatherIndex;
             weather.HasData = true;
-            weather.GameTime = gameTime;
-            _lastGameHour = gameHour;
+            // Игровое время = GameStartDate + GameTimeElapsed
+            weather.GameTime = state.GameStartDate.AddSeconds(state.GameTimeElapsed);
+            _lastWeatherIndex = weatherIndex;
         }
     }
 }.

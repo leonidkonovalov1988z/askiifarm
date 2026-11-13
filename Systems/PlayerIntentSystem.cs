@@ -15,20 +15,12 @@ public sealed class PlayerIntentSystem : ISystem
         var intents = world.Store<MoveIntent>();
         var players = world.Query<PlayerTag, Position>();
 
-        // Сбрасываем все предыдущие намерения
-        foreach (var entity in intents.Entities.ToArray())
-            intents.Remove(entity);
-
-        // Накапливаем вектор движения из всех команд за тик
-        int totalDx = 0;
-        int totalDy = 0;
-        bool exitRequested = false;
-
         foreach (var command in commands)
         {
             if (command == GameCommand.Exit)
             {
-                exitRequested = true;
+                state.IsRunning = false;
+                state.NeedsSave = true;
                 continue;
             }
 
@@ -40,25 +32,11 @@ public sealed class PlayerIntentSystem : ISystem
                 GameCommand.MoveRight => (1, 0),
                 _ => (0, 0)
             };
-            totalDx += dx;
-            totalDy += dy;
-        }
 
-        // Ограничиваем каждый компонент значением [-1, 1]
-        totalDx = Math.Clamp(totalDx, -1, 1);
-        totalDy = Math.Clamp(totalDy, -1, 1);
+            if (dx == 0 && dy == 0) continue;
 
-        // Если есть движение, устанавливаем намерение
-        if (totalDx != 0 || totalDy != 0)
-        {
             foreach (var entity in players)
-                intents.Set(entity, new MoveIntent(totalDx, totalDy));
-        }
-
-        if (exitRequested)
-        {
-            state.IsRunning = false;
-            state.NeedsSave = true;
+                intents.Set(entity, new MoveIntent(dx, dy));
         }
 
         // Обработка команд управления временем
@@ -66,16 +44,19 @@ public sealed class PlayerIntentSystem : ISystem
         {
             switch (command)
             {
-                case GameCommand.Speed1: state.TimeSpeed = 1.0f; break;
-                case GameCommand.Speed2: state.TimeSpeed = 30.0f; break;
-                case GameCommand.Speed3: state.TimeSpeed = 1440.0f; break;
-                case GameCommand.Speed4: state.TimeSpeed = 43200.0f; break;
-                case GameCommand.Speed5: state.TimeSpeed = 518400.0f; break;  // 1 год за 1 минуту
-                case GameCommand.FastForward1: state.FastForwardUntil = state.ElapsedTime + 3600.0; break;
-                case GameCommand.FastForward2: state.FastForwardUntil = state.ElapsedTime + 86400.0; break;
-                case GameCommand.FastForward3: state.FastForwardUntil = state.ElapsedTime + 604800.0; break;
-                case GameCommand.FastForward4: state.FastForwardUntil = state.ElapsedTime + 2592000.0; break;
-                case GameCommand.FastForward5: state.FastForwardUntil = state.ElapsedTime + 31536000.0; break;  // 1 год
+                // Относительные коэффициенты к DefaultTimeSpeed
+                case GameCommand.Speed1: state.TimeSpeed = state.DefaultTimeSpeed; break;
+                case GameCommand.Speed2: state.TimeSpeed = state.DefaultTimeSpeed * 2; break;
+                case GameCommand.Speed3: state.TimeSpeed = state.DefaultTimeSpeed * 3; break;
+                case GameCommand.Speed4: state.TimeSpeed = state.DefaultTimeSpeed * 4; break;
+                case GameCommand.Speed5: state.TimeSpeed = state.DefaultTimeSpeed * 5; break;
+
+                // Абсолютные значения для перемотки (не меняются)
+                case GameCommand.FastForward1: state.FastForwardUntil = state.GameTimeElapsed + 3600.0; break;
+                case GameCommand.FastForward2: state.FastForwardUntil = state.GameTimeElapsed + 86400.0; break;
+                case GameCommand.FastForward3: state.FastForwardUntil = state.GameTimeElapsed + 604800.0; break;
+                case GameCommand.FastForward4: state.FastForwardUntil = state.GameTimeElapsed + 2592000.0; break;
+                case GameCommand.FastForward5: state.FastForwardUntil = state.GameTimeElapsed + 31536000.0; break;
             }
         }
 

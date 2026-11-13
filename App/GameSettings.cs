@@ -17,7 +17,11 @@ public sealed class GameSettings
     public string PlayerCharacterKey { get; init; } = "player";
     public bool UseJsonContent { get; init; } = true;
     public double MaxTimeStep { get; init; } = 3600.0;
-
-    // НОВОЕ: дата и время начала игры
     public DateTime GameStartDate { get; init; } = new DateTime(2000, 5, 1, 8, 0, 0);
+
+    // НОВОЕ: базовая скорость игрового времени (по умолчанию x48)
+    public double DefaultTimeSpeed { get; init; } = 48.0;
+
+    // НОВОЕ: дней в месяце (0 = реальный календарь, иначе настраиваемый)
+    public int DaysPerMonth { get; init; } = 9;
 }

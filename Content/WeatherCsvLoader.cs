@@ -154,4 +154,47 @@ public static class WeatherCsvLoader
         // Если не нашли, начинаем с 0
         return 0;
     }
+    // Content/WeatherCsvLoader.cs — добавить метод
+    public static List<WeatherData> CompressWeatherData(List<WeatherData> original, int daysPerMonth)
+    {
+        if (daysPerMonth == 0 || original.Count == 0) return original;
+
+        int originalDays = 365; // предполагаем год данных
+        int newDays = CalendarHelper.GetDaysInYear(daysPerMonth);
+        double compressionRatio = (double)originalDays / newDays;
+
+        var result = new List<WeatherData>();
+
+        for (int i = 0; i < newDays; i++)
+        {
+            int startIdx = (int)(i * compressionRatio);
+            int endIdx = (int)((i + 1) * compressionRatio);
+            endIdx = Math.Min(endIdx, original.Count);
+
+            if (startIdx >= original.Count) break;
+
+            var range = original.Skip(startIdx).Take(endIdx - startIdx).ToList();
+
+            // Усредняем данные с сохранением min/max
+            var compressed = new WeatherData
+            {
+                Timestamp = range.First().Timestamp,
+                AirTemp = range.Average(d => d.AirTemp),
+                AirTempMin = range.Min(d => d.AirTemp),
+                AirTempMax = range.Max(d => d.AirTemp),
+                GroundTemp = range.Average(d => d.GroundTemp),
+                GroundTempMin = range.Min(d => d.GroundTemp),
+                GroundTempMax = range.Max(d => d.GroundTemp),
+                AirHumidity = range.Average(d => d.AirHumidity),
+                SoilMoisture = range.Average(d => d.SoilMoisture),
+                SolarEnergyMj = range.Average(d => d.SolarEnergyMj),
+                EffectiveSnowCm = range.Average(d => d.EffectiveSnowCm),
+                PrecipitationMm = range.Sum(d => d.PrecipitationMm)  // осадки суммируются
+            };
+
+            result.Add(compressed);
+        }
+
+        return result;
+    }
 }

@@ -146,7 +146,7 @@ public sealed class SnapshotSystem
         string realTimeStr = $"{(int)realTime.TotalHours:D2}:{realTime.Minutes:D2}:{realTime.Seconds:D2}";
 
         int startX = frame.Width - 12;  // Сдвинуто вправо
-        int startY = frame.Height - 3;
+        int startY = frame.Height - 4;
 
         for (int i = 0; i < dateStr.Length && startX + i < frame.Width; i++)
             Put(frame, startX + i, startY, dateStr[i], ConsoleColor.White, ConsoleColor.Black);
