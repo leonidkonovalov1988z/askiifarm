@@ -178,8 +178,10 @@ public sealed class GameApplication
 
         var simulation = new SimulationLoop(world, channel, SystemPipeline.CreateSimulationSystems(),
             new SnapshotSystem(frames), frames, shutdown);
+        // В методе Run(), при создании ConsolePresentSystem:
+        var fpsCounter = world.Resource<FpsCounter>();  // ДОБАВИТЬ
         var render = new RenderLoop(console, frames,
-            new ConsolePresentSystem(console, frames), 1000 / _settings.RenderFps);
+            new ConsolePresentSystem(console, frames, fpsCounter), 1000 / _settings.RenderFps);
         var input = new InputLoop(channel, bindings, _settings.InputPollMs);
 
         var threads = new[]
@@ -231,16 +233,20 @@ public sealed class GameSettings
     public string MapPath { get; init; } = "map_raw.txt";
     public string ContentRoot { get; init; } =
     System.IO.Path.Combine(AppContext.BaseDirectory, "Content");
-    public int ScreenWidth { get; init; } = 80;
+    public int ScreenWidth { get; init; } = 110;
     public int ScreenHeight { get; init; } = 25;
     public int SimulationFps { get; init; } = 12;
     public int RenderFps { get; init; } = 24;
     public int InputPollMs { get; init; } = 10;
+    public double MaxTimeStep { get; init; } = 3600.0;  // Максимальный шаг времени (1 час)
+
     public int CommandQueueCapacity { get; init; } = 32;
     public int PlayerStartX { get; init; } = 28;
     public int PlayerStartY { get; init; } = 12;
     public string PlayerCharacterKey { get; init; } = "player";
     public bool UseJsonContent { get; init; } = true;  // ← новое, можно выключить
+
+    public string WeatherCsvPath { get; init; } = "Content/weather.csv";
 }.
 //конец App\GameSettings.cs
 .
@@ -313,14 +319,32 @@ public static class GameWorldBuilder
             charPalette = GameContent.CreateCharacterPalette();
         }
 
+        // В методе Build, после инициализации других ресурсов:
+
+        // В методе Build, среди прочих SetResource:
+        var weatherData = WeatherCsvLoader.Load(settings.WeatherCsvPath, out var weatherError);
+        world.SetResource(new WeatherDataSource
+        {
+            HourlyData = weatherData,
+            LoadError = weatherError
+        });
+        world.SetResource(new WeatherCurrent());
+
+        var gameState = new GameState
+        {
+            GameStartDate = DateTime.Now,
+            TimeSpeed = 1.0f,
+            MaxTimeStep = settings.MaxTimeStep
+        };
+        
+
         world.SetResource(palette);
         world.SetResource(charPalette);
-        world.SetResource(new GameState());
+        world.SetResource(gameState);
         world.SetResource(new CommandBuffer());
         world.SetResource(new FpsCounter());
         world.SetResource(new FpsLimiter(settings.SimulationFps));
         world.SetResource(settings);
-
         return world;
     }
 }.
@@ -398,12 +422,35 @@ public sealed class SimulationLoop
 
         while (!token.IsCancellationRequested && state.IsRunning)
         {
+            // Промотка времени: используем MaxTimeStep
+            if (state.FastForwardUntil.HasValue)
+            {
+                double remaining = state.FastForwardUntil.Value - state.ElapsedTime;
+                double step = Math.Min(remaining, state.MaxTimeStep);
+
+                state.ElapsedTime += step;
+                state.GameTimeElapsed += step;
+                state.Tick++;
+
+                using (_world.Guard.Enter())
+                {
+                    _channel.DrainTo(buffer.Items);
+                    foreach (var system in _systems) system.Update(_world);
+                    _snapshot.Update(_world);
+                }
+
+                if (state.ElapsedTime >= state.FastForwardUntil.Value)
+                    state.FastForwardUntil = null;
+
+                continue;
+            }
+
+            // Обычный режим с ограничением FPS
             while (!limiter.BeginTick())
             {
                 Thread.Sleep(1);
                 if (token.IsCancellationRequested || !state.IsRunning) break;
             }
-
             if (token.IsCancellationRequested || !state.IsRunning) break;
 
             using (_world.Guard.Enter())
@@ -641,6 +688,8 @@ public static class GameContent
         Bind(GameCommand.MoveLeft, ConsoleKey.A, ConsoleKey.LeftArrow);
         Bind(GameCommand.MoveRight, ConsoleKey.D, ConsoleKey.RightArrow);
         Bind(GameCommand.Exit, ConsoleKey.Escape);
+
+
         return b;
     }
 
@@ -678,8 +727,157 @@ public static class GameContent
         Background = ConsoleColor.Black,
         Layer = 10
     };
+
 }.
 //конец Content\GameContent.cs
+.
+//начало Content\WeatherCsvLoader.cs
+﻿// Content/WeatherCsvLoader.cs
+using System;
+using System.Collections.Generic;
+using System.Globalization;
+using System.IO;
+using System.Linq;
+using System.Text;
+using AsciiFarm.Data;
+namespace AsciiFarm.Content;
+
+/// <summary>
+/// Парсит CSV погоды. Поддерживает два формата:
+///   1) Плоский: заголовки в 1-й строке, имена могут содержать единицы
+///      ("temperature_2m (°C)").
+///   2) Open-Meteo API: заголовки в строке "hourly", затем "hourly_units", затем данные.
+/// </summary>
+public static class WeatherCsvLoader
+{
+    private const float WiltingPoint = 0.10f;
+    private const float FieldCapacity = 0.38f;
+    private const float SnowCorrectionFactor = 0.5f;
+    private const float SnowInsulationFactor = 0.15f;
+    private const float SnowMeltTempThreshold = 3f;
+
+    public static List<WeatherData> Load(string filePath)
+        => Load(filePath, out _);
+
+    // Content/WeatherCsvLoader.cs — заменить метод Load
+    public static List<WeatherData> Load(string filePath, out string? error)
+    {
+        error = null;
+        var result = new List<WeatherData>();
+        if (!File.Exists(filePath)) { error = $"Файл не найден: {filePath}"; return result; }
+
+        string[] lines;
+        try { lines = File.ReadAllLines(filePath); }
+        catch (Exception ex) { error = $"Не удалось прочитать: {ex.Message}"; return result; }
+
+        if (lines.Length < 2) { error = "Файл слишком короткий"; return result; }
+
+        int headerIndex = -1;
+        for (int i = 0; i < Math.Min(10, lines.Length); i++)
+        {
+            var lower = lines[i].ToLowerInvariant();
+            if (lower.Contains("time") && lower.Contains("temperature"))
+            { headerIndex = i; break; }
+        }
+        if (headerIndex < 0) { error = "Не найдена строка заголовков"; return result; }
+
+        var headers = ParseCsvLine(lines[headerIndex]).Select(NormalizeHeader).ToList();
+        int idxTime = headers.IndexOf("time");
+        int idxTemp = headers.IndexOf("temperature_2m");
+        int idxHum = headers.IndexOf("relative_humidity_2m");
+        int idxRad = headers.IndexOf("shortwave_radiation");
+        int idxSoil = headers.IndexOf("soil_moisture_7_to_28cm");
+        int idxSnow = headers.IndexOf("snow_depth");
+        int idxPrecip = headers.IndexOf("precipitation");
+
+        if (idxTemp < 0) { error = $"Нет столбца temperature_2m"; return result; }
+
+        for (int i = headerIndex + 1; i < lines.Length; i++)
+        {
+            if (string.IsNullOrWhiteSpace(lines[i])) continue;
+            var fields = ParseCsvLine(lines[i]);
+            if (fields.Count == 0 || !LooksLikeDate(fields[0])) continue;
+            if (fields.Count <= idxTemp) continue;
+
+            // Парсим время
+            DateTime timestamp = DateTime.MinValue;
+            if (idxTime >= 0 && idxTime < fields.Count)
+                DateTime.TryParse(fields[idxTime], CultureInfo.InvariantCulture,
+                    DateTimeStyles.RoundtripKind, out timestamp);
+
+            float temp = ParseFloat(fields, idxTemp);
+            float hum = ParseFloat(fields, idxHum);
+            float rad = ParseFloat(fields, idxRad);
+            float soil = ParseFloat(fields, idxSoil);
+            float snow = ParseFloat(fields, idxSnow);
+            float precip = idxPrecip >= 0 ? ParseFloat(fields, idxPrecip) : 0f;
+
+            float solarEnergyMj = rad * 0.0036f;
+            float soilMoisture = Math.Clamp((soil - 0.10f) / 0.28f, 0f, 1f);
+            float effectiveSnowCm = (snow * 100f) * 0.5f;
+            if (temp > 3f) effectiveSnowCm = 0f;
+            float groundTemp = (temp < 0f && effectiveSnowCm > 0f)
+                ? temp / (1f + 0.15f * effectiveSnowCm) : temp;
+            float airHumidity = Math.Clamp(hum / 100f, 0f, 1f);
+
+            result.Add(new WeatherData
+            {
+                Timestamp = timestamp,
+                AirTemp = temp,
+                GroundTemp = groundTemp,
+                AirHumidity = airHumidity,
+                SoilMoisture = soilMoisture,
+                SolarEnergyMj = solarEnergyMj,
+                EffectiveSnowCm = effectiveSnowCm,
+                PrecipitationMm = precip
+            });
+        }
+
+        if (result.Count == 0) error = "Ни одна строка данных не распознана";
+        return result;
+    }
+
+    // "temperature_2m (°C)" → "temperature_2m"
+    // '"hourly"'            → "hourly"
+    private static string NormalizeHeader(string raw)
+    {
+        var s = raw.Trim().Trim('"');
+        int paren = s.IndexOf('(');
+        if (paren >= 0) s = s.Substring(0, paren);
+        return s.Trim().ToLowerInvariant();
+    }
+
+    // "2000-01-01T00:00" → true;  "iso8601" → false
+    private static bool LooksLikeDate(string first)
+    {
+        if (string.IsNullOrEmpty(first)) return false;
+        char c0 = first[0];
+        return c0 >= '0' && c0 <= '9';
+    }
+
+    private static List<string> ParseCsvLine(string line)
+    {
+        var result = new List<string>();
+        bool inQuotes = false;
+        var current = new StringBuilder();
+        foreach (char c in line)
+        {
+            if (c == '"') inQuotes = !inQuotes;
+            else if (c == ',' && !inQuotes) { result.Add(current.ToString()); current.Clear(); }
+            else current.Append(c);
+        }
+        result.Add(current.ToString());
+        return result;
+    }
+
+    private static float ParseFloat(List<string> fields, int index)
+    {
+        if (index < 0 || index >= fields.Count) return 0f;
+        return float.TryParse(fields[index], NumberStyles.Float,
+            CultureInfo.InvariantCulture, out var v) ? v : 0f;
+    }
+}.
+//конец Content\WeatherCsvLoader.cs
 .
 //начало Core\ComponentSerializerRegistry.cs
 ﻿using System;
@@ -739,6 +937,8 @@ public interface IComponentStore
     IReadOnlyCollection<Entity> Entities { get; }
     bool Has(Entity entity);
     void Remove(Entity entity);
+    // ДОБАВИТЬ ЭТО:
+    IEnumerable<(Entity Entity, object Component)> AllComponentsBoxed();
 }
 
 /// <summary>Только хранилище данных. Никакой игровой логики.</summary>
@@ -1073,17 +1273,27 @@ public sealed class CommandBuffer
 //начало Data\FpsCounter.cs
 ﻿// Data/FpsCounter.cs
 using System.Collections.Generic;
+using System.Diagnostics;
 namespace AsciiFarm.Data;
 
-/// <summary>Счётчик FPS (скользящее окно + экспоненциальное сглаживание).</summary>
 public sealed class FpsCounter
 {
     private const int SampleSize = 60;
     private readonly Queue<double> _frameTimes = new();
     private readonly object _gate = new();
 
+    // Для реального FPS (рендер)
+    private int _framesThisSecond = 0;
+    private readonly Stopwatch _renderTimer = Stopwatch.StartNew();
+
+    // Для TPS (симуляция)
+    private int _ticksThisSecond = 0;
+    private readonly Stopwatch _tickTimer = Stopwatch.StartNew();
+
     public float CurrentFps { get; private set; }
     public float AverageFps { get; private set; }
+    public int RealFps { get; private set; }
+    public int TicksPerSecond { get; private set; }
 
     public void RecordFrame(double timestampSeconds)
     {
@@ -1100,6 +1310,29 @@ public sealed class FpsCounter
                 if (duration > 0.001)
                     CurrentFps = (float)((_frameTimes.Count - 1) / duration);
             }
+
+            // Считаем реальный FPS (рендер)
+            _framesThisSecond++;
+            if (_renderTimer.ElapsedMilliseconds >= 1000)
+            {
+                RealFps = _framesThisSecond;
+                _framesThisSecond = 0;
+                _renderTimer.Restart();
+            }
+        }
+    }
+
+    public void RecordTick()
+    {
+        lock (_gate)
+        {
+            _ticksThisSecond++;
+            if (_tickTimer.ElapsedMilliseconds >= 1000)
+            {
+                TicksPerSecond = _ticksThisSecond;
+                _ticksThisSecond = 0;
+                _tickTimer.Restart();
+            }
         }
     }
 
@@ -1107,9 +1340,7 @@ public sealed class FpsCounter
     {
         lock (_gate)
         {
-            AverageFps = AverageFps == 0
-                ? instantFps
-                : AverageFps * 0.9f + instantFps * 0.1f;
+            AverageFps = AverageFps == 0 ? instantFps : AverageFps * 0.9f + instantFps * 0.1f;
         }
     }
 }.
@@ -1125,6 +1356,20 @@ public sealed class GameState
     public long Tick { get; set; }
     public float DeltaTime { get; set; }
     public double ElapsedTime { get; set; }
+
+    // Новое: коэффициент скорости времени (1.0 = реальное время)
+    public float TimeSpeed { get; set; } = 1.0f;
+
+    // Новое: суммарное игровое время (секунды), учитывает TimeSpeed
+    public double GameTimeElapsed { get; set; }
+
+    // Новое: дата начала игры
+    public DateTime GameStartDate { get; set; } = DateTime.Now;
+
+    // Новое: промотка времени
+    public double? FastForwardUntil { get; set; }
+    public double MaxTimeStep { get; set; } = 3600.0;  // Максимальный шаг времени (1 час)
+
 }.
 //конец Data\GameState.cs
 .
@@ -1167,6 +1412,54 @@ public static class TilePaletteExtensions
 }.
 //конец Data\TilePaletteExtensions.cs
 .
+//начало Data\WeatherCurrent.cs
+﻿// Data/WeatherCurrent.cs
+namespace AsciiFarm.Data;
+
+/// <summary>Текущая погода — ресурс, обновляется WeatherSystem.</summary>
+public sealed class WeatherCurrent
+{
+    public WeatherData Current { get; set; }
+    public int HourIndex { get; set; }
+    public bool HasData { get; set; }
+    public DateTime GameTime { get; set; }  // ← НОВОЕ
+
+}.
+//конец Data\WeatherCurrent.cs
+.
+//начало Data\WeatherData.cs
+﻿// Data/WeatherData.cs
+namespace AsciiFarm.Data;
+
+/// <summary>
+/// Одна запись погоды после всех трансформаций.
+/// </summary>
+public readonly struct WeatherData
+{
+    public DateTime Timestamp { get; init; }  // ← НОВОЕ: время из CSV
+
+    public float AirTemp { get; init; }          // °C
+    public float GroundTemp { get; init; }       // °C, с учётом снежного одеяла
+    public float AirHumidity { get; init; }      // 0.0–1.0
+    public float SoilMoisture { get; init; }     // 0.0–1.0
+    public float SolarEnergyMj { get; init; }    // МДж/м² за час
+    public float EffectiveSnowCm { get; init; }  // см, с коррекцией
+    public float PrecipitationMm { get; init; }  // мм за час
+}.
+//конец Data\WeatherData.cs
+.
+//начало Data\WeatherDataSource.cs
+﻿// Data/WeatherDataSource.cs
+using System.Collections.Generic;
+namespace AsciiFarm.Data;
+
+public sealed class WeatherDataSource
+{
+    public List<WeatherData> HourlyData { get; set; } = new();
+    public string? LoadError { get; set; }
+}.
+//конец Data\WeatherDataSource.cs
+.
 //начало Input\CommandChannel.cs
 ﻿// Input/CommandChannel.cs
 namespace AsciiFarm.Input;
@@ -1206,10 +1499,17 @@ public sealed class CommandChannel
 //конец Input\CommandChannel.cs
 .
 //начало Input\GameCommand.cs
-﻿// Input/GameCommand.cs
-namespace AsciiFarm.Input;
+﻿namespace AsciiFarm.Input;
 
-public enum GameCommand { None, MoveUp, MoveDown, MoveLeft, MoveRight, Exit }.
+public enum GameCommand
+{
+    None,
+    MoveUp, MoveDown, MoveLeft, MoveRight,
+    Exit,
+    // Управление временем
+    Speed1, Speed2, Speed3, Speed4,
+    FastForward1, FastForward2, FastForward3, FastForward4
+}.
 //конец Input\GameCommand.cs
 .
 //начало Input\InputLoop.cs
@@ -1217,12 +1517,17 @@ public enum GameCommand { None, MoveUp, MoveDown, MoveLeft, MoveRight, Exit }.
 using AsciiFarm.Data;
 namespace AsciiFarm.Input;
 
-/// <summary>Тело потока ввода. Ссылки на World нет по построению.</summary>
+/// <summary>
+/// Тело потока ввода. Ссылки на World нет по построению.
+/// </summary>
 public sealed class InputLoop
 {
+    private enum Modifier { None, Speed, FastForward }
+
     private readonly CommandChannel _channel;
     private readonly KeyBindings _bindings;
     private readonly int _pollDelayMs;
+    private Modifier _lastModifier = Modifier.None;
 
     public InputLoop(CommandChannel channel, KeyBindings bindings, int pollDelayMs)
     {
@@ -1236,9 +1541,56 @@ public sealed class InputLoop
         while (!token.IsCancellationRequested)
         {
             bool worked = false;
-            while (Console.KeyAvailable)                       // не блокируемся → выходим по токену
+            while (Console.KeyAvailable)
             {
-                var key = Console.ReadKey(intercept: true).Key;
+                var keyInfo = Console.ReadKey(intercept: true);
+                var key = keyInfo.Key;
+
+                // Модификаторы: запоминаем последний
+                if (key == ConsoleKey.X) { _lastModifier = Modifier.Speed; worked = true; continue; }
+                if (key == ConsoleKey.P) { _lastModifier = Modifier.FastForward; worked = true; continue; }
+
+                // Цифры 1-4 с модификатором
+                if (key >= ConsoleKey.D1 && key <= ConsoleKey.D4)
+                {
+                    int n = key - ConsoleKey.D1 + 1;
+                    if (_lastModifier == Modifier.Speed)
+                    {
+                        var cmd = n switch
+                        {
+                            1 => GameCommand.Speed1,
+                            2 => GameCommand.Speed2,
+                            3 => GameCommand.Speed3,
+                            4 => GameCommand.Speed4,
+                            _ => GameCommand.None
+                        };
+                        _channel.Post(cmd);
+                        _lastModifier = Modifier.None;
+                        worked = true;
+                        continue;
+                    }
+                    if (_lastModifier == Modifier.FastForward)
+                    {
+                        var cmd = n switch
+                        {
+                            1 => GameCommand.FastForward1,
+                            2 => GameCommand.FastForward2,
+                            3 => GameCommand.FastForward3,
+                            4 => GameCommand.FastForward4,
+                            _ => GameCommand.None
+                        };
+                        _channel.Post(cmd);
+                        _lastModifier = Modifier.None;
+                        worked = true;
+                        continue;
+                    }
+                }
+
+                // Сброс модификатора при любой другой клавише (кроме X/P)
+                if (_lastModifier != Modifier.None && key != ConsoleKey.X && key != ConsoleKey.P)
+                    _lastModifier = Modifier.None;
+
+                // Обычные команды из биндингов
                 if (_bindings.Map.TryGetValue(key, out var command))
                 {
                     _channel.Post(command);
@@ -2613,30 +2965,30 @@ namespace askiifarm.Serialization
 //конец Serialization\Serialization.cs
 .
 //начало Systems\ConsolePresentSystem.cs
-﻿// Systems/ConsolePresentSystem.cs
+﻿// Rendering/ConsolePresentSystem.cs
+using AsciiFarm.Data;
 using AsciiFarm.Rendering;
 using askiifarm;
 using askiifarm.Rendering;
 namespace AsciiFarm.Systems;
 
-/// <summary>
-/// Работает в потоке рендера. Метод намеренно НЕ принимает World:
-/// у рендера нет и не может быть доступа к игровым данным.
-/// </summary>
 public sealed class ConsolePresentSystem
 {
     private readonly DoubleBufferedConsole _console;
     private readonly FrameExchange<RenderFrame> _frames;
+    private readonly FpsCounter _fpsCounter;  // ДОБАВИТЬ
 
-    public ConsolePresentSystem(DoubleBufferedConsole console, FrameExchange<RenderFrame> frames)
+    public ConsolePresentSystem(DoubleBufferedConsole console, FrameExchange<RenderFrame> frames,
+                                FpsCounter fpsCounter)  // ДОБАВИТЬ ПАРАМЕТР
     {
         _console = console;
         _frames = frames;
+        _fpsCounter = fpsCounter;  // ДОБАВИТЬ
     }
 
     public void Present()
     {
-        if (!_frames.TryAcquireFresh(out var frame)) return;   // нового кадра нет — не перерисовываем
+        if (!_frames.TryAcquireFresh(out var frame)) return;
 
         for (int y = 0; y < frame.Height; y++)
             for (int x = 0; x < frame.Width; x++)
@@ -2646,6 +2998,7 @@ public sealed class ConsolePresentSystem
             }
 
         _console.Draw();
+        _fpsCounter.RecordFrame(frame.Tick);  // ДОБАВИТЬ
     }
 }.
 //конец Systems\ConsolePresentSystem.cs
@@ -2654,21 +3007,35 @@ public sealed class ConsolePresentSystem
 ﻿// Systems/ElapsedTimeSystem.cs
 using AsciiFarm.Core;
 using AsciiFarm.Data;
+using System.Diagnostics;
 namespace AsciiFarm.Systems;
 
-/// <summary>Накапливает игровое время из дельты.</summary>
-/// 
 [GameSystem(Order = 1)]
 public sealed class ElapsedTimeSystem : ISystem
 {
+    private readonly Stopwatch _tickTimer = Stopwatch.StartNew();
+    private double _lastTickTime = 0;
+
     public void Update(World world)
     {
         var state = world.Resource<GameState>();
-        var limiter = world.Resource<FpsLimiter>();
+        var fpsCounter = world.Resource<FpsCounter>();
 
-        state.DeltaTime = limiter.DeltaTime;
-        state.ElapsedTime += limiter.DeltaTime;
+        double now = _tickTimer.Elapsed.TotalSeconds;
+        double realDeltaTime = now - _lastTickTime;
+        _lastTickTime = now;
+        realDeltaTime = Math.Min(realDeltaTime, 0.1);
+
+        // Игровое время с учётом скорости
+        double effectiveDeltaTime = realDeltaTime * state.TimeSpeed;
+        effectiveDeltaTime = Math.Min(effectiveDeltaTime, state.MaxTimeStep);
+
+        state.DeltaTime = (float)realDeltaTime;
+        state.ElapsedTime += realDeltaTime;
+        state.GameTimeElapsed += effectiveDeltaTime;
         state.Tick++;
+
+        fpsCounter.RecordTick();
     }
 }.
 //конец Systems\ElapsedTimeSystem.cs
@@ -2689,7 +3056,7 @@ public sealed class FpsUpdateSystem : ISystem
         var limiter = world.Resource<FpsLimiter>();
 
         float instantFps = limiter.DeltaTime > 0 ? 1.0f / limiter.DeltaTime : 0;
-        fpsCounter.RecordFrame(limiter.ElapsedTime);
+        
         fpsCounter.UpdateAverage(instantFps);
     }
 }.
@@ -2800,6 +3167,38 @@ public sealed class PlayerIntentSystem : ISystem
         {
             state.IsRunning = false;
             state.NeedsSave = true;
+        }
+
+        // Обработка команд управления временем
+        foreach (var command in commands)
+        {
+            switch (command)
+            {
+                case GameCommand.Speed1:
+                    state.TimeSpeed = 1.0f;
+                    break;
+                case GameCommand.Speed2:
+                    state.TimeSpeed = 30.0f; // 48 реальных минут = 1 игровой день (24 часа)
+                    break;
+                case GameCommand.Speed3:
+                    state.TimeSpeed = 1440.0f; // 1 реальная минута = 1 игровой день
+                    break;
+                case GameCommand.Speed4:
+                    state.TimeSpeed = 43200.0f; // 1 реальная минута = 1 игровой месяц (30 дней)
+                    break;
+                case GameCommand.FastForward1:
+                    state.FastForwardUntil = state.ElapsedTime + 3600.0; // +1 час реального времени
+                    break;
+                case GameCommand.FastForward2:
+                    state.FastForwardUntil = state.ElapsedTime + 86400.0; // +1 день
+                    break;
+                case GameCommand.FastForward3:
+                    state.FastForwardUntil = state.ElapsedTime + 604800.0; // +1 неделя
+                    break;
+                case GameCommand.FastForward4:
+                    state.FastForwardUntil = state.ElapsedTime + 2592000.0; // +1 месяц (30 дней)
+                    break;
+            }
         }
 
         commands.Clear();
@@ -2915,7 +3314,8 @@ public sealed class SnapshotSystem
         }
 
         DrawUI(frame, gameState, fpsCounter);
-
+        DrawWeatherUI(frame, world.Resource<WeatherCurrent>(), world.Resource<WeatherDataSource>());
+        DrawGameTime(frame, gameState);
         frame.Tick = gameState.Tick;
         _frames.Publish();
     }
@@ -2937,23 +3337,95 @@ public sealed class SnapshotSystem
             }
     }
 
+    // В методе DrawUI:
     private static void DrawUI(RenderFrame frame, GameState state, FpsCounter fpsCounter)
     {
-        var elapsed = TimeSpan.FromSeconds(state.ElapsedTime);
-        string timeStr = $"{elapsed.Hours:D2}:{elapsed.Minutes:D2}:{elapsed.Seconds:D2}";
-        string fpsStr = $"FPS: {fpsCounter.CurrentFps:F0}";
+        string fpsStr = $"FPS: {fpsCounter.RealFps}";
+        string tickStr = $"TPS: {fpsCounter.TicksPerSecond}";
 
-        int startX = frame.Width - Math.Max(timeStr.Length, fpsStr.Length) - 1;
-
-        for (int i = 0; i < timeStr.Length; i++)
-            if (startX + i < frame.Width)
-                Put(frame, startX + i, 0, timeStr[i], ConsoleColor.Yellow, ConsoleColor.Black);
+        int startX = frame.Width - Math.Max(fpsStr.Length, tickStr.Length) - 1;
 
         for (int i = 0; i < fpsStr.Length; i++)
+            if (startX + i < frame.Width)
+                Put(frame, startX + i, 0, fpsStr[i], ConsoleColor.Green, ConsoleColor.Black);
+
+        for (int i = 0; i < tickStr.Length; i++)
             if (startX + i < frame.Width && 1 < frame.Height)
-                Put(frame, startX + i, 1, fpsStr[i], ConsoleColor.Green, ConsoleColor.Black);
+                Put(frame, startX + i, 1, tickStr[i], ConsoleColor.Cyan, ConsoleColor.Black);
+    }
+    // Новый метод:
+    private static void DrawWeatherUI(RenderFrame frame, WeatherCurrent weather, WeatherDataSource source)
+    {
+        int panelWidth = 24;
+        int startX = frame.Width - panelWidth - 2;
+        int startY = 3;
+
+        (string text, ConsoleColor color)[] lines;
+
+        if (!weather.HasData)
+        {
+            var err = source.LoadError ?? "Данные не загружены";
+            if (err.Length > 22) err = err.Substring(0, 22);
+            lines = new (string, ConsoleColor)[]
+            {
+            ("── ПОГОДА ──", ConsoleColor.DarkGray),
+            ("  нет данных", ConsoleColor.DarkGray),
+            (err, ConsoleColor.Red),
+            };
+        }
+        else
+        {
+            var d = weather.Current;
+            lines = new (string, ConsoleColor)[]
+            {
+            ("── ПОГОДА ──", ConsoleColor.Cyan),
+            ($"Час: {weather.HourIndex:D2}", ConsoleColor.DarkGray),
+            ($"Воздух:{d.AirTemp,7:F1}°C", ConsoleColor.White),
+            ($"Земля: {d.GroundTemp,7:F1}°C", d.GroundTemp < 0 ? ConsoleColor.Blue : ConsoleColor.White),
+            ($"Влажн: {d.AirHumidity * 100,6:F0}%", ConsoleColor.White),
+            ($"Почва: {d.SoilMoisture * 100,6:F0}%", d.SoilMoisture < 0.2f ? ConsoleColor.Red : ConsoleColor.Green),
+            ($"Солнц: {d.SolarEnergyMj,6:F2}МДж", ConsoleColor.Yellow),
+            ($"Снег:  {d.EffectiveSnowCm,6:F1}см", ConsoleColor.White),
+            ($"Осад:  {d.PrecipitationMm,6:F1}мм", ConsoleColor.Blue),
+            };
+        }
+
+        for (int i = 0; i < lines.Length; i++)
+        {
+            var (text, color) = lines[i];
+            for (int j = 0; j < text.Length && startX + j < frame.Width; j++)
+            {
+                if (startY + i < frame.Height)
+                    Put(frame, startX + j, startY + i, text[j], color, ConsoleColor.Black);
+            }
+        }
     }
 
+    // В методе DrawGameTime:
+    private static void DrawGameTime(RenderFrame frame, GameState state)
+    {
+        // Игровое время из GameTimeElapsed
+        DateTime gameTime = state.GameStartDate.AddSeconds(state.GameTimeElapsed);
+        string dateStr = gameTime.ToString("dd.MM.yyyy");
+        string timeStr = gameTime.ToString("HH:mm:ss");
+        string speedStr = $"x{state.TimeSpeed:F0}";
+
+        // Реальное время, прошедшее с запуска
+        TimeSpan realTime = TimeSpan.FromSeconds(state.ElapsedTime);
+        string realTimeStr = $"{(int)realTime.TotalHours:D2}:{realTime.Minutes:D2}:{realTime.Seconds:D2}";
+
+        int startX = frame.Width - 12;  // Сдвинуто вправо
+        int startY = frame.Height - 3;
+
+        for (int i = 0; i < dateStr.Length && startX + i < frame.Width; i++)
+            Put(frame, startX + i, startY, dateStr[i], ConsoleColor.White, ConsoleColor.Black);
+        for (int i = 0; i < timeStr.Length && startX + i < frame.Width; i++)
+            Put(frame, startX + i, startY + 1, timeStr[i], ConsoleColor.Yellow, ConsoleColor.Black);
+        for (int i = 0; i < speedStr.Length && startX + i < frame.Width; i++)
+            Put(frame, startX + i, startY + 2, speedStr[i], ConsoleColor.Green, ConsoleColor.Black);
+        for (int i = 0; i < realTimeStr.Length && startX + i < frame.Width; i++)
+            Put(frame, startX + i, startY + 3, realTimeStr[i], ConsoleColor.DarkGray, ConsoleColor.Black);
+    }
     private static void Put(RenderFrame frame, int x, int y, char symbol, ConsoleColor fg, ConsoleColor bg)
     {
         if ((uint)x >= (uint)frame.Width || (uint)y >= (uint)frame.Height) return;
@@ -2983,9 +3455,47 @@ public static class SystemPipeline
             .Select(t => new { Type = t, Attr = t.GetCustomAttribute<GameSystemAttribute>() })
             .Where(x => x.Attr != null)
             .OrderBy(x => x.Attr.Order)
-            .Select(x => (ISystem)Activator.CreateInstance(x.Type)!)
+            .Select(x => (ISystem)(Activator.CreateInstance(x.Type) ?? throw new InvalidOperationException($"Не удалось создать экземпляр {x.Type.Name}")))
             .ToArray();
     }
 }.
 //конец Systems\SystemPipeline.cs
+.
+//начало Systems\WeatherSystem.cs
+﻿// Systems/WeatherSystem.cs
+using System;
+using AsciiFarm.Core;
+using AsciiFarm.Data;
+namespace AsciiFarm.Systems;
+
+[GameSystem(Order = 6)]
+public sealed class WeatherSystem : ISystem
+{
+    private int _lastGameHour = -1;
+
+    public void Update(World world)
+    {
+        var weather = world.Resource<WeatherCurrent>();
+        var source = world.Resource<WeatherDataSource>();
+        var state = world.Resource<GameState>();
+
+        if (source.HourlyData.Count == 0) return;
+
+        // Вычисляем игровое время
+        DateTime gameTime = state.GameStartDate.AddSeconds(state.GameTimeElapsed);
+
+        // Индекс часа = час суток (0-23), по модулю количества записей в CSV
+        int gameHour = gameTime.Hour % source.HourlyData.Count;
+
+        if (gameHour != _lastGameHour)
+        {
+            weather.Current = source.HourlyData[gameHour];
+            weather.HourIndex = gameHour;
+            weather.HasData = true;
+            weather.GameTime = gameTime;
+            _lastGameHour = gameHour;
+        }
+    }
+}.
+//конец Systems\WeatherSystem.cs
 .

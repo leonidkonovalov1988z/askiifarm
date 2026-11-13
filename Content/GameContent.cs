@@ -51,6 +51,8 @@ public static class GameContent
         Bind(GameCommand.MoveLeft, ConsoleKey.A, ConsoleKey.LeftArrow);
         Bind(GameCommand.MoveRight, ConsoleKey.D, ConsoleKey.RightArrow);
         Bind(GameCommand.Exit, ConsoleKey.Escape);
+
+
         return b;
     }
 
@@ -88,4 +90,5 @@ public static class GameContent
         Background = ConsoleColor.Black,
         Layer = 10
     };
+
 }

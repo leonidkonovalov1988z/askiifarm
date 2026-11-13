@@ -2,16 +2,13 @@
 using System.Diagnostics;
 namespace AsciiFarm.Core;
 
-/// <summary>
-/// Ограничитель частоты кадров через дельта-время.
-/// </summary>
 public sealed class FpsLimiter
 {
-    private readonly double _targetFrameTimeSeconds;
+    private double _targetFrameTimeSeconds;
     private readonly Stopwatch _stopwatch = new();
     private double _lastAccumulatedTime;
 
-    public int TargetFps { get; }
+    public int TargetFps { get; private set; }
     public float DeltaTime { get; private set; }
     public double ElapsedTime => _stopwatch.Elapsed.TotalSeconds;
 
@@ -22,7 +19,16 @@ public sealed class FpsLimiter
         _targetFrameTimeSeconds = 1.0 / targetFps;
     }
 
-    /// <summary>Возвращает true, когда пора делать тик.</summary>
+    /// <summary>Изменить целевой FPS на лету (для ускорения времени).</summary>
+    public void SetTargetFps(int targetFps)
+    {
+        if (targetFps <= 0) return;
+        TargetFps = targetFps;
+        _targetFrameTimeSeconds = 1.0 / targetFps;
+        // Сбрасываем накопитель, чтобы не было скачка
+        _lastAccumulatedTime = _stopwatch.Elapsed.TotalSeconds;
+    }
+
     public bool BeginTick()
     {
         if (!_stopwatch.IsRunning) _stopwatch.Start();

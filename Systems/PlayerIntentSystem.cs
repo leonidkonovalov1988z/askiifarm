@@ -61,6 +61,24 @@ public sealed class PlayerIntentSystem : ISystem
             state.NeedsSave = true;
         }
 
+        // Обработка команд управления временем
+        foreach (var command in commands)
+        {
+            switch (command)
+            {
+                case GameCommand.Speed1: state.TimeSpeed = 1.0f; break;
+                case GameCommand.Speed2: state.TimeSpeed = 30.0f; break;
+                case GameCommand.Speed3: state.TimeSpeed = 1440.0f; break;
+                case GameCommand.Speed4: state.TimeSpeed = 43200.0f; break;
+                case GameCommand.Speed5: state.TimeSpeed = 518400.0f; break;  // 1 год за 1 минуту
+                case GameCommand.FastForward1: state.FastForwardUntil = state.ElapsedTime + 3600.0; break;
+                case GameCommand.FastForward2: state.FastForwardUntil = state.ElapsedTime + 86400.0; break;
+                case GameCommand.FastForward3: state.FastForwardUntil = state.ElapsedTime + 604800.0; break;
+                case GameCommand.FastForward4: state.FastForwardUntil = state.ElapsedTime + 2592000.0; break;
+                case GameCommand.FastForward5: state.FastForwardUntil = state.ElapsedTime + 31536000.0; break;  // 1 год
+            }
+        }
+
         commands.Clear();
     }
 }

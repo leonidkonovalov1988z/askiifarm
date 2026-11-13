@@ -13,7 +13,7 @@ public sealed class FpsUpdateSystem : ISystem
         var limiter = world.Resource<FpsLimiter>();
 
         float instantFps = limiter.DeltaTime > 0 ? 1.0f / limiter.DeltaTime : 0;
-        fpsCounter.RecordFrame(limiter.ElapsedTime);
+        
         fpsCounter.UpdateAverage(instantFps);
     }
 }

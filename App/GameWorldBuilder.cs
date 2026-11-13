@@ -1,4 +1,5 @@
-﻿using AsciiFarm.Components;
+﻿// App/GameWorldBuilder.cs
+using AsciiFarm.Components;
 using AsciiFarm.Content;
 using AsciiFarm.Core;
 using AsciiFarm.Data;
@@ -13,18 +14,15 @@ public static class GameWorldBuilder
     {
         var world = new World();
 
-        // Создаём реестр сериализаторов (авто-регистрация из сборки)
         var registry = ComponentSerializerRegistry.AutoRegister(Assembly.GetExecutingAssembly());
         var saveSystem = new ComponentSaveSystem(registry);
 
-        // Загружаем мир из файла сохранения
         if (ComponentSaveSystem.IsNewFormat(settings.MapPath))
         {
             saveSystem.Load(settings.MapPath, world);
         }
         else if (File.Exists(settings.MapPath))
         {
-            // Legacy формат — загружаем и конвертируем
             var legacyStorage = new GameStorage();
             var legacyData = legacyStorage.LoadLatest<GameDataV0_0_3>(settings.MapPath);
 
@@ -42,17 +40,13 @@ public static class GameWorldBuilder
                 Layer = 10
             });
 
-            // Сохраняем в новом формате
             saveSystem.Save(settings.MapPath, world);
         }
         else
         {
-            // Файла нет — создаём мир по умолчанию
-            // (здесь можно загрузить map_raw.txt или создать процедурно)
             throw new FileNotFoundException($"Файл сохранения не найден: {settings.MapPath}");
         }
 
-        // Загружаем ресурсы (не сохраняются, всегда из JSON или хардкода)
         TilePalette palette;
         CharacterPalette charPalette;
 
@@ -73,6 +67,24 @@ public static class GameWorldBuilder
         world.SetResource(new FpsCounter());
         world.SetResource(new FpsLimiter(settings.SimulationFps));
         world.SetResource(settings);
+
+        // Загрузка погоды
+        var weatherData = WeatherCsvLoader.Load(settings.WeatherCsvPath, out var weatherError);
+        int startIndex = WeatherCsvLoader.FindStartIndex(weatherData, settings.GameStartDate);
+
+        world.SetResource(new WeatherDataSource
+        {
+            HourlyData = weatherData,
+            LoadError = weatherError,
+            StartIndex = startIndex  // НОВОЕ
+        });
+        world.SetResource(new WeatherCurrent());
+
+        // Инициализация GameState с датой из настроек
+        var gameState = world.Resource<GameState>();
+        gameState.GameStartDate = settings.GameStartDate;  // НОВОЕ
+        gameState.TimeSpeed = 1.0f;
+        gameState.MaxTimeStep = settings.MaxTimeStep;
 
         return world;
     }

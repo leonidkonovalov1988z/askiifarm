@@ -14,13 +14,16 @@ public sealed class SimulationLoop
     private readonly SnapshotSystem _snapshot;
     private readonly FrameExchange<RenderFrame> _frames;
     private readonly CancellationTokenSource _shutdown;
+    private readonly int _baseSimulationFps;
+    private const int MaxTps = 1000;  // Разумный максимум
 
     public SimulationLoop(World world, CommandChannel channel, ISystem[] systems,
                           SnapshotSystem snapshot, FrameExchange<RenderFrame> frames,
-                          CancellationTokenSource shutdown)
+                          CancellationTokenSource shutdown, int baseSimulationFps)
     {
         _world = world; _channel = channel; _systems = systems;
         _snapshot = snapshot; _frames = frames; _shutdown = shutdown;
+        _baseSimulationFps = baseSimulationFps;
     }
 
     public void Run(CancellationToken token)
@@ -34,12 +37,43 @@ public sealed class SimulationLoop
 
         while (!token.IsCancellationRequested && state.IsRunning)
         {
+            // Промотка времени: крутим максимально быстро, без задержек
+            if (state.FastForwardUntil.HasValue)
+            {
+                while (state.ElapsedTime < state.FastForwardUntil.Value
+                       && !token.IsCancellationRequested
+                       && state.IsRunning)
+                {
+                    double remaining = state.FastForwardUntil.Value - state.ElapsedTime;
+                    double step = Math.Min(remaining, state.MaxTimeStep);
+
+                    state.ElapsedTime += step;
+                    state.GameTimeElapsed += step;
+                    state.Tick++;
+
+                    using (_world.Guard.Enter())
+                    {
+                        _channel.DrainTo(buffer.Items);
+                        foreach (var system in _systems) system.Update(_world);
+                        _snapshot.Update(_world);
+                    }
+                }
+                state.FastForwardUntil = null;
+                continue;
+            }
+
+            // Обычный режим: динамический TPS в зависимости от TimeSpeed
+            // Формула: TPS = max(baseFps, ceil(TimeSpeed / MaxTimeStep))
+            int targetTps = Math.Max(_baseSimulationFps,
+                (int)Math.Ceiling(state.TimeSpeed / state.MaxTimeStep));
+            targetTps = Math.Min(targetTps, MaxTps);
+            limiter.SetTargetFps(targetTps);
+
             while (!limiter.BeginTick())
             {
                 Thread.Sleep(1);
                 if (token.IsCancellationRequested || !state.IsRunning) break;
             }
-
             if (token.IsCancellationRequested || !state.IsRunning) break;
 
             using (_world.Guard.Enter())

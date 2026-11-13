@@ -44,10 +44,13 @@ public sealed class GameApplication
             bindings = GameContent.CreateKeyBindings();
         }
 
+        // В методе Run(), при создании SimulationLoop:
         var simulation = new SimulationLoop(world, channel, SystemPipeline.CreateSimulationSystems(),
-            new SnapshotSystem(frames), frames, shutdown);
+            new SnapshotSystem(frames), frames, shutdown, _settings.SimulationFps);
+        // В методе Run(), при создании ConsolePresentSystem:
+        var fpsCounter = world.Resource<FpsCounter>();  // ДОБАВИТЬ
         var render = new RenderLoop(console, frames,
-            new ConsolePresentSystem(console, frames), 1000 / _settings.RenderFps);
+            new ConsolePresentSystem(console, frames, fpsCounter), 1000 / _settings.RenderFps);
         var input = new InputLoop(channel, bindings, _settings.InputPollMs);
 
         var threads = new[]
