@@ -136,6 +136,7 @@ using AsciiFarm.Core;
 using AsciiFarm.Data;
 using AsciiFarm.Input;
 using AsciiFarm.Rendering;
+using AsciiFarm.Serialization;
 using AsciiFarm.Systems;
 using askiifarm;
 using askiifarm.Rendering;
@@ -149,6 +150,7 @@ public sealed class GameApplication
 
     public GameApplication(GameSettings settings) => _settings = settings;
 
+    // App/GameApplication.cs — только метод Run(), остальное без изменений
     public void Run()
     {
         if (Console.IsInputRedirected)
@@ -163,51 +165,46 @@ public sealed class GameApplication
         using var shutdown = new CancellationTokenSource();
         var errors = new ConcurrentQueue<Exception>();
 
+        // Загружаем привязки из того же источника, что и остальной контент
+        KeyBindings bindings;
+        if (_settings.UseJsonContent && Directory.Exists(_settings.ContentRoot))
+        {
+            bindings = new ContentLoader(_settings.ContentRoot).LoadKeyBindings();
+        }
+        else
+        {
+            bindings = GameContent.CreateKeyBindings();
+        }
+
         var simulation = new SimulationLoop(world, channel, SystemPipeline.CreateSimulationSystems(),
             new SnapshotSystem(frames), frames, shutdown);
         var render = new RenderLoop(console, frames,
             new ConsolePresentSystem(console, frames), 1000 / _settings.RenderFps);
-        var input = new InputLoop(channel, GameContent.CreateKeyBindings(), _settings.InputPollMs);
+        var input = new InputLoop(channel, bindings, _settings.InputPollMs);
 
         var threads = new[]
         {
-            Start("Simulation", () => simulation.Run(shutdown.Token), shutdown, errors),
-            Start("Render",     () => render.Run(shutdown.Token),     shutdown, errors),
-            Start("Input",      () => input.Run(shutdown.Token),      shutdown, errors),
-        };
+        Start("Simulation", () => simulation.Run(shutdown.Token), shutdown, errors),
+        Start("Render",     () => render.Run(shutdown.Token),     shutdown, errors),
+        Start("Input",      () => input.Run(shutdown.Token),      shutdown, errors),
+    };
 
         foreach (var thread in threads) thread.Join();
         channel.Close();
-
         if (!errors.IsEmpty) throw new AggregateException("Сбой игрового потока.", errors);
 
-        // Симуляция завершилась — снимаем блокировку, World больше не модифицируется
         world.Guard.Detach();
-
-        // Сохранение при выходе
         var state = world.Resource<GameState>();
-        if (state.NeedsSave)
-            SaveGame(world);
+        if (state.NeedsSave) SaveGame(world);
     }
+    // Заменить метод SaveGame на:
 
     private void SaveGame(World world)
     {
-        var mapEntity = world.Query<TileMapComponent>()[0];
-        var map = world.Store<TileMapComponent>().Get(mapEntity);
-
-        var playerEntity = world.Query<PlayerTag, Position>()[0];
-        var playerPos = world.Store<Position>().Get(playerEntity);
-
-        var data = new GameDataV0_0_3
-        {
-            Map = map.Tiles,
-            PlayerX = playerPos.X,
-            PlayerY = playerPos.Y,
-            TileColors = new Dictionary<char, TileColorData>()
-        };
-
-        var storage = new GameStorage();
-        storage.SaveSmart(_settings.MapPath, GameStorage.LatestVersion, data);
+        var registry = ComponentSerializerRegistry.AutoRegister(
+            System.Reflection.Assembly.GetExecutingAssembly());
+        var saveSystem = new ComponentSaveSystem(registry);
+        saveSystem.Save(_settings.MapPath, world);
     }
 
     private static Thread Start(string name, Action body,
@@ -232,6 +229,8 @@ namespace AsciiFarm.App;
 public sealed class GameSettings
 {
     public string MapPath { get; init; } = "map_raw.txt";
+    public string ContentRoot { get; init; } =
+    System.IO.Path.Combine(AppContext.BaseDirectory, "Content");
     public int ScreenWidth { get; init; } = 80;
     public int ScreenHeight { get; init; } = 25;
     public int SimulationFps { get; init; } = 12;
@@ -241,6 +240,7 @@ public sealed class GameSettings
     public int PlayerStartX { get; init; } = 28;
     public int PlayerStartY { get; init; } = 12;
     public string PlayerCharacterKey { get; init; } = "player";
+    public bool UseJsonContent { get; init; } = true;  // ← новое, можно выключить
 }.
 //конец App\GameSettings.cs
 .
@@ -249,19 +249,70 @@ public sealed class GameSettings
 using AsciiFarm.Content;
 using AsciiFarm.Core;
 using AsciiFarm.Data;
+using AsciiFarm.Serialization;
 using askiifarm.Serialization;
+using System.Reflection;
 namespace AsciiFarm.App;
 
 public static class GameWorldBuilder
 {
     public static World Build(GameSettings settings)
     {
-        var storage = new GameStorage();
-        var data = storage.LoadLatest<GameDataV0_0_3>(settings.MapPath);
-
         var world = new World();
-        var palette = GameContent.CreatePalette();
-        var charPalette = GameContent.CreateCharacterPalette();
+
+        // Создаём реестр сериализаторов (авто-регистрация из сборки)
+        var registry = ComponentSerializerRegistry.AutoRegister(Assembly.GetExecutingAssembly());
+        var saveSystem = new ComponentSaveSystem(registry);
+
+        // Загружаем мир из файла сохранения
+        if (ComponentSaveSystem.IsNewFormat(settings.MapPath))
+        {
+            saveSystem.Load(settings.MapPath, world);
+        }
+        else if (File.Exists(settings.MapPath))
+        {
+            // Legacy формат — загружаем и конвертируем
+            var legacyStorage = new GameStorage();
+            var legacyData = legacyStorage.LoadLatest<GameDataV0_0_3>(settings.MapPath);
+
+            var map = world.CreateEntity();
+            world.Add(map, new TileMapComponent { Tiles = legacyData.Map });
+
+            var player = world.CreateEntity();
+            world.Add(player, new Position(legacyData.PlayerX, legacyData.PlayerY));
+            world.Add(player, new PlayerTag());
+            world.Add(player, new Glyph
+            {
+                Symbol = '☺',
+                Foreground = ConsoleColor.Yellow,
+                Background = ConsoleColor.Black,
+                Layer = 10
+            });
+
+            // Сохраняем в новом формате
+            saveSystem.Save(settings.MapPath, world);
+        }
+        else
+        {
+            // Файла нет — создаём мир по умолчанию
+            // (здесь можно загрузить map_raw.txt или создать процедурно)
+            throw new FileNotFoundException($"Файл сохранения не найден: {settings.MapPath}");
+        }
+
+        // Загружаем ресурсы (не сохраняются, всегда из JSON или хардкода)
+        TilePalette palette;
+        CharacterPalette charPalette;
+
+        if (settings.UseJsonContent && Directory.Exists(settings.ContentRoot))
+        {
+            (palette, _, charPalette) = GameContent.LoadFromFiles(settings.ContentRoot);
+        }
+        else
+        {
+            palette = GameContent.CreatePalette();
+            charPalette = GameContent.CreateCharacterPalette();
+        }
+
         world.SetResource(palette);
         world.SetResource(charPalette);
         world.SetResource(new GameState());
@@ -269,14 +320,6 @@ public static class GameWorldBuilder
         world.SetResource(new FpsCounter());
         world.SetResource(new FpsLimiter(settings.SimulationFps));
         world.SetResource(settings);
-
-        var map = world.CreateEntity();
-        world.Add(map, new TileMapComponent { Tiles = data.Map });
-
-        var player = world.CreateEntity();
-        world.Add(player, new Position(data.PlayerX, data.PlayerY));
-        world.Add(player, new PlayerTag());
-        world.Add(player, charPalette.Get(settings.PlayerCharacterKey));
 
         return world;
     }
@@ -378,6 +421,8 @@ public sealed class SimulationLoop
 .
 //начало Components\Components.cs
 ﻿// Components/Components.cs
+using AsciiFarm.Core;
+
 namespace AsciiFarm.Components;
 
 public struct Position
@@ -387,6 +432,8 @@ public struct Position
     public Position(int x, int y) { X = x; Y = y; }
 }
 
+// Изменить объявление MoveIntent:
+[DontSave]
 public struct MoveIntent
 {
     public int Dx;
@@ -413,6 +460,133 @@ public struct TileMapComponent
 }.
 //конец Components\Components.cs
 .
+//начало Content\ContentLoader.cs
+﻿// Content/ContentLoader.cs
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Text.Json;
+using System.Text.Json.Serialization;
+using AsciiFarm.Components;
+using AsciiFarm.Data;
+using AsciiFarm.Input;
+using askiifarm;
+
+namespace AsciiFarm.Content;
+
+/// <summary>
+/// Загружает контент из JSON-файлов. Правка баланса/цветов/клавиш — без перекомпиляции.
+/// </summary>
+public sealed class ContentLoader
+{
+    private static readonly JsonSerializerOptions JsonOptions = new()
+    {
+        PropertyNameCaseInsensitive = true,
+        Converters = { new JsonStringEnumConverter() },
+        WriteIndented = true
+    };
+
+    // DTO для палитры
+    private sealed class PaletteDto
+    {
+        public TileStyleDto Fallback { get; set; } = new();
+        public Dictionary<string, TileStyleDto> Tiles { get; set; } = new();
+    }
+    private sealed class TileStyleDto
+    {
+        public ConsoleColor Foreground { get; set; } = ConsoleColor.Gray;
+        public ConsoleColor Background { get; set; } = ConsoleColor.Black;
+        public bool BlocksMovement { get; set; }
+    }
+
+    // DTO для привязок
+    private sealed class KeyBindingsDto
+    {
+        public Dictionary<string, string> Bindings { get; set; } = new();
+    }
+
+    // DTO для персонажей
+    private sealed class CharactersDto
+    {
+        public string DefaultPlayerKey { get; set; } = "player";
+        public Dictionary<string, GlyphDto> Characters { get; set; } = new();
+    }
+    private sealed class GlyphDto
+    {
+        public string Symbol { get; set; } = "?";
+        public ConsoleColor Foreground { get; set; } = ConsoleColor.White;
+        public ConsoleColor Background { get; set; } = ConsoleColor.Black;
+        public int Layer { get; set; }
+    }
+
+    public string ContentRoot { get; }
+
+    public ContentLoader(string contentRoot)
+    {
+        ContentRoot = contentRoot;
+    }
+
+    public TilePalette LoadPalette(string fileName = "palette.json")
+    {
+        var path = Path.Combine(ContentRoot, fileName);
+        var dto = JsonSerializer.Deserialize<PaletteDto>(File.ReadAllText(path), JsonOptions)
+            ?? throw new InvalidOperationException($"Не удалось прочитать {path}");
+
+        var palette = new TilePalette
+        {
+            Fallback = ToStyle(dto.Fallback)
+        };
+        foreach (var kvp in dto.Tiles)
+        {
+            if (kvp.Key.Length == 1)
+                palette.Tiles[kvp.Key[0]] = ToStyle(kvp.Value);
+        }
+        return palette;
+    }
+
+    public KeyBindings LoadKeyBindings(string fileName = "keybindings.json")
+    {
+        var path = Path.Combine(ContentRoot, fileName);
+        var dto = JsonSerializer.Deserialize<KeyBindingsDto>(File.ReadAllText(path), JsonOptions)
+            ?? throw new InvalidOperationException($"Не удалось прочитать {path}");
+
+        var bindings = new KeyBindings();
+        foreach (var kvp in dto.Bindings)
+        {
+            if (Enum.TryParse<ConsoleKey>(kvp.Key, true, out var key) &&
+                Enum.TryParse<GameCommand>(kvp.Value, true, out var cmd))
+            {
+                bindings.Map[key] = cmd;
+            }
+        }
+        return bindings;
+    }
+
+    public CharacterPalette LoadCharacterPalette(string fileName = "characters.json")
+    {
+        var path = Path.Combine(ContentRoot, fileName);
+        var dto = JsonSerializer.Deserialize<CharactersDto>(File.ReadAllText(path), JsonOptions)
+            ?? throw new InvalidOperationException($"Не удалось прочитать {path}");
+
+        var palette = new CharacterPalette { DefaultPlayerKey = dto.DefaultPlayerKey };
+        foreach (var kvp in dto.Characters)
+        {
+            palette.Characters[kvp.Key] = new Glyph
+            {
+                Symbol = kvp.Value.Symbol.Length > 0 ? kvp.Value.Symbol[0] : '?',
+                Foreground = kvp.Value.Foreground,
+                Background = kvp.Value.Background,
+                Layer = kvp.Value.Layer
+            };
+        }
+        return palette;
+    }
+
+    private static TileStyle ToStyle(TileStyleDto dto) =>
+        new(dto.Foreground, dto.Background, dto.BlocksMovement);
+}.
+//конец Content\ContentLoader.cs
+.
 //начало Content\GameContent.cs
 ﻿// Content/GameContent.cs
 using AsciiFarm.Components;
@@ -421,27 +595,37 @@ using AsciiFarm.Input;
 using askiifarm;
 namespace AsciiFarm.Content;
 
+/// <summary>
+/// Тонкая обёртка над ContentLoader. Позволяет создавать контент из кода (тесты, дефолты)
+/// ИЛИ из JSON-файлов (продакшн).
+/// </summary>
 public static class GameContent
 {
+    /// <summary>Загрузить всё из JSON (рекомендуемый путь).</summary>
+    public static (TilePalette Palette, KeyBindings Keys, CharacterPalette Chars)
+        LoadFromFiles(string contentRoot)
+    {
+        var loader = new ContentLoader(contentRoot);
+        return (loader.LoadPalette(), loader.LoadKeyBindings(), loader.LoadCharacterPalette());
+    }
+
+    /// <summary>Хардкод-дефолт. Используется, если JSON недоступен.</summary>
     public static TilePalette CreatePalette()
     {
         var p = new TilePalette { Fallback = new TileStyle(ConsoleColor.Gray, ConsoleColor.Black, false) };
-
         void Set(string chars, ConsoleColor fg, ConsoleColor bg = ConsoleColor.Black, bool blocks = false)
         {
             foreach (char c in chars) p.Tiles[c] = new TileStyle(fg, bg, blocks);
         }
-
         Set(".,'`;", ConsoleColor.Green);
         Set("\"", ConsoleColor.Yellow);
         Set("♣♠", ConsoleColor.DarkGreen, blocks: true);
-        Set("≈", ConsoleColor.Cyan); // базовый, переопределяется RiverFlowSystem
+        Set("≈", ConsoleColor.Cyan);
         Set("┌┐└┘─│┬┴├┤▒#", ConsoleColor.DarkYellow, blocks: true);
         Set("┼╪", ConsoleColor.DarkYellow);
         Set("Θ", ConsoleColor.Red, blocks: true);
         Set("≡", ConsoleColor.White, ConsoleColor.DarkBlue, blocks: true);
         Set("╔╗╚╝═║╠╣╦╩╬", ConsoleColor.Gray, blocks: true);
-
         return p;
     }
 
@@ -452,7 +636,6 @@ public static class GameContent
         {
             foreach (var k in keys) b.Map[k] = command;
         }
-
         Bind(GameCommand.MoveUp, ConsoleKey.W, ConsoleKey.UpArrow);
         Bind(GameCommand.MoveDown, ConsoleKey.S, ConsoleKey.DownArrow);
         Bind(GameCommand.MoveLeft, ConsoleKey.A, ConsoleKey.LeftArrow);
@@ -464,7 +647,6 @@ public static class GameContent
     public static CharacterPalette CreateCharacterPalette()
     {
         var palette = new CharacterPalette();
-
         palette.Characters["player"] = new Glyph
         {
             Symbol = Cp437Symbols.WhiteSmilingFace,
@@ -472,7 +654,6 @@ public static class GameContent
             Background = ConsoleColor.Black,
             Layer = 10
         };
-
         palette.Characters["warrior"] = new Glyph
         {
             Symbol = Cp437Symbols.BlackSpadeSuit,
@@ -480,7 +661,6 @@ public static class GameContent
             Background = ConsoleColor.Black,
             Layer = 10
         };
-
         palette.Characters["mage"] = new Glyph
         {
             Symbol = Cp437Symbols.EighthNote,
@@ -488,7 +668,6 @@ public static class GameContent
             Background = ConsoleColor.Black,
             Layer = 10
         };
-
         return palette;
     }
 
@@ -501,6 +680,54 @@ public static class GameContent
     };
 }.
 //конец Content\GameContent.cs
+.
+//начало Core\ComponentSerializerRegistry.cs
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Reflection;
+namespace AsciiFarm.Core;
+
+/// <summary>
+/// Реестр сериализаторов компонентов. Поддерживает авто-регистрацию через рефлексию.
+/// </summary>
+public sealed class ComponentSerializerRegistry
+{
+    private readonly Dictionary<Type, IComponentSerializer> _byType = new();
+    private readonly Dictionary<string, IComponentSerializer> _byName = new();
+
+    public void Register(IComponentSerializer serializer)
+    {
+        _byType[serializer.ComponentType] = serializer;
+        _byName[serializer.TypeName] = serializer;
+    }
+
+    public IComponentSerializer? Get(Type componentType) =>
+        _byType.TryGetValue(componentType, out var s) ? s : null;
+
+    public IComponentSerializer? Get(string typeName) =>
+        _byName.TryGetValue(typeName, out var s) ? s : null;
+
+    public IEnumerable<IComponentSerializer> All => _byType.Values;
+
+    /// <summary>
+    /// Авто-регистрация: ищет все классы, наследующие IComponentSerializer, в сборке.
+    /// </summary>
+    public static ComponentSerializerRegistry AutoRegister(Assembly assembly)
+    {
+        var registry = new ComponentSerializerRegistry();
+        foreach (var type in assembly.GetTypes())
+        {
+            if (!type.IsAbstract && typeof(IComponentSerializer).IsAssignableFrom(type))
+            {
+                var instance = (IComponentSerializer)Activator.CreateInstance(type)!;
+                registry.Register(instance);
+            }
+        }
+        return registry;
+    }
+}.
+//конец Core\ComponentSerializerRegistry.cs
 .
 //начало Core\ComponentStore.cs
 ﻿// Core/ComponentStore.cs
@@ -527,8 +754,29 @@ public sealed class ComponentStore<T> : IComponentStore where T : struct
     public T Get(Entity entity) => _items[entity];
     public bool TryGet(Entity entity, out T component) => _items.TryGetValue(entity, out component);
     public void Remove(Entity entity) => _items.Remove(entity);
+    // Добавить в конец класса ComponentStore<T>
+
+    /// <summary>
+    /// Итератор по всем компонентам (упакованный в object для универсального доступа).
+    /// </summary>
+    public IEnumerable<(Entity Entity, object Component)> AllComponentsBoxed()
+    {
+        foreach (var kvp in _items)
+            yield return (kvp.Key, kvp.Value);
+    }
 }.
 //конец Core\ComponentStore.cs
+.
+//начало Core\DontSaveAttribute.cs
+﻿using System;
+namespace AsciiFarm.Core;
+
+/// <summary>
+/// Помечает компонент как временный — не сохраняется в файл.
+/// </summary>
+[AttributeUsage(AttributeTargets.Struct)]
+public sealed class DontSaveAttribute : Attribute { }.
+//конец Core\DontSaveAttribute.cs
 .
 //начало Core\Entity.cs
 ﻿// Core/Entity.cs
@@ -578,6 +826,64 @@ public sealed class FpsLimiter
     }
 }.
 //конец Core\FpsLimiter.cs
+.
+//начало Core\GameSystemAttribute.cs
+﻿// Core/GameSystemAttribute.cs
+using System;
+namespace AsciiFarm.Core;
+
+/// <summary>
+/// Помечает класс как игровую систему. Order определяет порядок выполнения.
+/// </summary>
+[AttributeUsage(AttributeTargets.Class, Inherited = false)]
+public sealed class GameSystemAttribute : Attribute
+{
+    public int Order { get; set; }
+}.
+//конец Core\GameSystemAttribute.cs
+.
+//начало Core\IComponentSerializer.cs
+﻿using System;
+using System.IO;
+namespace AsciiFarm.Core;
+
+/// <summary>
+/// Интерфейс сериализации компонента. Каждый компонент имеет свой сериализатор.
+/// </summary>
+public interface IComponentSerializer
+{
+    /// <summary>Тип компонента (например, typeof(Position)).</summary>
+    Type ComponentType { get; }
+
+    /// <summary>Имя типа для хранения в файле.</summary>
+    string TypeName { get; }
+
+    /// <summary>Текущая версия формата сериализации.</summary>
+    int Version { get; }
+
+    void Serialize(BinaryWriter writer, object component);
+    object Deserialize(BinaryReader reader, int version);
+}
+
+/// <summary>
+/// Базовый класс для типобезопасных сериализаторов.
+/// </summary>
+public abstract class ComponentSerializer<T> : IComponentSerializer where T : struct
+{
+    public Type ComponentType => typeof(T);
+    public abstract string TypeName { get; }
+    public virtual int Version => 1;
+
+    public abstract void Serialize(BinaryWriter writer, T component);
+    public abstract T Deserialize(BinaryReader reader, int version);
+
+    void IComponentSerializer.Serialize(BinaryWriter writer, object component) =>
+        Serialize(writer, (T)component);
+
+    object IComponentSerializer.Deserialize(BinaryReader reader, int version) =>
+        Deserialize(reader, version);
+}.
+//конец Core\IComponentSerializer.cs
 .
 //начало Core\ISystem.cs
 ﻿// Core/ISystem.cs
@@ -708,6 +1014,27 @@ public sealed class World
     {
         Guard.Validate();
         _resources[typeof(T)] = resource;
+    }
+    // Добавить в конец класса World, перед закрывающей скобкой
+
+    /// <summary>
+    /// Итератор по всем хранилищам компонентов.
+    /// </summary>
+    public IEnumerable<(Type ComponentType, IComponentStore Store)> AllStores()
+    {
+        Guard.Validate();
+        foreach (var kvp in _stores)
+            yield return (kvp.Key, kvp.Value);
+    }
+
+    /// <summary>
+    /// Резервирует ID сущности, чтобы новые сущности не получили уже использованный ID.
+    /// </summary>
+    public void ReserveId(int id)
+    {
+        Guard.Validate();
+        if (id >= _nextEntityId)
+            _nextEntityId = id + 1;
     }
 }.
 //конец Core\World.cs
@@ -1580,6 +1907,220 @@ public sealed class RenderFrame
 }.
 //конец Rendering\RenderFrame.cs
 .
+//начало Serialization\ComponentSaveSystem.cs
+﻿using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Reflection;
+using System.Text;
+using AsciiFarm.Core;
+namespace AsciiFarm.Serialization;
+
+/// <summary>
+/// Компонентная система сохранения. Формат файла:
+/// [6 байт: сигнатура "AFARM2"]
+/// [4 байта: версия формата]
+/// [4 байта: количество записей]
+/// Для каждой записи:
+///   [строка: имя типа компонента]
+///   [4 байта: версия компонента]
+///   [4 байта: ID сущности]
+///   [4 байта: длина данных]
+///   [N байт: данные]
+/// 
+/// Forward compatibility: неизвестные компоненты пропускаются.
+/// Backward compatibility: старые компоненты читаются через миграции.
+/// </summary>
+public sealed class ComponentSaveSystem
+{
+    private static readonly byte[] Signature = Encoding.ASCII.GetBytes("AFARM2");
+    public const int FormatVersion = 1;
+
+    private readonly ComponentSerializerRegistry _registry;
+
+    public ComponentSaveSystem(ComponentSerializerRegistry registry) => _registry = registry;
+
+    public void Save(string filePath, World world)
+    {
+        using var stream = new FileStream(filePath, FileMode.Create, FileAccess.Write);
+        using var writer = new BinaryWriter(stream, Encoding.UTF8);
+
+        writer.Write(Signature);
+        writer.Write(FormatVersion);
+
+        var entries = new List<(string typeName, int version, int entityId, byte[] data)>();
+
+        foreach (var (componentType, store) in world.AllStores())
+        {
+            // Пропускаем компоненты с [DontSave]
+            if (componentType.GetCustomAttribute<DontSaveAttribute>() != null)
+                continue;
+
+            var serializer = _registry.Get(componentType);
+            if (serializer == null) continue; // нет сериализатора — не сохраняем
+
+            foreach (var (entity, component) in store.AllComponentsBoxed())
+            {
+                using var ms = new MemoryStream();
+                using var compWriter = new BinaryWriter(ms, Encoding.UTF8, leaveOpen: true);
+                serializer.Serialize(compWriter, component);
+                entries.Add((serializer.TypeName, serializer.Version, entity.Id, ms.ToArray()));
+            }
+        }
+
+        writer.Write(entries.Count);
+        foreach (var (typeName, version, entityId, data) in entries)
+        {
+            writer.Write(typeName);
+            writer.Write(version);
+            writer.Write(entityId);
+            writer.Write(data.Length);
+            writer.Write(data);
+        }
+    }
+
+    public void Load(string filePath, World world)
+    {
+        using var stream = new FileStream(filePath, FileMode.Open, FileAccess.Read);
+        using var reader = new BinaryReader(stream, Encoding.UTF8);
+
+        var sig = reader.ReadBytes(6);
+        if (!sig.AsSpan().SequenceEqual(Signature))
+            throw new InvalidOperationException($"Неверная сигнатура файла сохранения");
+
+        int formatVersion = reader.ReadInt32();
+        if (formatVersion > FormatVersion)
+            throw new InvalidOperationException($"Формат {formatVersion} новее поддерживаемого {FormatVersion}");
+
+        int count = reader.ReadInt32();
+        int maxEntityId = 0;
+
+        for (int i = 0; i < count; i++)
+        {
+            string typeName = reader.ReadString();
+            int version = reader.ReadInt32();
+            int entityId = reader.ReadInt32();
+            int dataLen = reader.ReadInt32();
+            byte[] data = reader.ReadBytes(dataLen);
+
+            var serializer = _registry.Get(typeName);
+            if (serializer == null)
+            {
+                // Неизвестный компонент — пропускаем (forward compatibility!)
+                continue;
+            }
+
+            if (version > serializer.Version)
+            {
+                // Версия компонента новее — пропускаем (forward compatibility!)
+                continue;
+            }
+
+            using var ms = new MemoryStream(data);
+            using var compReader = new BinaryReader(ms, Encoding.UTF8, leaveOpen: true);
+            var component = serializer.Deserialize(compReader, version);
+
+            var entity = new Entity(entityId);
+
+            // Добавляем компонент через рефлексию
+            var addMethod = typeof(World).GetMethod(nameof(World.Add))!.MakeGenericMethod(serializer.ComponentType);
+            addMethod.Invoke(world, new[] { entity, component });
+
+            if (entityId > maxEntityId) maxEntityId = entityId;
+        }
+
+        // Резервируем ID, чтобы новые сущности не конфликтовали
+        world.ReserveId(maxEntityId);
+    }
+
+    public static bool IsNewFormat(string filePath)
+    {
+        if (!File.Exists(filePath)) return false;
+        using var stream = File.OpenRead(filePath);
+        if (stream.Length < 6) return false;
+        var sig = new byte[6];
+        stream.Read(sig, 0, 6);
+        return sig.AsSpan().SequenceEqual(Signature);
+    }
+}.
+//конец Serialization\ComponentSaveSystem.cs
+.
+//начало Serialization\ComponentSerializers.cs
+﻿using System;
+using System.IO;
+using AsciiFarm.Components;
+using AsciiFarm.Core;
+namespace AsciiFarm.Serialization;
+
+public sealed class PositionSerializer : ComponentSerializer<Position>
+{
+    public override string TypeName => nameof(Position);
+
+    public override void Serialize(BinaryWriter w, Position p)
+    {
+        w.Write(p.X);
+        w.Write(p.Y);
+    }
+
+    public override Position Deserialize(BinaryReader r, int version) =>
+        new(r.ReadInt32(), r.ReadInt32());
+}
+
+public sealed class TileMapSerializer : ComponentSerializer<TileMapComponent>
+{
+    public override string TypeName => nameof(TileMapComponent);
+
+    public override void Serialize(BinaryWriter w, TileMapComponent m)
+    {
+        int width = m.Width, height = m.Height;
+        w.Write(width);
+        w.Write(height);
+        for (int y = 0; y < height; y++)
+            for (int x = 0; x < width; x++)
+                w.Write(m.Tiles[x, y]);
+    }
+
+    public override TileMapComponent Deserialize(BinaryReader r, int version)
+    {
+        int width = r.ReadInt32(), height = r.ReadInt32();
+        char[,] tiles = new char[width, height];
+        for (int y = 0; y < height; y++)
+            for (int x = 0; x < width; x++)
+                tiles[x, y] = r.ReadChar();
+        return new TileMapComponent { Tiles = tiles };
+    }
+}
+
+public sealed class PlayerTagSerializer : ComponentSerializer<PlayerTag>
+{
+    public override string TypeName => nameof(PlayerTag);
+    public override void Serialize(BinaryWriter w, PlayerTag p) { }
+    public override PlayerTag Deserialize(BinaryReader r, int version) => new();
+}
+
+public sealed class GlyphSerializer : ComponentSerializer<Glyph>
+{
+    public override string TypeName => nameof(Glyph);
+
+    public override void Serialize(BinaryWriter w, Glyph g)
+    {
+        w.Write(g.Symbol);
+        w.Write((int)g.Foreground);
+        w.Write((int)g.Background);
+        w.Write(g.Layer);
+    }
+
+    public override Glyph Deserialize(BinaryReader r, int version) => new()
+    {
+        Symbol = r.ReadChar(),
+        Foreground = (ConsoleColor)r.ReadInt32(),
+        Background = (ConsoleColor)r.ReadInt32(),
+        Layer = r.ReadInt32()
+    };
+}.
+//конец Serialization\ComponentSerializers.cs
+.
 //начало Serialization\GameStorage.cs
 ﻿using System;
 using System.Collections.Generic;
@@ -2116,6 +2657,8 @@ using AsciiFarm.Data;
 namespace AsciiFarm.Systems;
 
 /// <summary>Накапливает игровое время из дельты.</summary>
+/// 
+[GameSystem(Order = 1)]
 public sealed class ElapsedTimeSystem : ISystem
 {
     public void Update(World world)
@@ -2137,6 +2680,7 @@ using AsciiFarm.Data;
 namespace AsciiFarm.Systems;
 
 /// <summary>Записывает замер FPS каждый тик.</summary>
+[GameSystem(Order = 2)]
 public sealed class FpsUpdateSystem : ISystem
 {
     public void Update(World world)
@@ -2159,6 +2703,7 @@ using AsciiFarm.Data;
 namespace AsciiFarm.Systems;
 
 /// <summary>Бывший MapPhysics: проходимость берётся из данных палитры, а не из switch.</summary>
+[GameSystem(Order = 4)]
 public sealed class MovementSystem : ISystem
 {
     public void Update(World world)
@@ -2201,6 +2746,7 @@ using AsciiFarm.Data;
 using AsciiFarm.Input;
 namespace AsciiFarm.Systems;
 
+[GameSystem(Order = 3)]
 public sealed class PlayerIntentSystem : ISystem
 {
     public void Update(World world)
@@ -2273,6 +2819,7 @@ namespace AsciiFarm.Systems;
 /// Анимация реки: каждый водный тайл с шансом 80% синий, 20% белый.
 /// Псевдослучайность детерминирована по (x, y, time).
 /// </summary>
+[GameSystem(Order = 5)]
 public sealed class RiverFlowSystem : ISystem
 {
     private const char WaterSymbol = '≈';
@@ -2420,19 +2967,25 @@ public sealed class SnapshotSystem
 .
 //начало Systems\SystemPipeline.cs
 ﻿// Systems/SystemPipeline.cs
+using System;
+using System.Linq;
+using System.Reflection;
 using AsciiFarm.Core;
 namespace AsciiFarm.Systems;
 
 public static class SystemPipeline
 {
-    public static ISystem[] CreateSimulationSystems() => new ISystem[]
+    public static ISystem[] CreateSimulationSystems()
     {
-        new ElapsedTimeSystem(),     // 1. Время
-        new FpsUpdateSystem(),       // 2. Счётчик FPS
-        new PlayerIntentSystem(),    // 3. Ввод → намерения
-        new MovementSystem(),        // 4. Физика
-        new RiverFlowSystem(),       // 5. Анимация воды
-    };
+        return Assembly.GetExecutingAssembly()
+            .GetTypes()
+            .Where(t => typeof(ISystem).IsAssignableFrom(t) && !t.IsAbstract && !t.IsInterface)
+            .Select(t => new { Type = t, Attr = t.GetCustomAttribute<GameSystemAttribute>() })
+            .Where(x => x.Attr != null)
+            .OrderBy(x => x.Attr.Order)
+            .Select(x => (ISystem)Activator.CreateInstance(x.Type)!)
+            .ToArray();
+    }
 }.
 //конец Systems\SystemPipeline.cs
 .

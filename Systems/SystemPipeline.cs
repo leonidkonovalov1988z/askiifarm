@@ -15,7 +15,7 @@ public static class SystemPipeline
             .Select(t => new { Type = t, Attr = t.GetCustomAttribute<GameSystemAttribute>() })
             .Where(x => x.Attr != null)
             .OrderBy(x => x.Attr.Order)
-            .Select(x => (ISystem)Activator.CreateInstance(x.Type)!)
+            .Select(x => (ISystem)(Activator.CreateInstance(x.Type) ?? throw new InvalidOperationException($"Не удалось создать экземпляр {x.Type.Name}")))
             .ToArray();
     }
 }

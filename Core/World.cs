@@ -59,4 +59,25 @@ public sealed class World
         Guard.Validate();
         _resources[typeof(T)] = resource;
     }
+    // Добавить в конец класса World, перед закрывающей скобкой
+
+    /// <summary>
+    /// Итератор по всем хранилищам компонентов.
+    /// </summary>
+    public IEnumerable<(Type ComponentType, IComponentStore Store)> AllStores()
+    {
+        Guard.Validate();
+        foreach (var kvp in _stores)
+            yield return (kvp.Key, kvp.Value);
+    }
+
+    /// <summary>
+    /// Резервирует ID сущности, чтобы новые сущности не получили уже использованный ID.
+    /// </summary>
+    public void ReserveId(int id)
+    {
+        Guard.Validate();
+        if (id >= _nextEntityId)
+            _nextEntityId = id + 1;
+    }
 }

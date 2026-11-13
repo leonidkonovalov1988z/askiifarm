@@ -1,4 +1,6 @@
 ﻿// Components/Components.cs
+using AsciiFarm.Core;
+
 namespace AsciiFarm.Components;
 
 public struct Position
@@ -8,6 +10,8 @@ public struct Position
     public Position(int x, int y) { X = x; Y = y; }
 }
 
+// Изменить объявление MoveIntent:
+[DontSave]
 public struct MoveIntent
 {
     public int Dx;

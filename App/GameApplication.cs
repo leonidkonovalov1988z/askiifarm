@@ -4,6 +4,7 @@ using AsciiFarm.Core;
 using AsciiFarm.Data;
 using AsciiFarm.Input;
 using AsciiFarm.Rendering;
+using AsciiFarm.Serialization;
 using AsciiFarm.Systems;
 using askiifarm;
 using askiifarm.Rendering;
@@ -64,24 +65,14 @@ public sealed class GameApplication
         var state = world.Resource<GameState>();
         if (state.NeedsSave) SaveGame(world);
     }
+    // Заменить метод SaveGame на:
+
     private void SaveGame(World world)
     {
-        var mapEntity = world.Query<TileMapComponent>()[0];
-        var map = world.Store<TileMapComponent>().Get(mapEntity);
-
-        var playerEntity = world.Query<PlayerTag, Position>()[0];
-        var playerPos = world.Store<Position>().Get(playerEntity);
-
-        var data = new GameDataV0_0_3
-        {
-            Map = map.Tiles,
-            PlayerX = playerPos.X,
-            PlayerY = playerPos.Y,
-            TileColors = new Dictionary<char, TileColorData>()
-        };
-
-        var storage = new GameStorage();
-        storage.SaveSmart(_settings.MapPath, GameStorage.LatestVersion, data);
+        var registry = ComponentSerializerRegistry.AutoRegister(
+            System.Reflection.Assembly.GetExecutingAssembly());
+        var saveSystem = new ComponentSaveSystem(registry);
+        saveSystem.Save(_settings.MapPath, world);
     }
 
     private static Thread Start(string name, Action body,
