@@ -127,9 +127,23 @@ public static class GameWorldBuilder
 
         // Создаём и регистрируем провайдеры информации о тайле
         var tileInfoRegistry = new TileInfoRegistry();
-        tileInfoRegistry.Register(new TilePaletteInfoProvider());
+        //tileInfoRegistry.Register(new TilePaletteInfoProvider());
         tileInfoRegistry.Register(new WeatherTileInfoProvider());
         world.SetResource(tileInfoRegistry);
+
+        // App/GameWorldBuilder.cs (внутри метода Build, перед return world;)
+
+        // 1. Создаём и регистрируем провайдеры информации о тайле
+        tileInfoRegistry.Register(new TerrainInfoProvider());       // Показывает NPK, влагу, символ
+        tileInfoRegistry.Register(new EntityInspectorProvider());   // АВТОМАТИЧЕСКИ показывает все компоненты на тайле
+        tileInfoRegistry.Register(new WeatherTileInfoProvider());   // Показывает погоду
+        world.SetResource(tileInfoRegistry);
+
+        // 2. (ОПЦИОНАЛЬНО) Зарегистрируйте правила отображения для будущих компонентов здесь.
+        // Например, когда вы создадите компонент PlantComponent, добавьте одну строку:
+        // ComponentDisplayRegistry.Register<PlantComponent>(p => $"{p.SpeciesName}, Рост: {p.GrowthStage:P0}");
+
+        return world;
 
         return world;
     }

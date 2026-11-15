@@ -1,13 +1,10 @@
-﻿using System.Collections.Generic;
+﻿// Data/ITileInfoProvider.cs
+using System.Collections.Generic;
 
 namespace AsciiFarm.Data;
 
-/// <summary>
-/// Провайдер информации о тайле для UI.
-/// Реализации могут собирать данные из разных источников.
-/// </summary>
 public interface ITileInfoProvider
 {
-    /// <summary>Возвращает строки информации для данного тайла.</summary>
-    IEnumerable<string> GetInfo(char tile, Core.World world);
+    /// <summary>Возвращает строки информации для тайла по конкретным координатам.</summary>
+    IEnumerable<string> GetInfo(int x, int y, char tile, Core.World world);
 }

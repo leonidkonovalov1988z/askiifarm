@@ -297,22 +297,21 @@ public static class GameWorldBuilder
     public static World Build(GameSettings settings)
     {
         var world = new World();
-
         var registry = ComponentSerializerRegistry.AutoRegister(Assembly.GetExecutingAssembly());
         var saveSystem = new ComponentSaveSystem(registry);
 
-        // Загружаем компоненты из сохранения (если есть)
         if (ComponentSaveSystem.IsNewFormat(settings.MapPath))
         {
             saveSystem.Load(settings.MapPath, world);
         }
         else if (File.Exists(settings.MapPath))
         {
+            // МИГРАЦИЯ: читаем старый формат
             var legacyStorage = new GameStorage();
             var legacyData = legacyStorage.LoadLatest<GameDataV0_0_3>(settings.MapPath);
 
             var map = world.CreateEntity();
-            world.Add(map, new TileMapComponent { Tiles = legacyData.Map });
+            world.Add(map, new TileMapComponent { Tiles = MigrateOldMap(legacyData.Map) });
 
             var player = world.CreateEntity();
             world.Add(player, new Position(legacyData.PlayerX, legacyData.PlayerY));
@@ -325,6 +324,7 @@ public static class GameWorldBuilder
                 Layer = 10
             });
 
+            // Сразу сохраняем в новом формате
             saveSystem.Save(settings.MapPath, world);
         }
         else
@@ -410,11 +410,65 @@ public static class GameWorldBuilder
 
         // Создаём и регистрируем провайдеры информации о тайле
         var tileInfoRegistry = new TileInfoRegistry();
-        tileInfoRegistry.Register(new TilePaletteInfoProvider());
+        //tileInfoRegistry.Register(new TilePaletteInfoProvider());
         tileInfoRegistry.Register(new WeatherTileInfoProvider());
         world.SetResource(tileInfoRegistry);
 
+        // App/GameWorldBuilder.cs (внутри метода Build, перед return world;)
+
+        // 1. Создаём и регистрируем провайдеры информации о тайле
+        tileInfoRegistry.Register(new TerrainInfoProvider());       // Показывает NPK, влагу, символ
+        tileInfoRegistry.Register(new EntityInspectorProvider());   // АВТОМАТИЧЕСКИ показывает все компоненты на тайле
+        tileInfoRegistry.Register(new WeatherTileInfoProvider());   // Показывает погоду
+        world.SetResource(tileInfoRegistry);
+
+        // 2. (ОПЦИОНАЛЬНО) Зарегистрируйте правила отображения для будущих компонентов здесь.
+        // Например, когда вы создадите компонент PlantComponent, добавьте одну строку:
+        // ComponentDisplayRegistry.Register<PlantComponent>(p => $"{p.SpeciesName}, Рост: {p.GrowthStage:P0}");
+
         return world;
+
+        return world;
+    }
+    /// <summary>
+    /// Правила миграции: назначаем NPK и влажность на основе старого символа тайла.
+    /// </summary>
+    private static TileData[,] MigrateOldMap(char[,] oldMap)
+    {
+        int width = oldMap.GetLength(0);
+        int height = oldMap.GetLength(1);
+        var newMap = new TileData[width, height];
+
+        for (int y = 0; y < height; y++)
+        {
+            for (int x = 0; x < width; x++)
+            {
+                char c = oldMap[x, y];
+                newMap[x, y] = c switch
+                {
+                    // Вода
+                    '≈' => new TileData { Symbol = c, Nitrogen = 0f, Phosphorus = 0f, Potassium = 0f, Moisture = 1.0f },
+
+                    // Густая растительность / кусты
+                    '♣' or '♠' => new TileData { Symbol = c, Nitrogen = 0.7f, Phosphorus = 0.5f, Potassium = 0.6f, Moisture = 0.7f },
+
+                    // Обычная почва / трава
+                    '.' or ',' or '\'' or '`' or ';' => new TileData { Symbol = c, Nitrogen = 0.5f, Phosphorus = 0.3f, Potassium = 0.4f, Moisture = 0.6f },
+
+                    // Камень, стены, структуры (бесплодные)
+                    '#' or '▒' or '┌' or '┐' or '└' or '┘' or '─' or '│' or '┬' or '┴' or '├' or '┤' or '┼' or '╪'
+                    or '╔' or '╗' or '╚' or '╝' or '═' or '║' or '╠' or '╣' or '╦' or '╩' or '╬'
+                    => new TileData { Symbol = c, Nitrogen = 0f, Phosphorus = 0f, Potassium = 0f, Moisture = 0f },
+
+                    // Пустынная или истощенная земля
+                    ' ' => new TileData { Symbol = c, Nitrogen = 0.1f, Phosphorus = 0.1f, Potassium = 0.1f, Moisture = 0.1f },
+
+                    // Значения по умолчанию для всего остального
+                    _ => new TileData { Symbol = c, Nitrogen = 0.3f, Phosphorus = 0.3f, Potassium = 0.3f, Moisture = 0.4f }
+                };
+            }
+        }
+        return newMap;
     }
 }.
 //конец App\GameWorldBuilder.cs
@@ -573,8 +627,7 @@ public sealed class SimulationLoop
 //конец App\SimulationLoop.cs
 .
 //начало Components\Components.cs
-﻿// Components/Components.cs
-using AsciiFarm.Core;
+﻿using AsciiFarm.Core;
 
 namespace AsciiFarm.Components;
 
@@ -585,7 +638,6 @@ public struct Position
     public Position(int x, int y) { X = x; Y = y; }
 }
 
-// Изменить объявление MoveIntent:
 [DontSave]
 public struct MoveIntent
 {
@@ -599,15 +651,26 @@ public struct Glyph
     public char Symbol;
     public ConsoleColor Foreground;
     public ConsoleColor Background;
-    public int Layer;           // 0 — карта, 10 — акторы, 20 — UI
+    public int Layer;
 }
 
-/// <summary>Маркер «управляется игроком». Данных нет.</summary>
 public struct PlayerTag { }
+
+/// <summary>
+/// Полные данные одной клетки карты.
+/// </summary>
+public struct TileData
+{
+    public char Symbol;
+    public float Nitrogen;      // 0.0 - 1.0
+    public float Phosphorus;    // 0.0 - 1.0
+    public float Potassium;     // 0.0 - 1.0
+    public float Moisture;      // 0.0 - 1.0
+}
 
 public struct TileMapComponent
 {
-    public char[,] Tiles;
+    public TileData[,] Tiles;
     public int Width => Tiles.GetLength(0);
     public int Height => Tiles.GetLength(1);
 }.
@@ -1160,6 +1223,8 @@ public interface IComponentStore
     void Remove(Entity entity);
     // ДОБАВИТЬ ЭТО:
     IEnumerable<(Entity Entity, object Component)> AllComponentsBoxed();
+    // ДОБАВИТЬ ЭТО:
+    bool TryGetBoxed(Entity entity, out object component);
 }
 
 /// <summary>Только хранилище данных. Никакой игровой логики.</summary>
@@ -1184,6 +1249,17 @@ public sealed class ComponentStore<T> : IComponentStore where T : struct
     {
         foreach (var kvp in _items)
             yield return (kvp.Key, kvp.Value);
+    }
+
+    public bool TryGetBoxed(Entity entity, out object component)
+    {
+        if (_items.TryGetValue(entity, out var c))
+        {
+            component = c;
+            return true;
+        }
+        component = null;
+        return false;
     }
 }.
 //конец Core\ComponentStore.cs
@@ -1563,6 +1639,45 @@ public sealed class CommandBuffer
 }.
 //конец Data\CommandBuffer.cs
 .
+//начало Data\ComponentDisplayRegistry.cs
+﻿// Data/ComponentDisplayRegistry.cs
+using System;
+using System.Collections.Generic;
+
+namespace AsciiFarm.Data;
+
+/// <summary>
+/// Реестр правил форматирования компонентов для отображения в UI.
+/// Позволяет добавлять поддержку новых компонентов без изменения кода отрисовки.
+/// </summary>
+public static class ComponentDisplayRegistry
+{
+    private static readonly Dictionary<Type, Func<object, string>> Formatters = new();
+
+    /// <summary>
+    /// Зарегистрировать правило отображения для компонента.
+    /// Пример: ComponentDisplayRegistry.Register<PlantComponent>(p => $"{p.Species} (Рост: {p.Growth:P0})");
+    /// </summary>
+    public static void Register<T>(Func<T, string> formatter)
+    {
+        Formatters[typeof(T)] = obj => formatter((T)obj);
+    }
+
+    /// <summary>
+    /// Получить строковое представление компонента. Если правило не задано, вызывает ToString().
+    /// </summary>
+    public static string Format(object component)
+    {
+        if (component == null) return "null";
+
+        if (Formatters.TryGetValue(component.GetType(), out var formatter))
+            return formatter(component);
+
+        return component.ToString(); // Запасной вариант
+    }
+}.
+//конец Data\ComponentDisplayRegistry.cs
+.
 //начало Data\FpsCounter.cs
 ﻿// Data/FpsCounter.cs
 using System.Collections.Generic;
@@ -1661,18 +1776,15 @@ public sealed class GameState
 //конец Data\GameState.cs
 .
 //начало Data\ITileInfoProvider.cs
-﻿using System.Collections.Generic;
+﻿// Data/ITileInfoProvider.cs
+using System.Collections.Generic;
 
 namespace AsciiFarm.Data;
 
-/// <summary>
-/// Провайдер информации о тайле для UI.
-/// Реализации могут собирать данные из разных источников.
-/// </summary>
 public interface ITileInfoProvider
 {
-    /// <summary>Возвращает строки информации для данного тайла.</summary>
-    IEnumerable<string> GetInfo(char tile, Core.World world);
+    /// <summary>Возвращает строки информации для тайла по конкретным координатам.</summary>
+    IEnumerable<string> GetInfo(int x, int y, char tile, Core.World world);
 }.
 //конец Data\ITileInfoProvider.cs
 .
@@ -1690,61 +1802,109 @@ public sealed class KeyBindings
 //конец Data\KeyBindings.cs
 .
 //начало Data\TileInfoProviders.cs
-﻿using System.Collections.Generic;
+﻿// Data/TileInfoProviders.cs
+using System.Collections.Generic;
 using AsciiFarm.Components;
 using AsciiFarm.Core;
 
 namespace AsciiFarm.Data;
 
-/// <summary>Информация о стиле тайла из палитры.</summary>
-public sealed class TilePaletteInfoProvider : ITileInfoProvider
+/// <summary>
+/// Выводит базовые свойства местности (NPK, влажность, проходимость) из TileData.
+/// </summary>
+public sealed class TerrainInfoProvider : ITileInfoProvider
 {
-    public IEnumerable<string> GetInfo(char tile, World world)
+    public IEnumerable<string> GetInfo(int x, int y, char tile, World world)
     {
-        var palette = world.Resource<TilePalette>();
-        var style = palette.Resolve(tile);
+        var maps = world.Query<TileMapComponent>();
+        if (maps.Length == 0) yield break;
+
+        var map = world.Store<TileMapComponent>().Get(maps[0]);
+        if (x < 0 || y < 0 || x >= map.Width || y >= map.Height) yield break;
+
+        var data = map.Tiles[x, y];
 
         yield return $"Символ: '{tile}'";
-        yield return $"Цвет: {style.Foreground}";
-        yield return $"Фон: {style.Background}";
+        yield return $"N: {data.Nitrogen:P0} | P: {data.Phosphorus:P0} | K: {data.Potassium:P0}";
+        yield return $"Влага почвы: {data.Moisture:P0}";
+
+        var palette = world.Resource<TilePalette>();
+        var style = palette.Resolve(tile);
         yield return $"Проходимость: {(style.BlocksMovement ? "Нет" : "Да")}";
     }
 }
 
-/// <summary>Информация о погоде в точке тайла.</summary>
+/// <summary>
+/// АВТОМАТИЧЕСКИЙ ИНСПЕКТОР: находит ВСЕ сущности на данных координатах 
+/// и выводит их компоненты через ComponentDisplayRegistry.
+/// </summary>
+public sealed class EntityInspectorProvider : ITileInfoProvider
+{
+    public IEnumerable<string> GetInfo(int x, int y, char tile, World world)
+    {
+        var positions = world.Store<Position>();
+
+        // Ищем все сущности, чья позиция совпадает с (x, y)
+        foreach (var entity in positions.Entities)
+        {
+            var pos = positions.Get(entity);
+            if (pos.X == x && pos.Y == y)
+            {
+                yield return $"── Объект (ID: {entity.Id}) ──";
+
+                // Перебираем все хранилища компонентов в мире
+                foreach (var (compType, store) in world.AllStores())
+                {
+                    // Проверяем, есть ли у этой сущности данный компонент
+                    if (store.TryGetBoxed(entity, out var comp))
+                    {
+                        // Координаты мы уже показали, не дублируем
+                        if (compType == typeof(Position)) continue;
+
+                        // Используем реестр для красивого вывода
+                        string display = ComponentDisplayRegistry.Format(comp);
+                        yield return $"  {compType.Name}: {display}";
+                    }
+                }
+            }
+        }
+    }
+}
+
+/// <summary>Информация о погоде (глобальная, не зависит от X,Y, но оставим для совместимости).</summary>
 public sealed class WeatherTileInfoProvider : ITileInfoProvider
 {
-    public IEnumerable<string> GetInfo(char tile, World world)
+    public IEnumerable<string> GetInfo(int x, int y, char tile, World world)
     {
         var weather = world.Resource<WeatherCurrent>();
         if (!weather.HasData) yield break;
 
         var d = weather.Current;
-        yield return $"Темп: {d.AirTemp:F1}°C";
+        yield return "── Погода ──";
+        yield return $"Воздух: {d.AirTemp:F1}°C";
         yield return $"Влажн: {d.AirHumidity * 100:F0}%";
-        yield return $"Почва: {d.SoilMoisture * 100:F0}%";
         yield return $"Снег: {d.EffectiveSnowCm:F1}см";
     }
 }.
 //конец Data\TileInfoProviders.cs
 .
 //начало Data\TileInfoRegistry.cs
-﻿using System.Collections.Generic;
+﻿// Data/TileInfoRegistry.cs
+using System.Collections.Generic;
 
 namespace AsciiFarm.Data;
 
-/// <summary>Реестр провайдеров информации о тайле.</summary>
 public sealed class TileInfoRegistry
 {
     private readonly List<ITileInfoProvider> _providers = new();
 
     public void Register(ITileInfoProvider provider) => _providers.Add(provider);
 
-    public IEnumerable<string> GetAllInfo(char tile, Core.World world)
+    public IEnumerable<string> GetAllInfo(int x, int y, char tile, Core.World world)
     {
         foreach (var provider in _providers)
         {
-            foreach (var line in provider.GetInfo(tile, world))
+            foreach (var line in provider.GetInfo(x, y, tile, world))
             {
                 yield return line;
             }
@@ -2609,25 +2769,20 @@ public sealed class ComponentSaveSystem
 using System.IO;
 using AsciiFarm.Components;
 using AsciiFarm.Core;
+
 namespace AsciiFarm.Serialization;
 
 public sealed class PositionSerializer : ComponentSerializer<Position>
 {
     public override string TypeName => nameof(Position);
-
-    public override void Serialize(BinaryWriter w, Position p)
-    {
-        w.Write(p.X);
-        w.Write(p.Y);
-    }
-
-    public override Position Deserialize(BinaryReader r, int version) =>
-        new(r.ReadInt32(), r.ReadInt32());
+    public override void Serialize(BinaryWriter w, Position p) { w.Write(p.X); w.Write(p.Y); }
+    public override Position Deserialize(BinaryReader r, int version) => new(r.ReadInt32(), r.ReadInt32());
 }
 
 public sealed class TileMapSerializer : ComponentSerializer<TileMapComponent>
 {
     public override string TypeName => nameof(TileMapComponent);
+    public override int Version => 2; // Увеличиваем версию формата
 
     public override void Serialize(BinaryWriter w, TileMapComponent m)
     {
@@ -2635,18 +2790,73 @@ public sealed class TileMapSerializer : ComponentSerializer<TileMapComponent>
         w.Write(width);
         w.Write(height);
         for (int y = 0; y < height; y++)
+        {
             for (int x = 0; x < width; x++)
-                w.Write(m.Tiles[x, y]);
+            {
+                var tile = m.Tiles[x, y];
+                w.Write(tile.Symbol);
+                w.Write(tile.Nitrogen);
+                w.Write(tile.Phosphorus);
+                w.Write(tile.Potassium);
+                w.Write(tile.Moisture);
+            }
+        }
     }
 
     public override TileMapComponent Deserialize(BinaryReader r, int version)
     {
         int width = r.ReadInt32(), height = r.ReadInt32();
-        char[,] tiles = new char[width, height];
-        for (int y = 0; y < height; y++)
-            for (int x = 0; x < width; x++)
-                tiles[x, y] = r.ReadChar();
-        return new TileMapComponent { Tiles = tiles };
+
+        if (version == 1)
+        {
+            // МИГРАЦИЯ: старый формат содержал только char. 
+            // Читаем символ и сразу назначаем ему параметры по умолчанию.
+            var tiles = new TileData[width, height];
+            for (int y = 0; y < height; y++)
+            {
+                for (int x = 0; x < width; x++)
+                {
+                    char symbol = r.ReadChar();
+                    tiles[x, y] = MigrateTile(symbol);
+                }
+            }
+            return new TileMapComponent { Tiles = tiles };
+        }
+        else
+        {
+            // Новый формат (версия 2)
+            var tiles = new TileData[width, height];
+            for (int y = 0; y < height; y++)
+            {
+                for (int x = 0; x < width; x++)
+                {
+                    tiles[x, y] = new TileData
+                    {
+                        Symbol = r.ReadChar(),
+                        Nitrogen = r.ReadSingle(),
+                        Phosphorus = r.ReadSingle(),
+                        Potassium = r.ReadSingle(),
+                        Moisture = r.ReadSingle()
+                    };
+                }
+            }
+            return new TileMapComponent { Tiles = tiles };
+        }
+    }
+
+    private static TileData MigrateTile(char symbol)
+    {
+        return symbol switch
+        {
+            '≈' => new TileData { Symbol = symbol, Nitrogen = 0f, Phosphorus = 0f, Potassium = 0f, Moisture = 1.0f },
+            '♣' or '♠' => new TileData { Symbol = symbol, Nitrogen = 0.7f, Phosphorus = 0.5f, Potassium = 0.6f, Moisture = 0.7f },
+            '.' or ',' or '\'' or '`' or ';' => new TileData { Symbol = symbol, Nitrogen = 0.5f, Phosphorus = 0.3f, Potassium = 0.4f, Moisture = 0.6f },
+            '#' or '▒' or '┌' or '┐' or '└' or '┘' or '─' or '│' or '┬' or '┴' or '├' or '┤' or '┼' or '╪'
+            or '╔' or '╗' or '╚' or '╝' or '═' or '║' or '╠' or '╣' or '╦' or '╩' or '╬'
+            => new TileData { Symbol = symbol, Nitrogen = 0f, Phosphorus = 0f, Potassium = 0f, Moisture = 0f },
+            ' ' => new TileData { Symbol = symbol, Nitrogen = 0.1f, Phosphorus = 0.1f, Potassium = 0.1f, Moisture = 0.1f },
+            _ => new TileData { Symbol = symbol, Nitrogen = 0.3f, Phosphorus = 0.3f, Potassium = 0.3f, Moisture = 0.4f }
+        };
     }
 }
 
@@ -2660,15 +2870,10 @@ public sealed class PlayerTagSerializer : ComponentSerializer<PlayerTag>
 public sealed class GlyphSerializer : ComponentSerializer<Glyph>
 {
     public override string TypeName => nameof(Glyph);
-
     public override void Serialize(BinaryWriter w, Glyph g)
     {
-        w.Write(g.Symbol);
-        w.Write((int)g.Foreground);
-        w.Write((int)g.Background);
-        w.Write(g.Layer);
+        w.Write(g.Symbol); w.Write((int)g.Foreground); w.Write((int)g.Background); w.Write(g.Layer);
     }
-
     public override Glyph Deserialize(BinaryReader r, int version) => new()
     {
         Symbol = r.ReadChar(),
@@ -3311,7 +3516,7 @@ public sealed class MovementSystem : ISystem
     private static bool IsWalkable(TileMapComponent map, TilePalette palette, int x, int y)
     {
         if (x < 0 || y < 0 || x >= map.Width || y >= map.Height) return false;
-        return !palette.Resolve(map.Tiles[x, y]).BlocksMovement;
+        return !palette.Resolve(map.Tiles[x, y].Symbol).BlocksMovement;
     }
 }.
 //конец Systems\MovementSystem.cs
@@ -3422,7 +3627,7 @@ public sealed class RiverFlowSystem : ISystem
         {
             for (int x = 0; x < map.Width; x++)
             {
-                if (map.Tiles[x, y] != WaterSymbol) continue;
+                if (map.Tiles[x, y].Symbol != WaterSymbol) continue;
 
                 // Детерминированный псевдослучайный выбор цвета
                 int hash = HashCode.Combine(x, y, (int)(time * AnimationSpeed));
@@ -3511,7 +3716,7 @@ public sealed class SnapshotSystem
         for (int y = 0; y < height; y++)
             for (int x = 0; x < width; x++)
             {
-                char tile = map.Tiles[x, y];
+                char tile = map.Tiles[x, y].Symbol;
                 var style = waterCache != null && waterCache.Colors.TryGetValue((x, y), out var ws)
                     ? ws
                     : palette.Resolve(tile);
@@ -3566,9 +3771,11 @@ public sealed class SnapshotSystem
     }
 
     /// <summary>Колонка 1 (низ): Информация о тайле под игроком.</summary>
+    // Systems/SnapshotSystem.cs (найдите метод DrawTileInfoColumn)
+
+    /// <summary>Колонка 1 (низ): Информация о тайле под игроком.</summary>
     private static void DrawTileInfoColumn(RenderFrame frame, World world, int startX, int startY)
     {
-        // Находим позицию игрока
         var players = world.Query<PlayerTag, Position>();
         if (players.Length == 0) return;
 
@@ -3583,11 +3790,11 @@ public sealed class SnapshotSystem
             playerPos.X >= map.Width || playerPos.Y >= map.Height)
             return;
 
-        char tile = map.Tiles[playerPos.X, playerPos.Y];
+        char tile = map.Tiles[playerPos.X, playerPos.Y].Symbol; // .Symbol добавлен из-за TileData
 
-        // Получаем информацию из всех провайдеров
+        // Получаем информацию, передавая координаты!
         var registry = world.Resource<TileInfoRegistry>();
-        var infoLines = registry.GetAllInfo(tile, world).ToList();
+        var infoLines = registry.GetAllInfo(playerPos.X, playerPos.Y, tile, world).ToList();
 
         int y = startY;
         DrawText(frame, startX, y++, "── ТАЙЛ ──", ConsoleColor.Cyan);
@@ -3599,7 +3806,6 @@ public sealed class SnapshotSystem
             DrawText(frame, startX, y++, line, ConsoleColor.Gray);
         }
     }
-
     /// <summary>Колонка 2 (верх): FPS и TPS.</summary>
     private static void DrawStatsColumn(RenderFrame frame, int startX, int startY, FpsCounter fpsCounter)
     {

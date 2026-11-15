@@ -9,6 +9,8 @@ public interface IComponentStore
     void Remove(Entity entity);
     // ДОБАВИТЬ ЭТО:
     IEnumerable<(Entity Entity, object Component)> AllComponentsBoxed();
+    // ДОБАВИТЬ ЭТО:
+    bool TryGetBoxed(Entity entity, out object component);
 }
 
 /// <summary>Только хранилище данных. Никакой игровой логики.</summary>
@@ -33,5 +35,16 @@ public sealed class ComponentStore<T> : IComponentStore where T : struct
     {
         foreach (var kvp in _items)
             yield return (kvp.Key, kvp.Value);
+    }
+
+    public bool TryGetBoxed(Entity entity, out object component)
+    {
+        if (_items.TryGetValue(entity, out var c))
+        {
+            component = c;
+            return true;
+        }
+        component = null;
+        return false;
     }
 }

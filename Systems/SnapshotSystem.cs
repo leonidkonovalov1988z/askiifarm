@@ -115,9 +115,11 @@ public sealed class SnapshotSystem
     }
 
     /// <summary>Колонка 1 (низ): Информация о тайле под игроком.</summary>
+    // Systems/SnapshotSystem.cs (найдите метод DrawTileInfoColumn)
+
+    /// <summary>Колонка 1 (низ): Информация о тайле под игроком.</summary>
     private static void DrawTileInfoColumn(RenderFrame frame, World world, int startX, int startY)
     {
-        // Находим позицию игрока
         var players = world.Query<PlayerTag, Position>();
         if (players.Length == 0) return;
 
@@ -132,11 +134,11 @@ public sealed class SnapshotSystem
             playerPos.X >= map.Width || playerPos.Y >= map.Height)
             return;
 
-        char tile = map.Tiles[playerPos.X, playerPos.Y].Symbol;
+        char tile = map.Tiles[playerPos.X, playerPos.Y].Symbol; // .Symbol добавлен из-за TileData
 
-        // Получаем информацию из всех провайдеров
+        // Получаем информацию, передавая координаты!
         var registry = world.Resource<TileInfoRegistry>();
-        var infoLines = registry.GetAllInfo(tile, world).ToList();
+        var infoLines = registry.GetAllInfo(playerPos.X, playerPos.Y, tile, world).ToList();
 
         int y = startY;
         DrawText(frame, startX, y++, "── ТАЙЛ ──", ConsoleColor.Cyan);
@@ -148,7 +150,6 @@ public sealed class SnapshotSystem
             DrawText(frame, startX, y++, line, ConsoleColor.Gray);
         }
     }
-
     /// <summary>Колонка 2 (верх): FPS и TPS.</summary>
     private static void DrawStatsColumn(RenderFrame frame, int startX, int startY, FpsCounter fpsCounter)
     {
