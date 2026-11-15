@@ -1994,11 +1994,7 @@ namespace askiifarm.Rendering
         public void AttachToCurrentThread() => _guard.AttachToCurrentThread();
 
         [StructLayout(LayoutKind.Sequential)]
-        private struct COORD
-        {
-            public short X;
-            public short Y;
-        }
+        private struct COORD { public short X; public short Y; }
 
         [StructLayout(LayoutKind.Sequential)]
         private struct SMALL_RECT
@@ -2012,12 +2008,19 @@ namespace askiifarm.Rendering
         [StructLayout(LayoutKind.Explicit, CharSet = CharSet.Unicode)]
         private struct CHAR_INFO
         {
-            [FieldOffset(0)]
-            public char UnicodeChar;
-            [FieldOffset(0)]
-            public byte AsciiChar;
-            [FieldOffset(2)]
-            public short Attributes;
+            [FieldOffset(0)] public char UnicodeChar;
+            [FieldOffset(0)] public byte AsciiChar;
+            [FieldOffset(2)] public short Attributes;
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        private struct CONSOLE_SCREEN_BUFFER_INFO
+        {
+            public COORD dwSize;
+            public COORD dwCursorPosition;
+            public short wAttributes;
+            public SMALL_RECT srWindow;
+            public COORD dwMaximumWindowSize;
         }
 
         [DllImport("kernel32.dll", SetLastError = true)]
@@ -2028,9 +2031,7 @@ namespace askiifarm.Rendering
 
         [DllImport("kernel32.dll", SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
-        private static extern bool SetConsoleScreenBufferSize(
-            SafeFileHandle hConsoleOutput,
-            COORD dwSize);
+        private static extern bool SetConsoleScreenBufferSize(SafeFileHandle hConsoleOutput, COORD dwSize);
 
         [DllImport("kernel32.dll", SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
@@ -2038,6 +2039,12 @@ namespace askiifarm.Rendering
             SafeFileHandle hConsoleOutput,
             [MarshalAs(UnmanagedType.Bool)] bool bAbsolute,
             ref SMALL_RECT lpConsoleWindow);
+
+        [DllImport("kernel32.dll", SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        private static extern bool GetConsoleScreenBufferInfo(
+            SafeFileHandle hConsoleOutput,
+            out CONSOLE_SCREEN_BUFFER_INFO lpConsoleScreenBufferInfo);
 
         [DllImport("kernel32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
         [return: MarshalAs(UnmanagedType.Bool)]
@@ -2056,28 +2063,9 @@ namespace askiifarm.Rendering
             uint dwFlags,
             nint lpScreenBufferData);
 
-
-        [DllImport("kernel32.dll", SetLastError = true)]
-        private static extern bool FillConsoleOutputCharacter(
-            SafeFileHandle hConsoleOutput,
-            char cCharacter,
-            uint nLength,
-            COORD dwWriteCoord,
-            out uint lpNumberOfCharsWritten);
-
-        [DllImport("kernel32.dll", SetLastError = true)]
-        private static extern bool FillConsoleOutputAttribute(
-            SafeFileHandle hConsoleOutput,
-            short wAttribute,
-            uint nLength,
-            COORD dwWriteCoord,
-            out uint lpNumberOfAttrsWritten);
-
-
         [DllImport("kernel32.dll", SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
-        private static extern bool SetConsoleActiveScreenBuffer(
-            SafeFileHandle hConsoleOutput);
+        private static extern bool SetConsoleActiveScreenBuffer(SafeFileHandle hConsoleOutput);
 
         private readonly SafeFileHandle _stdout;
         private SafeFileHandle _buffer;
@@ -2089,13 +2077,11 @@ namespace askiifarm.Rendering
 
         public int Width => _width;
         public int Height => _height;
-
         public ConsoleColor DefaultForeground { get; set; }
         public ConsoleColor DefaultBackground { get; set; }
 
         public DoubleBufferedConsole(
-            int width,
-            int height,
+            int width, int height,
             ConsoleColor defaultForeground = ConsoleColor.Gray,
             ConsoleColor defaultBackground = ConsoleColor.Black)
         {
@@ -2116,29 +2102,19 @@ namespace askiifarm.Rendering
             {
                 ValidateAgainstLargestWindowSize(width, height);
                 _buffer = CreateBuffer();
+
+                // КЛЮЧЕВОЕ ИСПРАВЛЕНИЕ: буфер должен быть активным ДО работы с его окном.
+                // SetConsoleWindowInfo на неактивном буфере возвращает ERROR_INVALID_PARAMETER.
+                SetActiveBuffer(_buffer);
+
                 SetBufferSize(width, height);
 
                 _cells = new CHAR_INFO[width * height];
                 FillCells(_cells, ' ', MakeAttribute(DefaultForeground, DefaultBackground));
-
-                // Показываем начальный пустой кадр
                 WriteBuffer(_buffer, _cells, width, height);
-
-                // в конструкторе, сразу после WriteBuffer(_buffer, _cells, width, height):
-                SetActiveBuffer(_buffer);
-
-                // ← ВАЖНО: делаем буфер активным!
-                SetActiveBuffer(_buffer);
-
-
-
                 _dirty = false;
 
-                try
-                {
-                    Console.CursorVisible = false;
-                }
-                catch { }
+                try { Console.CursorVisible = false; } catch { }
             }
             catch
             {
@@ -2152,8 +2128,7 @@ namespace askiifarm.Rendering
         {
             _guard.Validate();
             CheckNotDisposed();
-            if ((uint)x >= (uint)_width || (uint)y >= (uint)_height)
-                return;
+            if ((uint)x >= (uint)_width || (uint)y >= (uint)_height) return;
             int index = y * _width + x;
             _cells[index].UnicodeChar = character;
             _cells[index].Attributes = MakeAttribute(foreground, background);
@@ -2164,9 +2139,7 @@ namespace askiifarm.Rendering
         {
             _guard.Validate();
             CheckNotDisposed();
-            if (!_dirty && !force)
-                return;
-
+            if (!_dirty && !force) return;
             WriteBuffer(_buffer, _cells, _width, _height);
             _dirty = false;
         }
@@ -2194,15 +2167,13 @@ namespace askiifarm.Rendering
             CheckNotDisposed();
             if (width < 0 || height < 0)
                 throw new ArgumentOutOfRangeException(nameof(width), "Размер не может быть отрицательным.");
-            if (width == 0 || height == 0)
-                return;
+            if (width == 0 || height == 0) return;
 
             int left = Math.Max(0, x);
             int top = Math.Max(0, y);
             int right = (int)Math.Min(_width, (long)x + width);
             int bottom = (int)Math.Min(_height, (long)y + height);
-            if (left >= right || top >= bottom)
-                return;
+            if (left >= right || top >= bottom) return;
 
             short attributes = MakeAttribute(foreground, background);
             for (int yy = top; yy < bottom; yy++)
@@ -2223,70 +2194,42 @@ namespace askiifarm.Rendering
             _guard.Validate();
             CheckNotDisposed();
             ValidateSize(width, height);
-            if (width == _width && height == _height)
-                return;
+            if (width == _width && height == _height) return;
             ValidateAgainstLargestWindowSize(width, height);
 
-            // Меняем размер буфера и окна
             SetBufferSize(width, height);
 
-            // Пересоздаём ячейки
             _cells = new CHAR_INFO[width * height];
             FillCells(_cells, ' ', MakeAttribute(DefaultForeground, DefaultBackground));
             _width = width;
             _height = height;
 
-            // Принудительно очищаем буфер Windows через FillConsoleOutput*
-            COORD coord = new COORD { X = 0, Y = 0 };
-            uint charsWritten;
-            uint attrsWritten;
-            short attributes = MakeAttribute(DefaultForeground, DefaultBackground);
-            FillConsoleOutputCharacter(_buffer, ' ', (uint)(width * height), coord, out charsWritten);
-            FillConsoleOutputAttribute(_buffer, attributes, (uint)(width * height), coord, out attrsWritten);
-
+            // Сразу затираем весь буфер пробелами, не дожидаясь свежего кадра.
+            // Это убирает мусор, который conhost оставляет в новых ячейках при растяжении.
+            WriteBuffer(_buffer, _cells, width, height);
             _dirty = false;
         }
 
-        [DllImport("kernel32.dll", SetLastError = true)]
-        private static extern bool GetConsoleScreenBufferInfo(
-    SafeFileHandle hConsoleOutput,
-    out CONSOLE_SCREEN_BUFFER_INFO lpConsoleScreenBufferInfo);
-
-        [StructLayout(LayoutKind.Sequential)]
-        private struct CONSOLE_SCREEN_BUFFER_INFO
-        {
-            public COORD dwSize;
-            public COORD dwCursorPosition;
-            public short wAttributes;
-            public SMALL_RECT srWindow;
-            public COORD dwMaximumWindowSize;
-        }
-
-        /// <summary>
-        /// Получает реальный размер окна консоли через WinAPI.
-        /// </summary>
         public (int Width, int Height) GetWindowSize()
         {
             _guard.Validate();
             CheckNotDisposed();
             if (GetConsoleScreenBufferInfo(_buffer, out var info))
             {
-                int width = info.srWindow.Right - info.srWindow.Left + 1;
-                int height = info.srWindow.Bottom - info.srWindow.Top + 1;
-                return (width, height);
+                int w = info.srWindow.Right - info.srWindow.Left + 1;
+                int h = info.srWindow.Bottom - info.srWindow.Top + 1;
+                return (w, h);
             }
             return (_width, _height);
         }
 
         public void Dispose()
         {
-            if (_disposed)
-                return;
+            if (_disposed) return;
             _disposed = true;
 
             try
             {
-                // Возвращаем исходный консольный буфер
                 if (_stdout != null && !_stdout.IsInvalid)
                     SetConsoleActiveScreenBuffer(_stdout);
             }
@@ -2295,17 +2238,12 @@ namespace askiifarm.Rendering
             _buffer?.Dispose();
             _stdout?.Dispose();
 
-            try
-            {
-                Console.CursorVisible = true;
-            }
-            catch { }
+            try { Console.CursorVisible = true; } catch { }
         }
 
         private void CheckNotDisposed()
         {
-            if (_disposed)
-                throw new ObjectDisposedException(nameof(DoubleBufferedConsole));
+            if (_disposed) throw new ObjectDisposedException(nameof(DoubleBufferedConsole));
         }
 
         private static void ValidateSize(int width, int height)
@@ -2322,18 +2260,15 @@ namespace askiifarm.Rendering
         {
             COORD largest = GetLargestConsoleWindowSize(_stdout);
             if (largest.X > 0 && largest.Y > 0 && (width > largest.X || height > largest.Y))
-            {
                 throw new ArgumentOutOfRangeException(
                     nameof(width),
                     $"Размер окна консоли не может быть больше {largest.X}x{largest.Y}.");
-            }
         }
 
         private static SafeFileHandle OpenStandardOutput()
         {
             SafeFileHandle handle = new SafeFileHandle(GetStdHandle(STD_OUTPUT_HANDLE), false);
-            if (handle.IsInvalid)
-                throw new Win32Exception(Marshal.GetLastWin32Error());
+            if (handle.IsInvalid) throw new Win32Exception(Marshal.GetLastWin32Error());
             return handle;
         }
 
@@ -2345,13 +2280,25 @@ namespace askiifarm.Rendering
                 nint.Zero,
                 CONSOLE_TEXTMODE_BUFFER,
                 nint.Zero);
-            if (handle.IsInvalid)
-                throw new Win32Exception(Marshal.GetLastWin32Error());
+            if (handle.IsInvalid) throw new Win32Exception(Marshal.GetLastWin32Error());
             return handle;
         }
 
+        /// <summary>
+        /// Устанавливает размер буфера и окна.
+        /// Соблюдает инвариант Windows: размер окна не может превышать размер буфера.
+        /// Никаких «трюков» с 1×1 — только корректная последовательность.
+        /// </summary>
         private void SetBufferSize(int width, int height)
         {
+            if (!GetConsoleScreenBufferInfo(_buffer, out var info))
+                throw new Win32Exception(Marshal.GetLastWin32Error());
+
+            int curBufW = info.dwSize.X;
+            int curBufH = info.dwSize.Y;
+            int curWinW = info.srWindow.Right - info.srWindow.Left + 1;
+            int curWinH = info.srWindow.Bottom - info.srWindow.Top + 1;
+
             COORD size = new COORD { X = (short)width, Y = (short)height };
             SMALL_RECT target = new SMALL_RECT
             {
@@ -2361,13 +2308,22 @@ namespace askiifarm.Rendering
                 Bottom = (short)(height - 1)
             };
 
-            // Сначала уменьшаем окно до минимума, потом меняем размер буфера, потом восстанавливаем окно
-            SMALL_RECT tiny = new SMALL_RECT { Left = 0, Top = 0, Right = 0, Bottom = 0 };
-            SetConsoleWindowInfo(_buffer, true, ref tiny);
+            // Если уменьшаем буфер, а текущее окно больше нового буфера —
+            // сначала уменьшаем окно до целевого размера (это всегда разрешено).
+            if (width < curWinW || height < curWinH)
+            {
+                SMALL_RECT interim = target;
+                if (width > curBufW) interim.Right = (short)(curBufW - 1);
+                if (height > curBufH) interim.Bottom = (short)(curBufH - 1);
+                if (!SetConsoleWindowInfo(_buffer, true, ref interim))
+                    throw new Win32Exception(Marshal.GetLastWin32Error());
+            }
 
+            // Меняем размер буфера.
             if (!SetConsoleScreenBufferSize(_buffer, size))
                 throw new Win32Exception(Marshal.GetLastWin32Error());
 
+            // Устанавливаем финальный размер окна.
             if (!SetConsoleWindowInfo(_buffer, true, ref target))
                 throw new Win32Exception(Marshal.GetLastWin32Error());
         }
@@ -2407,11 +2363,7 @@ namespace askiifarm.Rendering
             int fg = (int)foreground;
             int bg = (int)background;
             if ((fg & ~0xF) != 0 || (bg & ~0xF) != 0)
-            {
-                throw new ArgumentOutOfRangeException(
-                    nameof(foreground),
-                    "ConsoleColor должен быть в диапазоне 0..15.");
-            }
+                throw new ArgumentOutOfRangeException(nameof(foreground), "ConsoleColor должен быть в диапазоне 0..15.");
             return (short)(fg | bg << 4);
         }
     }

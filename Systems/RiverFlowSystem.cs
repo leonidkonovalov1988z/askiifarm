@@ -31,7 +31,7 @@ public sealed class RiverFlowSystem : ISystem
         {
             for (int x = 0; x < map.Width; x++)
             {
-                if (map.Tiles[x, y] != WaterSymbol) continue;
+                if (map.Tiles[x, y].Symbol != WaterSymbol) continue;
 
                 // Детерминированный псевдослучайный выбор цвета
                 int hash = HashCode.Combine(x, y, (int)(time * AnimationSpeed));

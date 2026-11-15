@@ -35,6 +35,6 @@ public sealed class MovementSystem : ISystem
     private static bool IsWalkable(TileMapComponent map, TilePalette palette, int x, int y)
     {
         if (x < 0 || y < 0 || x >= map.Width || y >= map.Height) return false;
-        return !palette.Resolve(map.Tiles[x, y]).BlocksMovement;
+        return !palette.Resolve(map.Tiles[x, y].Symbol).BlocksMovement;
     }
 }

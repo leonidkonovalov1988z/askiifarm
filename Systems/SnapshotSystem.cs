@@ -60,7 +60,7 @@ public sealed class SnapshotSystem
         for (int y = 0; y < height; y++)
             for (int x = 0; x < width; x++)
             {
-                char tile = map.Tiles[x, y];
+                char tile = map.Tiles[x, y].Symbol;
                 var style = waterCache != null && waterCache.Colors.TryGetValue((x, y), out var ws)
                     ? ws
                     : palette.Resolve(tile);
@@ -132,7 +132,7 @@ public sealed class SnapshotSystem
             playerPos.X >= map.Width || playerPos.Y >= map.Height)
             return;
 
-        char tile = map.Tiles[playerPos.X, playerPos.Y];
+        char tile = map.Tiles[playerPos.X, playerPos.Y].Symbol;
 
         // Получаем информацию из всех провайдеров
         var registry = world.Resource<TileInfoRegistry>();

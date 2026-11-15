@@ -14,22 +14,21 @@ public static class GameWorldBuilder
     public static World Build(GameSettings settings)
     {
         var world = new World();
-
         var registry = ComponentSerializerRegistry.AutoRegister(Assembly.GetExecutingAssembly());
         var saveSystem = new ComponentSaveSystem(registry);
 
-        // Загружаем компоненты из сохранения (если есть)
         if (ComponentSaveSystem.IsNewFormat(settings.MapPath))
         {
             saveSystem.Load(settings.MapPath, world);
         }
         else if (File.Exists(settings.MapPath))
         {
+            // МИГРАЦИЯ: читаем старый формат
             var legacyStorage = new GameStorage();
             var legacyData = legacyStorage.LoadLatest<GameDataV0_0_3>(settings.MapPath);
 
             var map = world.CreateEntity();
-            world.Add(map, new TileMapComponent { Tiles = legacyData.Map });
+            world.Add(map, new TileMapComponent { Tiles = MigrateOldMap(legacyData.Map) });
 
             var player = world.CreateEntity();
             world.Add(player, new Position(legacyData.PlayerX, legacyData.PlayerY));
@@ -42,6 +41,7 @@ public static class GameWorldBuilder
                 Layer = 10
             });
 
+            // Сразу сохраняем в новом формате
             saveSystem.Save(settings.MapPath, world);
         }
         else
@@ -132,5 +132,45 @@ public static class GameWorldBuilder
         world.SetResource(tileInfoRegistry);
 
         return world;
+    }
+    /// <summary>
+    /// Правила миграции: назначаем NPK и влажность на основе старого символа тайла.
+    /// </summary>
+    private static TileData[,] MigrateOldMap(char[,] oldMap)
+    {
+        int width = oldMap.GetLength(0);
+        int height = oldMap.GetLength(1);
+        var newMap = new TileData[width, height];
+
+        for (int y = 0; y < height; y++)
+        {
+            for (int x = 0; x < width; x++)
+            {
+                char c = oldMap[x, y];
+                newMap[x, y] = c switch
+                {
+                    // Вода
+                    '≈' => new TileData { Symbol = c, Nitrogen = 0f, Phosphorus = 0f, Potassium = 0f, Moisture = 1.0f },
+
+                    // Густая растительность / кусты
+                    '♣' or '♠' => new TileData { Symbol = c, Nitrogen = 0.7f, Phosphorus = 0.5f, Potassium = 0.6f, Moisture = 0.7f },
+
+                    // Обычная почва / трава
+                    '.' or ',' or '\'' or '`' or ';' => new TileData { Symbol = c, Nitrogen = 0.5f, Phosphorus = 0.3f, Potassium = 0.4f, Moisture = 0.6f },
+
+                    // Камень, стены, структуры (бесплодные)
+                    '#' or '▒' or '┌' or '┐' or '└' or '┘' or '─' or '│' or '┬' or '┴' or '├' or '┤' or '┼' or '╪'
+                    or '╔' or '╗' or '╚' or '╝' or '═' or '║' or '╠' or '╣' or '╦' or '╩' or '╬'
+                    => new TileData { Symbol = c, Nitrogen = 0f, Phosphorus = 0f, Potassium = 0f, Moisture = 0f },
+
+                    // Пустынная или истощенная земля
+                    ' ' => new TileData { Symbol = c, Nitrogen = 0.1f, Phosphorus = 0.1f, Potassium = 0.1f, Moisture = 0.1f },
+
+                    // Значения по умолчанию для всего остального
+                    _ => new TileData { Symbol = c, Nitrogen = 0.3f, Phosphorus = 0.3f, Potassium = 0.3f, Moisture = 0.4f }
+                };
+            }
+        }
+        return newMap;
     }
 }
