@@ -21,16 +21,17 @@ public sealed class ConsolePresentSystem
 
     public void Present()
     {
-        if (!_frames.TryAcquireFresh(out var frame)) return;
-
-        for (int y = 0; y < frame.Height; y++)
-            for (int x = 0; x < frame.Width; x++)
-            {
-                int i = y * frame.Width + x;
-                _console.PutChar(x, y, frame.Symbols[i], frame.Foreground[i], frame.Background[i]);
-            }
-
+        if (_frames.TryAcquireFresh(out var frame))
+        {
+            for (int y = 0; y < frame.Height; y++)
+                for (int x = 0; x < frame.Width; x++)
+                {
+                    int i = y * frame.Width + x;
+                    _console.PutChar(x, y, frame.Symbols[i], frame.Foreground[i], frame.Background[i]);
+                }
+            _fpsCounter.RecordFrame(frame.Tick);
+        }
+        // Вызываем Draw() всегда, даже если нет свежего кадра
         _console.Draw();
-        _fpsCounter.RecordFrame(frame.Tick);  // ДОБАВИТЬ
     }
 }

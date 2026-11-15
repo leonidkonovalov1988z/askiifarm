@@ -1,24 +1,21 @@
-﻿// Rendering/FrameExchange.cs
-using AsciiFarm.Core;
+﻿using AsciiFarm.Core;
+
 namespace AsciiFarm.Rendering;
 
-/// <summary>
-/// Тройная буферизация: write-буфер принадлежит симуляции, read-буфер — рендеру,
-/// средний слот меняется только под lock. Одновременного доступа к содержимому нет физически.
-/// </summary>
 public sealed class FrameExchange<T> where T : class
 {
-    private readonly T[] _buffers;
+    private T[] _buffers;  // Убрали readonly
     private readonly object _gate = new();
     private readonly ThreadGuard _writerGuard = new("FrameExchange.Writer");
     private readonly ThreadGuard _readerGuard = new("FrameExchange.Reader");
 
-    private int _writeIndex;        // трогает только писатель
-    private int _readIndex = 1;     // трогает только читатель
-    private int _readyIndex = 2;    // только под _gate
-    private bool _hasFreshFrame;    // флаг готовности, только под _gate
+    private int _writeIndex;
+    private int _readIndex = 1;
+    private int _readyIndex = 2;
+    private bool _hasFreshFrame;
 
-    public FrameExchange(Func<T> factory) => _buffers = new[] { factory(), factory(), factory() };
+    public FrameExchange(Func<T> factory) =>
+        _buffers = new[] { factory(), factory(), factory() };
 
     public void AttachWriter() => _writerGuard.AttachToCurrentThread();
     public void AttachReader() => _readerGuard.AttachToCurrentThread();
@@ -53,5 +50,18 @@ public sealed class FrameExchange<T> where T : class
         }
         frame = _buffers[_readIndex];
         return false;
+    }
+
+    /// <summary>Пересоздаёт все буферы (при изменении размера окна).</summary>
+    public void Resize(Func<T> factory)
+    {
+        lock (_gate)
+        {
+            _buffers = new[] { factory(), factory(), factory() };
+            _writeIndex = 0;
+            _readIndex = 1;
+            _readyIndex = 2;
+            _hasFreshFrame = false;
+        }
     }
 }

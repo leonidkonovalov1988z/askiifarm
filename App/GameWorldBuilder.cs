@@ -125,6 +125,12 @@ public static class GameWorldBuilder
             DaysPerMonth = settings.DaysPerMonth
         });
 
+        // Создаём и регистрируем провайдеры информации о тайле
+        var tileInfoRegistry = new TileInfoRegistry();
+        tileInfoRegistry.Register(new TilePaletteInfoProvider());
+        tileInfoRegistry.Register(new WeatherTileInfoProvider());
+        world.SetResource(tileInfoRegistry);
+
         return world;
     }
 }
