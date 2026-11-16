@@ -33,7 +33,13 @@ public sealed class CropDefinition
     public double SolarMjTarget { get; init; }
     public HarvestMode Mode { get; init; }
     public float SeedRatio { get; init; }
-    public float FertilityDelta { get; init; }
+
+    /// <summary>
+    /// Вынос N/P/K за ПОЛНЫЙ сезон (за solar_mj_target биомассы).
+    /// Отрицательный — истощение, положительный — обогащение (бобовые).
+    /// Размазывается по росту пропорционально приросту биомассы.
+    /// </summary>
+    public float SoilDelta { get; init; }
 
     public double TargetGdd(bool isYear2) =>
         isYear2 && GddSeedYear2 > 0 ? GddSeedYear2 : GddHarvest;

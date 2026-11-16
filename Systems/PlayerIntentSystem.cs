@@ -57,6 +57,7 @@ public sealed class PlayerIntentSystem : ISystem
                 case GameCommand.FastForward3: Forward(7 * CalendarHelper.SecondsPerDay); break;
                 case GameCommand.FastForward4: Forward(MonthSeconds(state)); break;
                 case GameCommand.FastForward5: Forward(YearSeconds(state)); break;
+                case GameCommand.PlantYear2: Farm(FarmAction.PlantYear2); break;
             }
         }
 

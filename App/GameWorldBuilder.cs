@@ -3,6 +3,7 @@ using AsciiFarm.Components;
 using AsciiFarm.Content;
 using AsciiFarm.Core;
 using AsciiFarm.Data;
+using AsciiFarm.Rendering;
 using AsciiFarm.Serialization;
 using AsciiFarm.Systems;
 using System.Reflection;
@@ -52,6 +53,8 @@ public static class GameWorldBuilder
             throw new FileNotFoundException($"Файл сохранения не найден: {mapPath}");
         }
 
+
+
         // --- Контент ---
         TilePalette palette;
         CharacterPalette charPalette;
@@ -82,7 +85,6 @@ public static class GameWorldBuilder
         ComponentDisplayRegistry.Register<Glyph>(g => $"'{g.Symbol}' слой {g.Layer}");
         ComponentDisplayRegistry.Register<PlantComponent>(p => $"{p.CropId}, {p.Stage}, HP {p.Health:P0}");
         ComponentDisplayRegistry.Register<GranaryComponent>(g => $"{g.Items?.Count ?? 0} позиций");
-        ComponentDisplayRegistry.Register<SoilFertilityMap>(m => $"{m.Width}x{m.Height}");
 
         // --- P2-10: состояние систем живёт в ресурсах ---
         world.SetResource(new SimulationClock());
@@ -112,12 +114,14 @@ public static class GameWorldBuilder
             DaysPerMonth = settings.DaysPerMonth
         });
 
+        world.SetResource(new HudMetrics());   // геометрия HUD: OriginX/ColumnWidth можно крутить
+
         // --- Провайдеры информации о тайле (P0-1: каждый ровно один раз) ---
         var tileInfoRegistry = new TileInfoRegistry();
         tileInfoRegistry.Register(new TerrainInfoProvider());
-        tileInfoRegistry.Register(new EntityInspectorProvider());
-        tileInfoRegistry.Register(new WeatherTileInfoProvider());
         tileInfoRegistry.Register(new PlantInfoProvider());
+        tileInfoRegistry.Register(new EntityInspectorProvider());
+        // WeatherTileInfoProvider убран: дублирует панель ПОГОДА
         world.SetResource(tileInfoRegistry);
 
         return world;   // P0-1: единственный return

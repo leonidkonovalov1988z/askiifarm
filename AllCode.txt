@@ -259,6 +259,8 @@ public sealed class GameSettings
 
     // НОВОЕ: дней в месяце (0 = реальный календарь, иначе настраиваемый)
     public int DaysPerMonth { get; init; } = 3;
+    public string CropsCsvPath { get; init; } = "Content/slavic_crops.csv";
+    public float StartingSeedUnits { get; init; } = 5f;
 }.
 //конец App\GameSettings.cs
 .
@@ -268,6 +270,7 @@ using AsciiFarm.Components;
 using AsciiFarm.Content;
 using AsciiFarm.Core;
 using AsciiFarm.Data;
+using AsciiFarm.Rendering;
 using AsciiFarm.Serialization;
 using AsciiFarm.Systems;
 using System.Reflection;
@@ -317,6 +320,23 @@ public static class GameWorldBuilder
             throw new FileNotFoundException($"Файл сохранения не найден: {mapPath}");
         }
 
+        // Плодородие почвы: создаём при старте, чтобы HUD всегда показывал значение
+        var mapEntities = world.Query<TileMapComponent>();
+        if (mapEntities.Length > 0)
+        {
+            var mapEntity = mapEntities[0];
+            var tiles = world.Store<TileMapComponent>().Get(mapEntity);
+            var fertilityStore = world.Store<SoilFertilityMap>();
+            if (!fertilityStore.Has(mapEntity))
+            {
+                var values = new float[tiles.Width, tiles.Height];
+                for (int y = 0; y < tiles.Height; y++)
+                    for (int x = 0; x < tiles.Width; x++)
+                        values[x, y] = 1.0f;
+                fertilityStore.Set(mapEntity, new SoilFertilityMap { Values = values });
+            }
+        }
+
         // --- Контент ---
         TilePalette palette;
         CharacterPalette charPalette;
@@ -334,6 +354,20 @@ public static class GameWorldBuilder
         world.SetResource(new FpsCounter());
         world.SetResource(new FpsLimiter(settings.SimulationFps));
         world.SetResource(settings);
+
+        // --- Растения ---
+        var cropCatalog = CropCsvLoader.Load(SafePath.Resolve(settings.CropsCsvPath));
+        world.SetResource(cropCatalog);
+        world.SetResource(new CropBalance { StartingSeedUnits = settings.StartingSeedUnits });
+        world.SetResource(new CropClock());
+        world.SetResource(new FarmSelection());
+        world.SetResource(new FarmLog());
+
+        // Компактный вывод компонентов в инспекторе тайла
+        ComponentDisplayRegistry.Register<Glyph>(g => $"'{g.Symbol}' слой {g.Layer}");
+        ComponentDisplayRegistry.Register<PlantComponent>(p => $"{p.CropId}, {p.Stage}, HP {p.Health:P0}");
+        ComponentDisplayRegistry.Register<GranaryComponent>(g => $"{g.Items?.Count ?? 0} позиций");
+        ComponentDisplayRegistry.Register<SoilFertilityMap>(m => $"{m.Width}x{m.Height}");
 
         // --- P2-10: состояние систем живёт в ресурсах ---
         world.SetResource(new SimulationClock());
@@ -363,11 +397,14 @@ public static class GameWorldBuilder
             DaysPerMonth = settings.DaysPerMonth
         });
 
+        world.SetResource(new HudMetrics());   // геометрия HUD: OriginX/ColumnWidth можно крутить
+
         // --- Провайдеры информации о тайле (P0-1: каждый ровно один раз) ---
         var tileInfoRegistry = new TileInfoRegistry();
         tileInfoRegistry.Register(new TerrainInfoProvider());
+        tileInfoRegistry.Register(new PlantInfoProvider());
         tileInfoRegistry.Register(new EntityInspectorProvider());
-        tileInfoRegistry.Register(new WeatherTileInfoProvider());
+        // WeatherTileInfoProvider убран: дублирует панель ПОГОДА
         world.SetResource(tileInfoRegistry);
 
         return world;   // P0-1: единственный return
@@ -604,6 +641,74 @@ public struct TileMapComponent
 }.
 //конец Components\Components.cs
 .
+//начало Components\PlantComponents.cs
+﻿// Components/PlantComponents.cs
+using AsciiFarm.Core;
+
+namespace AsciiFarm.Components;
+
+public enum PlantStage : byte { Germination = 0, Vegetative = 1, Flowering = 2, Ripe = 3, Dead = 4 }
+
+/// <summary>Состояние растения. Накопления уже масштабированы под игровой год.</summary>
+public struct PlantComponent
+{
+    public string CropId;
+    public double GddAccumulated;   // GDD-часы
+    public double BiomassMj;
+    public float Health;            // 0..1
+    public float Disease;           // 0..∞
+    public bool IsYear2;
+    public PlantStage Stage;
+}
+
+/// <summary>Плодородие почвы по тайлам (0.2..1.0). Компонент на сущности карты.</summary>
+public struct SoilFertilityMap
+{
+    public float[,] Values;
+    public int Width => Values.GetLength(0);
+    public int Height => Values.GetLength(1);
+}
+
+/// <summary>Амбар: зерно/семена по культурам, посадочный материал, овощи, волокно.</summary>
+public struct GranaryComponent
+{
+    public Dictionary<string, float> Items;
+}
+
+public enum FarmAction : byte { Plant, Harvest, CycleCrop }
+
+[DontSave]
+public struct FarmIntent
+{
+    public FarmAction Action;
+    public FarmIntent(FarmAction action) => Action = action;
+}
+
+/// <summary>Ключи и доступ к амбару. Словарь создаётся один раз, дальше мутируется на месте.</summary>
+public static class Granary
+{
+    public const string Vegetables = "#vegetables";
+    public const string Fiber = "#fiber";
+    public static string Root(string cropId) => cropId + "#root";
+
+    public static float Get(GranaryComponent g, string key) =>
+        g.Items != null && g.Items.TryGetValue(key, out var v) ? v : 0f;
+
+    public static void Add(GranaryComponent g, string key, float amount)
+    {
+        if (g.Items == null || amount <= 0f) return;
+        g.Items[key] = Get(g, key) + amount;
+    }
+
+    public static void Take(GranaryComponent g, string key, float amount)
+    {
+        if (g.Items == null) return;
+        g.Items[key] = MathF.Max(0f, Get(g, key) - amount);
+    }
+    public enum FarmAction : byte { Plant, Harvest, CycleCrop, PlantYear2 }
+}.
+//конец Components\PlantComponents.cs
+.
 //начало Content\ContentLoader.cs
 ﻿// Content/ContentLoader.cs
 using System;
@@ -736,6 +841,118 @@ public sealed class ContentLoader
 }.
 //конец Content\ContentLoader.cs
 .
+//начало Content\CropCsvLoader.cs
+﻿// Content/CropCsvLoader.cs
+using System.Globalization;
+using AsciiFarm.Data;
+
+namespace AsciiFarm.Content;
+
+/// <summary>Читает справочную таблицу культур. Порядок столбцов произвольный, лишние — игнорируются.</summary>
+public static class CropCsvLoader
+{
+    private static readonly Dictionary<string, string> Names = new(StringComparer.OrdinalIgnoreCase)
+    {
+        ["rye_winter"] = "Озимая рожь",
+        ["wheat_spring"] = "Яровая пшеница",
+        ["barley_spring"] = "Ячмень",
+        ["oats_spring"] = "Овёс",
+        ["millet_spring"] = "Просо",
+        ["peas_field"] = "Горох",
+        ["turnip_garden"] = "Репа",
+        ["cabbage_garden"] = "Капуста",
+        ["onion_garden"] = "Лук",
+        ["flax_fiber"] = "Лён"
+    };
+
+    public static CropCatalog Load(string filePath) => Load(filePath, out _);
+
+    public static CropCatalog Load(string filePath, out string? error)
+    {
+        error = null;
+        var catalog = new CropCatalog();
+
+        if (!File.Exists(filePath)) { error = $"Файл не найден: {filePath}"; catalog.LoadError = error; return catalog; }
+
+        string[] lines;
+        try { lines = File.ReadAllLines(filePath); }
+        catch (Exception ex) { error = $"Не удалось прочитать: {ex.Message}"; catalog.LoadError = error; return catalog; }
+
+        int headerIndex = -1;
+        for (int i = 0; i < lines.Length && i < 20; i++)
+            if (lines[i].ToLowerInvariant().Contains("crop_id")) { headerIndex = i; break; }
+
+        if (headerIndex < 0) { error = "Не найдена строка заголовков (crop_id)"; catalog.LoadError = error; return catalog; }
+
+        var header = Split(lines[headerIndex]);
+        var col = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+        for (int i = 0; i < header.Count; i++) col[header[i]] = i;
+
+        for (int line = headerIndex + 1; line < lines.Length; line++)
+        {
+            string text = lines[line].Trim();
+            if (text.Length == 0 || text.StartsWith("#")) continue;
+            var f = Split(text);
+
+            string S(string key, string def = "") =>
+                col.TryGetValue(key, out var i) && i < f.Count ? f[i] : def;
+            float F(string key, float def = 0f) =>
+                float.TryParse(S(key), NumberStyles.Float, CultureInfo.InvariantCulture, out var v) ? v : def;
+            double D(string key, double def = 0d) =>
+                double.TryParse(S(key), NumberStyles.Float, CultureInfo.InvariantCulture, out var v) ? v : def;
+
+            string id = S("crop_id");
+            if (id.Length == 0) continue;
+
+            var crop = new CropDefinition
+            {
+                Id = id,
+                Name = S("name", Names.TryGetValue(id, out var n) ? n : id),
+                IsWinter = F("is_winter") > 0.5f,
+                TBase = F("t_base"),
+                TOptMin = F("t_opt_min"),
+                TOptMax = F("t_opt_max"),
+                TCritColdGround = F("t_crit_cold_ground"),
+                TCritFrostFlower = F("t_crit_frost_flower"),
+                TCritHeat = F("t_crit_heat"),
+                GddVeg = D("gdd_veg"),
+                GddFlower = D("gdd_flower"),
+                GddEarlyHarvest = D("gdd_early_harvest"),
+                GddHarvest = D("gdd_harvest"),
+                GddSeedYear2 = D("gdd_seed_year2"),
+                SoilMoistMin = F("soil_moist_min"),
+                SoilMoistOptMin = F("soil_moist_opt_min"),
+                SoilMoistOptMax = F("soil_moist_opt_max"),
+                SoilMoistMax = F("soil_moist_max"),
+                SoilMoistRipeningMax = F("soil_moist_ripening_max"),
+                AirHumDiseaseMin = F("air_hum_disease_min"),
+                SolarMjTarget = D("solar_mj_target"),
+                Mode = ParseMode(S("harvest_mode")),
+                SeedRatio = F("seed_ratio"),
+                FertilityDelta = F("fertility_delta")
+            };
+
+            if (crop.GddHarvest <= 0 || crop.SolarMjTarget <= 0 || crop.SeedRatio <= 0) continue;
+            catalog.Add(crop);
+        }
+
+        if (catalog.Count == 0) error = "Ни одна культура не распознана";
+        catalog.LoadError = error;
+        return catalog;
+    }
+
+    private static HarvestMode ParseMode(string s) => s.Trim().ToLowerInvariant() switch
+    {
+        "biennial" => HarvestMode.Biennial,
+        "early_or_late" => HarvestMode.EarlyOrLate,
+        _ => HarvestMode.GrainAndSeed
+    };
+
+    private static List<string> Split(string line) =>
+        line.Split(',').Select(s => s.Trim().Trim('"')).ToList();
+}.
+//конец Content\CropCsvLoader.cs
+.
 //начало Content\GameContent.cs
 ﻿// Content/GameContent.cs
 using AsciiFarm.Components;
@@ -789,7 +1006,10 @@ public static class GameContent
         Bind(GameCommand.MoveLeft, ConsoleKey.A, ConsoleKey.LeftArrow);
         Bind(GameCommand.MoveRight, ConsoleKey.D, ConsoleKey.RightArrow);
         Bind(GameCommand.Exit, ConsoleKey.Escape);
-
+        Bind(GameCommand.Plant, ConsoleKey.E);
+        Bind(GameCommand.Harvest, ConsoleKey.R);
+        Bind(GameCommand.CycleCrop, ConsoleKey.Tab);
+        Bind(GameCommand.PlantYear2, ConsoleKey.T);
 
         return b;
     }
@@ -1725,6 +1945,236 @@ public static class ComponentDisplayRegistry
 }.
 //конец Data\ComponentDisplayRegistry.cs
 .
+//начало Data\CropBalance.cs
+﻿// Data/CropBalance.cs
+namespace AsciiFarm.Data;
+
+/// <summary>Скорости урона за ОДИН РЕАЛЬНЫЙ час; в системе умножаются на TIME_SCALE.</summary>
+public sealed class CropBalance
+{
+    public const double RealHoursPerYear = 8760.0;
+
+    public bool ScaleToGameYear { get; set; } = true;   // способ 1; false = способ 2 (CSV уже масштабирован)
+    public bool UseTileMoisture { get; set; } = true;   // true: TileData.Moisture, false: W.soil_moisture
+    public float StartingSeedUnits { get; set; } = 5f;
+
+    public float ColdDamageRate { get; set; } = 0.003f;
+    public float FrostDamageRate { get; set; } = 0.008f;
+    public float HeatDamageRate { get; set; } = 0.005f;
+    public float WaterDamageRate { get; set; } = 0.012f;
+    public float DiseaseAccumRate { get; set; } = 0.06f;
+    public float DiseaseDamageRate { get; set; } = 0.015f;
+
+    public float MinFertility { get; set; } = 0.2f;
+    public float MaxFertility { get; set; } = 1.0f;
+    public float MaxYieldMultiplier { get; set; } = 1.2f;
+
+    public double TimeScale(int daysPerMonth)
+    {
+        if (!ScaleToGameYear) return 1.0;
+        double gameHours = CalendarHelper.GetDaysInYear(daysPerMonth) * 24.0;
+        return gameHours > 0 ? RealHoursPerYear / gameHours : 1.0;
+    }
+}.
+//конец Data\CropBalance.cs
+.
+//начало Data\CropClock.cs
+﻿// Data/CropClock.cs
+namespace AsciiFarm.Data;
+
+/// <summary>Сколько целых игровых часов уже прожито растениями.</summary>
+public sealed class CropClock
+{
+    public long LastHour { get; set; } = -1;   // -1 = не инициализировано (первый тик без роста)
+}.
+//конец Data\CropClock.cs
+.
+//начало Data\CropDefinition.cs
+﻿// Data/CropDefinition.cs
+namespace AsciiFarm.Data;
+
+public enum HarvestMode { GrainAndSeed, Biennial, EarlyOrLate }
+
+/// <summary>Справочные (реальные) параметры культуры. Масштабирования здесь нет.</summary>
+public sealed class CropDefinition
+{
+    public string Id { get; init; } = "";
+    public string Name { get; init; } = "";
+    public bool IsWinter { get; init; }
+
+    public float TBase { get; init; }
+    public float TOptMin { get; init; }
+    public float TOptMax { get; init; }
+    public float TCritColdGround { get; init; }
+    public float TCritFrostFlower { get; init; }
+    public float TCritHeat { get; init; }
+
+    public double GddVeg { get; init; }
+    public double GddFlower { get; init; }
+    public double GddEarlyHarvest { get; init; }
+    public double GddHarvest { get; init; }
+    public double GddSeedYear2 { get; init; }
+
+    public float SoilMoistMin { get; init; }
+    public float SoilMoistOptMin { get; init; }
+    public float SoilMoistOptMax { get; init; }
+    public float SoilMoistMax { get; init; }
+    public float SoilMoistRipeningMax { get; init; }
+    public float AirHumDiseaseMin { get; init; }
+
+    public double SolarMjTarget { get; init; }
+    public HarvestMode Mode { get; init; }
+    public float SeedRatio { get; init; }
+    public float FertilityDelta { get; init; }
+
+    public double TargetGdd(bool isYear2) =>
+        isYear2 && GddSeedYear2 > 0 ? GddSeedYear2 : GddHarvest;
+
+    public float RipeningMoistureMax =>
+        SoilMoistRipeningMax > 0 ? SoilMoistRipeningMax : SoilMoistMax;
+}
+
+public sealed class CropCatalog
+{
+    private readonly Dictionary<string, CropDefinition> _byId = new(StringComparer.OrdinalIgnoreCase);
+    private readonly List<CropDefinition> _list = new();
+
+    public IReadOnlyList<CropDefinition> All => _list;
+    public int Count => _list.Count;
+    public string? LoadError { get; set; }
+
+    public void Add(CropDefinition crop)
+    {
+        if (_byId.ContainsKey(crop.Id)) return;
+        _byId[crop.Id] = crop;
+        _list.Add(crop);
+    }
+
+    public bool TryGet(string? id, out CropDefinition crop)
+    {
+        if (id != null && _byId.TryGetValue(id, out var found)) { crop = found; return true; }
+        crop = null!;
+        return false;
+    }
+
+    public CropDefinition? ByIndex(int index) =>
+        _list.Count == 0 ? null : _list[Math.Clamp(index, 0, _list.Count - 1)];
+}.
+//конец Data\CropDefinition.cs
+.
+//начало Data\CropMath.cs
+﻿// Data/CropMath.cs
+using AsciiFarm.Components;
+
+namespace AsciiFarm.Data;
+
+public static class CropMath
+{
+    public static PlantStage StageOf(in PlantComponent p, CropDefinition c)
+    {
+        if (p.Health <= 0f) return PlantStage.Dead;
+        double target = c.TargetGdd(p.IsYear2);
+        double flower = Math.Min(c.GddFlower, target);   // у лука seed_year2 < gdd_flower
+        double veg = Math.Min(c.GddVeg, flower);
+
+        if (p.GddAccumulated < veg) return PlantStage.Germination;
+        if (p.GddAccumulated < flower) return PlantStage.Vegetative;
+        if (p.GddAccumulated < target) return PlantStage.Flowering;
+        return PlantStage.Ripe;
+    }
+
+    /// <summary>Трапеция 0..1: min → optMin → optMax → max. Безопасна при вырожденных порогах.</summary>
+    public static float Factor(float value, float min, float optMin, float optMax, float max)
+    {
+        if (value <= min || value >= max) return 0f;
+        optMin = Math.Clamp(optMin, min, max);
+        optMax = Math.Clamp(optMax, optMin, max);
+        if (value < optMin) return optMin > min ? (value - min) / (optMin - min) : 1f;
+        if (value > optMax) return max > optMax ? (max - value) / (max - optMax) : 1f;
+        return 1f;
+    }
+
+    public static float Yield(in PlantComponent p, CropDefinition c, float cap = 1.2f)
+    {
+        if (c.SolarMjTarget <= 0) return 0f;
+        double raw = Math.Clamp(p.BiomassMj / c.SolarMjTarget, 0.0, cap);
+        return (float)(raw * Math.Clamp(p.Health, 0f, 1f));
+    }
+
+    public static string StageName(PlantStage s) => s switch
+    {
+        PlantStage.Germination => "всходы",
+        PlantStage.Vegetative => "рост",
+        PlantStage.Flowering => "цветение",
+        PlantStage.Ripe => "созрело",
+        _ => "погибло"
+    };
+}.
+//конец Data\CropMath.cs
+.
+//начало Data\CropVisuals.cs
+﻿// Data/CropVisuals.cs
+using AsciiFarm.Components;
+
+namespace AsciiFarm.Data;
+
+public static class CropVisuals
+{
+    public const int Layer = 5;   // над картой (0), под игроком (10)
+
+    public static Glyph For(CropDefinition crop, PlantStage stage)
+    {
+        var look = stage switch
+        {
+            PlantStage.Germination => (',', ConsoleColor.DarkGreen),
+            PlantStage.Vegetative => ('"', ConsoleColor.Green),
+            PlantStage.Flowering => (Cp437Symbols.BlackClubSuit, ConsoleColor.Yellow),
+            PlantStage.Ripe => Ripe(crop),
+            _ => ('x', ConsoleColor.DarkGray)
+        };
+
+        return new Glyph
+        {
+            Symbol = look.Item1,
+            Foreground = look.Item2,
+            Background = ConsoleColor.Black,
+            Layer = Layer
+        };
+    }
+
+    private static (char, ConsoleColor) Ripe(CropDefinition c) => c.Mode switch
+    {
+        HarvestMode.Biennial => (Cp437Symbols.InverseBullet, ConsoleColor.White),
+        HarvestMode.EarlyOrLate => (Cp437Symbols.BlackUpPointingTriangle, ConsoleColor.Cyan),
+        _ => (Cp437Symbols.WhiteSunWithRays, ConsoleColor.DarkYellow)
+    };
+}.
+//конец Data\CropVisuals.cs
+.
+//начало Data\FarmState.cs
+﻿// Data/FarmState.cs
+namespace AsciiFarm.Data;
+
+public sealed class FarmSelection
+{
+    public int Index { get; set; }
+}
+
+public sealed class FarmLog
+{
+    public string Message { get; set; } = "";
+    public double ShowUntil { get; set; }
+
+    public void Set(string message, double nowSeconds, double seconds = 6.0)
+    {
+        Message = message;
+        ShowUntil = nowSeconds + seconds;
+    }
+
+    public string? Current(double nowSeconds) => nowSeconds < ShowUntil ? Message : null;
+}.
+//конец Data\FarmState.cs
+.
 //начало Data\FpsCounter.cs
 ﻿// Data/FpsCounter.cs
 using System.Diagnostics;
@@ -1880,6 +2330,31 @@ public sealed class SimulationClock
 }.
 //конец Data\SimulationClock.cs
 .
+//начало Data\SoilFertility.cs
+﻿// Data/SoilFertility.cs
+using AsciiFarm.Components;
+using AsciiFarm.Core;
+
+namespace AsciiFarm.Data;
+
+/// <summary>Единая точка чтения плодородия почвы.</summary>
+public static class SoilFertility
+{
+    public const float Default = 1.0f;
+
+    public static float At(World world, int x, int y)
+    {
+        var fields = world.Query<SoilFertilityMap>();
+        if (fields.Length == 0) return Default;
+        var field = world.Store<SoilFertilityMap>().Get(fields[0]);
+        if (field.Values == null || x < 0 || y < 0 || x >= field.Width || y >= field.Height)
+            return Default;
+        float v = field.Values[x, y];
+        return v <= 0f ? Default : v;
+    }
+}.
+//конец Data\SoilFertility.cs
+.
 //начало Data\TileInfoProviders.cs
 ﻿// Data/TileInfoProviders.cs
 using System.Collections.Generic;
@@ -1897,18 +2372,18 @@ public sealed class TerrainInfoProvider : ITileInfoProvider
     {
         var maps = world.Query<TileMapComponent>();
         if (maps.Length == 0) yield break;
-
         var map = world.Store<TileMapComponent>().Get(maps[0]);
         if (x < 0 || y < 0 || x >= map.Width || y >= map.Height) yield break;
 
         var data = map.Tiles[x, y];
+        float f = SoilFertility.At(world, x, y);
 
         yield return $"Символ: '{tile}'";
-        yield return $"N: {data.Nitrogen:P0} | P: {data.Phosphorus:P0} | K: {data.Potassium:P0}";
-        yield return $"Влага почвы: {data.Moisture:P0}";
-
-        var palette = world.Resource<TilePalette>();
-        var style = palette.Resolve(tile);
+        // Эффективные NPK = потенциал почвы × плодородие
+        yield return $"N:{data.Nitrogen * f * 100:F0}% P:{data.Phosphorus * f * 100:F0}% K:{data.Potassium * f * 100:F0}%";
+        yield return $"Влага: {data.Moisture * 100:F0}%";
+        yield return $"Плодородие: {f * 100:F0}%";
+        var style = world.Resource<TilePalette>().Resolve(tile);
         yield return $"Проходимость: {(style.BlocksMovement ? "Нет" : "Да")}";
     }
 }
@@ -1920,19 +2395,27 @@ public sealed class TerrainInfoProvider : ITileInfoProvider
 // Data/TileInfoProviders.cs — заменить EntityInspectorProvider (остальные провайдеры без изменений)
 public sealed class EntityInspectorProvider : ITileInfoProvider
 {
+    // Компоненты, у которых есть свой блок в HUD — не дублируем.
+    private static readonly HashSet<Type> Hidden = new()
+    {
+        typeof(Position), typeof(Glyph), typeof(PlantComponent),
+        typeof(GranaryComponent), typeof(SoilFertilityMap), typeof(TileMapComponent),
+        typeof(MoveIntent), typeof(FarmIntent)
+    };
+
     public IEnumerable<string> GetInfo(int x, int y, char tile, World world)
     {
         var positions = world.Store<Position>();
-
         foreach (var entity in positions.Entities)
         {
             var pos = positions.Get(entity);
             if (pos.X != x || pos.Y != y) continue;
 
-            yield return $"── Объект (ID: {entity.Id}) ──";
-
             var visitor = new InspectorVisitor(entity);
             foreach (var (_, store) in world.AllStores()) store.Accept(visitor);
+            if (visitor.Lines.Count == 0) continue;   // нечего показать — без заголовка
+
+            yield return $"── Объект (ID: {entity.Id}) ──";
             foreach (var line in visitor.Lines) yield return line;
         }
     }
@@ -1946,12 +2429,11 @@ public sealed class EntityInspectorProvider : ITileInfoProvider
         public void Visit<T>(Entity entity, in T component) where T : struct
         {
             if (entity.Id != _targetId) return;
-            if (typeof(T) == typeof(Position)) return;   // координаты уже показаны
+            if (Hidden.Contains(typeof(T))) return;
             Lines.Add($"  {typeof(T).Name}: {ComponentDisplayRegistry.Format(in component)}");
         }
     }
-}
-/// <summary>Информация о погоде (глобальная, не зависит от X,Y, но оставим для совместимости).</summary>
+}/// <summary>Информация о погоде (глобальная, не зависит от X,Y, но оставим для совместимости).</summary>
 public sealed class WeatherTileInfoProvider : ITileInfoProvider
 {
     public IEnumerable<string> GetInfo(int x, int y, char tile, World world)
@@ -1964,6 +2446,38 @@ public sealed class WeatherTileInfoProvider : ITileInfoProvider
         yield return $"Воздух: {d.AirTemp:F1}°C";
         yield return $"Влажн: {d.AirHumidity * 100:F0}%";
         yield return $"Снег: {d.EffectiveSnowCm:F1}см";
+    }
+}
+
+/// <summary>Информация о растении на тайле + плодородие почвы.</summary>
+public sealed class PlantInfoProvider : ITileInfoProvider
+{
+    public IEnumerable<string> GetInfo(int x, int y, char tile, World world)
+    {
+        var catalog = world.Resource<CropCatalog>();
+        var plants = world.Store<PlantComponent>();
+        var positions = world.Store<Position>();
+
+        foreach (var entity in world.Query<PlantComponent, Position>())
+        {
+            var pos = positions.Get(entity);
+            if (pos.X != x || pos.Y != y) continue;
+
+            var p = plants.Get(entity);
+            if (!catalog.TryGet(p.CropId, out var c)) continue;
+
+            double target = c.TargetGdd(p.IsYear2);
+            int pct = target > 0 ? (int)Math.Clamp(p.GddAccumulated / target * 100.0, 0, 100) : 0;
+
+            yield return "── РАСТЕНИЕ ──";
+            yield return $"{c.Name}{(p.IsYear2 ? " (2 год)" : "")}";
+            yield return $"Стадия: {CropMath.StageName(p.Stage)}";
+            yield return $"Созревание: {pct}%";
+            yield return $"Здоровье: {p.Health * 100:F0}%";
+            yield return $"Болезнь: {p.Disease:F2}";
+            yield return $"Биомасса: {p.BiomassMj:F0}/{c.SolarMjTarget:F0}";
+            yield return $"Прогноз: {CropMath.Yield(p, c):F2} ед.";
+        }
     }
 }.
 //конец Data\TileInfoProviders.cs
@@ -2130,16 +2644,14 @@ public sealed class CommandChannel
 //конец Input\CommandChannel.cs
 .
 //начало Input\GameCommand.cs
-﻿// Input/GameCommand.cs
-namespace AsciiFarm.Input;
-
-public enum GameCommand
+﻿public enum GameCommand
 {
     None,
     MoveUp, MoveDown, MoveLeft, MoveRight,
     Exit,
     Speed1, Speed2, Speed3, Speed4, Speed5,
-    FastForward1, FastForward2, FastForward3, FastForward4, FastForward5
+    FastForward1, FastForward2, FastForward3, FastForward4, FastForward5,
+    Plant, Harvest, CycleCrop, PlantYear2
 }.
 //конец Input\GameCommand.cs
 .
@@ -2770,6 +3282,92 @@ public sealed class FrameExchange<T> where T : class
 }.
 //конец Rendering\FrameExchange.cs
 .
+//начало Rendering\HudLayout.cs
+﻿// Rendering/HudLayout.cs
+namespace AsciiFarm.Rendering;
+
+/// <summary>
+/// Раскладка панелей: колонки слева направо, внутри колонки — сверху вниз.
+/// Шаг по Y = реальная высота панели, поэтому перекрытия невозможны.
+/// </summary>
+public static class HudLayout
+{
+    public static void Draw(RenderFrame frame, HudMetrics m, params HudPanel[][] columns)
+    {
+        int x = m.OriginX;
+        foreach (var column in columns)
+        {
+            if (x >= frame.Width) return;
+            int y = m.OriginY;
+            foreach (var panel in column)
+            {
+                if (y >= frame.Height) break;
+                panel.Draw(frame, x, y, m.ColumnWidth);
+                y += panel.Height + m.RowGap;
+            }
+            x += m.ColumnWidth + m.ColumnGap;
+        }
+    }
+}.
+//конец Rendering\HudLayout.cs
+.
+//начало Rendering\HudMetrics.cs
+﻿// Rendering/HudMetrics.cs
+namespace AsciiFarm.Rendering;
+
+/// <summary>Геометрия HUD. Все координаты — от ЛЕВОГО ВЕРХНЕГО угла кадра.</summary>
+public sealed class HudMetrics
+{
+    public int OriginX { get; set; } = 66;      // левый край HUD (не зависит от ширины окна)
+    public int OriginY { get; set; } = 0;
+    public int ColumnWidth { get; set; } = 21;  // ширина колонки; строки обрезаются по ней
+    public int ColumnGap { get; set; } = 2;
+    public int RowGap { get; set; } = 1;
+}.
+//конец Rendering\HudMetrics.cs
+.
+//начало Rendering\HudPanel.cs
+﻿// Rendering/HudPanel.cs
+namespace AsciiFarm.Rendering;
+
+/// <summary>Блок HUD: заголовок + строки. Высота считается сама, угадывать нечего.</summary>
+public sealed class HudPanel
+{
+    private readonly List<(string Text, ConsoleColor Color)> _lines = new();
+    private readonly string _title;
+
+    public HudPanel(string title) => _title = $"── {title} ──";
+
+    /// <summary>+1 — заголовок.</summary>
+    public int Height => _lines.Count + 1;
+
+    public HudPanel Add(string text, ConsoleColor color)
+    {
+        _lines.Add((text ?? "", color));
+        return this;
+    }
+
+    public HudPanel AddRange(IEnumerable<string> lines, ConsoleColor color)
+    {
+        foreach (var line in lines) Add(line, color);
+        return this;
+    }
+
+    public void Draw(RenderFrame frame, int x, int y, int width)
+    {
+        FrameDraw.Text(frame, x, y, Fit(_title, width), ConsoleColor.Cyan);
+        for (int i = 0; i < _lines.Count; i++)
+        {
+            var (text, color) = _lines[i];
+            FrameDraw.Text(frame, x, y + 1 + i, Fit(text, width), color);
+        }
+    }
+
+    private static string Fit(string s, int width) =>
+        width <= 0 ? "" : (s.Length <= width ? s : s[..width]);
+}.
+//конец Rendering\HudPanel.cs
+.
 //начало Rendering\HudRenderer.cs
 ﻿// Rendering/HudRenderer.cs
 using AsciiFarm.Components;
@@ -2780,89 +3378,123 @@ namespace AsciiFarm.Rendering;
 
 public sealed class HudRenderer : IFrameRenderer
 {
-    private const int ColWidth = 20;
-    private const int Gap = 2;
+    private static readonly HudMetrics DefaultMetrics = new();
 
     public void Render(RenderFrame frame, World world)
     {
-        int totalWidth = ColWidth * 2 + Gap;
-        if (frame.Width < totalWidth + 5) return;
+        world.TryGetResource<HudMetrics>(out var metrics);
+        var m = metrics ?? DefaultMetrics;
+        if (frame.Width <= m.OriginX || frame.Height <= m.OriginY) return;
 
-        int startX = frame.Width - totalWidth;
-        int col1 = startX;
-        int col2 = startX + ColWidth + Gap;
+        var state = world.Resource<GameState>();
 
-        DrawDateTime(frame, col1, 0, world.Resource<GameState>());
-        DrawTileInfo(frame, world, col1, Math.Max(0, frame.Height - 12));
-        DrawStats(frame, col2, 0, world.Resource<FpsCounter>());
-        DrawWeather(frame, col2, 3, world);
+        // Панели с переменной высотой — ПОСЛЕДНИЕ в колонке, чтобы ничего не «прыгало».
+        HudLayout.Draw(frame, m,
+            new[] { TimePanel(state), TilePanel(world) },
+            new[] { StatsPanel(world.Resource<FpsCounter>()), WeatherPanel(world), FarmPanel(world, state) });
     }
 
-    private static void DrawDateTime(RenderFrame f, int x, int y, GameState state)
+    private static HudPanel TimePanel(GameState state)
     {
-        string gameTime = CalendarHelper.FormatGameTime(state.GameStartDate, state.GameTimeElapsed, state.DaysPerMonth);
+        var p = new HudPanel("ВРЕМЯ");
+        string gameTime = CalendarHelper.FormatGameTime(
+            state.GameStartDate, state.GameTimeElapsed, state.DaysPerMonth);
         var parts = gameTime.Split(' ');
         var real = TimeSpan.FromSeconds(state.ElapsedTime);
 
-        FrameDraw.Text(f, x, y++, "── ВРЕМЯ ──", ConsoleColor.Cyan);
-        FrameDraw.Text(f, x, y++, parts.Length > 0 ? parts[0] : "", ConsoleColor.White);
-        FrameDraw.Text(f, x, y++, parts.Length > 1 ? parts[1] : "", ConsoleColor.Yellow);
-        FrameDraw.Text(f, x, y++, $"Скорость: x{state.TimeSpeed:F0}", ConsoleColor.Green);
-        FrameDraw.Text(f, x, y, $"Реальное: {(int)real.TotalHours:D2}:{real.Minutes:D2}:{real.Seconds:D2}", ConsoleColor.DarkGray);
+        p.Add(parts.Length > 0 ? parts[0] : "", ConsoleColor.White);
+        p.Add(parts.Length > 1 ? parts[1] : "", ConsoleColor.Yellow);
+        p.Add($"Скорость: x{state.TimeSpeed:F0}", ConsoleColor.Green);
+        p.Add($"Реальное: {(int)real.TotalHours:D2}:{real.Minutes:D2}:{real.Seconds:D2}", ConsoleColor.DarkGray);
+        return p;
     }
 
-    private static void DrawTileInfo(RenderFrame f, World world, int x, int y)
+    private static HudPanel TilePanel(World world)
     {
+        var p = new HudPanel("ТАЙЛ");
         var players = world.Query<PlayerTag, Position>();
         var maps = world.Query<TileMapComponent>();
-        if (players.Length == 0 || maps.Length == 0) return;
+        if (players.Length == 0 || maps.Length == 0) return p.Add("нет данных", ConsoleColor.DarkGray);
 
         var map = world.Store<TileMapComponent>().Get(maps[0]);
         var pos = world.Store<Position>().Get(players[0]);
-        if (pos.X < 0 || pos.Y < 0 || pos.X >= map.Width || pos.Y >= map.Height) return;
+        if (pos.X < 0 || pos.Y < 0 || pos.X >= map.Width || pos.Y >= map.Height)
+            return p.Add("вне карты", ConsoleColor.DarkGray);
 
         char tile = map.Tiles[pos.X, pos.Y].Symbol;
-        FrameDraw.Text(f, x, y++, "── ТАЙЛ ──", ConsoleColor.Cyan);
-        FrameDraw.Text(f, x, y++, $"Позиция: ({pos.X}, {pos.Y})", ConsoleColor.White);
-
-        // без ToList(): строки идут потоком
-        foreach (var line in world.Resource<TileInfoRegistry>().GetAllInfo(pos.X, pos.Y, tile, world))
-        {
-            if (y >= f.Height) break;
-            FrameDraw.Text(f, x, y++, line, ConsoleColor.Gray);
-        }
+        p.Add($"Позиция: ({pos.X}, {pos.Y})", ConsoleColor.White);
+        p.AddRange(world.Resource<TileInfoRegistry>().GetAllInfo(pos.X, pos.Y, tile, world), ConsoleColor.Gray);
+        return p;
     }
 
-    private static void DrawStats(RenderFrame f, int x, int y, FpsCounter fps)
+    private static HudPanel StatsPanel(FpsCounter fps)
     {
-        FrameDraw.Text(f, x, y++, "── СТАТИСТИКА ──", ConsoleColor.Cyan);
-        FrameDraw.Text(f, x, y++, $"FPS: {fps.RealFps}", ConsoleColor.Green);
-        FrameDraw.Text(f, x, y, $"TPS: {fps.TicksPerSecond}", ConsoleColor.Cyan);
+        var p = new HudPanel("СТАТИСТИКА");
+        p.Add($"FPS: {fps.RealFps}", ConsoleColor.Green);
+        p.Add($"TPS: {fps.TicksPerSecond}", ConsoleColor.Cyan);
+        return p;
     }
 
-    private static void DrawWeather(RenderFrame f, int x, int y, World world)
+    private static HudPanel WeatherPanel(World world)
     {
+        var p = new HudPanel("ПОГОДА");
         var weather = world.Resource<WeatherCurrent>();
         var source = world.Resource<WeatherDataSource>();
 
         if (!weather.HasData)
         {
-            FrameDraw.Text(f, x, y++, "── ПОГОДА ──", ConsoleColor.DarkGray);
-            FrameDraw.Text(f, x, y++, "нет данных", ConsoleColor.DarkGray);
-            if (source.LoadError != null) FrameDraw.Text(f, x, y, source.LoadError, ConsoleColor.Red);
-            return;
+            p.Add("нет данных", ConsoleColor.DarkGray);
+            if (source.LoadError != null) p.Add(source.LoadError, ConsoleColor.Red);
+            return p;
         }
 
         var d = weather.Current;
-        FrameDraw.Text(f, x, y++, "── ПОГОДА ──", ConsoleColor.Cyan);
-        FrameDraw.Text(f, x, y++, $"Час: {weather.HourIndex:D2}", ConsoleColor.DarkGray);
-        FrameDraw.Text(f, x, y++, $"Воздух: {d.AirTemp,7:F1}°C", ConsoleColor.White);
-        FrameDraw.Text(f, x, y++, $"Земля: {d.GroundTemp,7:F1}°C", d.GroundTemp < 0 ? ConsoleColor.Blue : ConsoleColor.White);
-        FrameDraw.Text(f, x, y++, $"Влажн: {d.AirHumidity * 100,6:F0}%", ConsoleColor.White);
-        FrameDraw.Text(f, x, y++, $"Почва: {d.SoilMoisture * 100,6:F0}%", d.SoilMoisture < 0.2f ? ConsoleColor.Red : ConsoleColor.Green);
-        FrameDraw.Text(f, x, y++, $"Солнц: {d.SolarEnergyMj,6:F2}МДж", ConsoleColor.Yellow);
-        FrameDraw.Text(f, x, y++, $"Снег: {d.EffectiveSnowCm,6:F1}см", ConsoleColor.White);
-        FrameDraw.Text(f, x, y, $"Осад: {d.PrecipitationMm,6:F1}мм", ConsoleColor.Blue);
+        p.Add($"Час: {weather.HourIndex:D2}", ConsoleColor.DarkGray);
+        p.Add($"Воздух: {d.AirTemp,7:F1}°C", ConsoleColor.White);
+        p.Add($"Земля: {d.GroundTemp,7:F1}°C", d.GroundTemp < 0 ? ConsoleColor.Blue : ConsoleColor.White);
+        p.Add($"Влажн: {d.AirHumidity * 100,6:F0}%", ConsoleColor.White);
+        p.Add($"Почва: {d.SoilMoisture * 100,6:F0}%", d.SoilMoisture < 0.2f ? ConsoleColor.Red : ConsoleColor.Green);
+        p.Add($"Солнц: {d.SolarEnergyMj,6:F2}МДж", ConsoleColor.Yellow);
+        p.Add($"Снег: {d.EffectiveSnowCm,6:F1}см", ConsoleColor.White);
+        p.Add($"Осад: {d.PrecipitationMm,6:F1}мм", ConsoleColor.Blue);
+        return p;
+    }
+
+    private static HudPanel FarmPanel(World world, GameState state)
+    {
+        var p = new HudPanel("ПОСЕВ");
+        var catalog = world.Resource<CropCatalog>();
+        var selection = world.Resource<FarmSelection>();
+        var crop = catalog.ByIndex(selection.Index);
+
+        if (crop == null)
+        {
+            p.Add("нет культур", ConsoleColor.DarkGray);
+            if (catalog.LoadError != null) p.Add(catalog.LoadError, ConsoleColor.Red);
+            return p;
+        }
+
+        float seeds = 0f, roots = 0f, veg = 0f, fiber = 0f;
+        var players = world.Query<PlayerTag, GranaryComponent>();
+        if (players.Length > 0)
+        {
+            var g = world.Store<GranaryComponent>().Get(players[0]);
+            seeds = Granary.Get(g, crop.Id);
+            roots = Granary.Get(g, Granary.Root(crop.Id));
+            veg = Granary.Get(g, Granary.Vegetables);
+            fiber = Granary.Get(g, Granary.Fiber);
+        }
+
+        p.Add($"> {crop.Name}", ConsoleColor.White);
+        p.Add($"Семена: {seeds:F1}", ConsoleColor.Green);
+        if (crop.Mode == HarvestMode.Biennial)
+            p.Add($"На семена: {roots:F0}", ConsoleColor.DarkGreen);
+        p.Add($"Овощи: {veg:F1}", ConsoleColor.Green);
+        p.Add($"Волокно: {fiber:F1}", ConsoleColor.Cyan);
+
+        var msg = world.Resource<FarmLog>().Current(state.ElapsedTime);
+        if (msg != null) p.Add(msg, ConsoleColor.Yellow);
+        return p;
     }
 }.
 //конец Rendering\HudRenderer.cs
@@ -3378,6 +4010,119 @@ namespace AsciiFarm.Serialization
 }.
 //конец Serialization\GameStorage.cs
 .
+//начало Serialization\PlantSerializers.cs
+﻿// Serialization/PlantSerializers.cs
+using System;
+using System.IO;
+using AsciiFarm.Components;
+using AsciiFarm.Core;
+
+namespace AsciiFarm.Serialization;
+
+public sealed class PlantComponentSerializer : ComponentSerializer<PlantComponent>
+{
+    public override string TypeName => nameof(PlantComponent);
+
+    public override void Serialize(BinaryWriter w, PlantComponent p)
+    {
+        w.Write(p.CropId ?? "");
+        w.Write(p.GddAccumulated);
+        w.Write(p.BiomassMj);
+        w.Write(p.Health);
+        w.Write(p.Disease);
+        w.Write(p.IsYear2);
+        w.Write((byte)p.Stage);
+    }
+
+    public override PlantComponent Deserialize(BinaryReader r, int version)
+    {
+        string id = r.ReadString();
+        if (id.Length > 128) throw new InvalidDataException("Plant: слишком длинный crop_id.");
+
+        double gdd = r.ReadDouble();
+        double biomass = r.ReadDouble();
+        float health = r.ReadSingle();
+        float disease = r.ReadSingle();
+        bool year2 = r.ReadBoolean();
+        byte stage = r.ReadByte();
+
+        return new PlantComponent
+        {
+            CropId = id,
+            GddAccumulated = Math.Clamp(gdd, 0.0, 1e9),
+            BiomassMj = Math.Clamp(biomass, 0.0, 1e9),
+            Health = Math.Clamp(health, 0f, 1f),
+            Disease = Math.Clamp(disease, 0f, 1e6f),
+            IsYear2 = year2,
+            Stage = (PlantStage)Math.Min(stage, (byte)PlantStage.Dead)
+        };
+    }
+}
+
+public sealed class SoilFertilitySerializer : ComponentSerializer<SoilFertilityMap>
+{
+    public const int MaxTiles = 2_000_000;
+    public override string TypeName => nameof(SoilFertilityMap);
+
+    public override void Serialize(BinaryWriter w, SoilFertilityMap m)
+    {
+        int width = m.Width, height = m.Height;
+        w.Write(width);
+        w.Write(height);
+        for (int y = 0; y < height; y++)
+            for (int x = 0; x < width; x++)
+                w.Write(m.Values[x, y]);
+    }
+
+    public override SoilFertilityMap Deserialize(BinaryReader r, int version)
+    {
+        int width = r.ReadInt32(), height = r.ReadInt32();
+        if (width <= 0 || height <= 0 || (long)width * height > MaxTiles)
+            throw new InvalidDataException($"SoilFertility: некорректный размер {width}x{height}.");
+        if ((long)width * height * 4 > r.BaseStream.Length - r.BaseStream.Position)
+            throw new InvalidDataException("SoilFertility: файл оборван.");
+
+        var values = new float[width, height];
+        for (int y = 0; y < height; y++)
+            for (int x = 0; x < width; x++)
+                values[x, y] = Math.Clamp(r.ReadSingle(), 0f, 1f);
+
+        return new SoilFertilityMap { Values = values };
+    }
+}
+
+public sealed class GranarySerializer : ComponentSerializer<GranaryComponent>
+{
+    public const int MaxItems = 10_000;
+    public override string TypeName => nameof(GranaryComponent);
+
+    public override void Serialize(BinaryWriter w, GranaryComponent g)
+    {
+        var items = g.Items ?? new Dictionary<string, float>();
+        w.Write(items.Count);
+        foreach (var kv in items) { w.Write(kv.Key); w.Write(kv.Value); }
+    }
+
+    public override GranaryComponent Deserialize(BinaryReader r, int version)
+    {
+        int count = r.ReadInt32();
+        if (count < 0 || count > MaxItems)
+            throw new InvalidDataException($"Granary: недопустимое число позиций {count}.");
+
+        var items = new Dictionary<string, float>(count, StringComparer.OrdinalIgnoreCase);
+        for (int i = 0; i < count; i++)
+        {
+            string key = r.ReadString();
+            float value = r.ReadSingle();
+            if (key.Length > 128) throw new InvalidDataException("Granary: слишком длинный ключ.");
+            if (!float.IsFinite(value) || value < 0f) value = 0f;
+            items[key] = Math.Min(value, 1e9f);
+        }
+        return new GranaryComponent { Items = items };
+    }
+}.
+//конец Serialization\PlantSerializers.cs
+.
 //начало Serialization\Serialization.cs
 ﻿using System;
 using System.Collections.Generic;
@@ -3761,6 +4506,170 @@ public sealed class ConsolePresentSystem
 }.
 //конец Systems\ConsolePresentSystem.cs
 .
+//начало Systems\CropGrowthSystem.cs
+﻿// Systems/CropGrowthSystem.cs
+using AsciiFarm.Components;
+using AsciiFarm.Core;
+using AsciiFarm.Data;
+
+namespace AsciiFarm.Systems;
+
+[GameSystem(Order = 8)]
+public sealed class CropGrowthSystem : ISystem
+{
+    private const int MaxHoursPerTick = 960;   // предохранитель; остаток догоняется на следующих тиках
+
+    public void Update(World world)
+    {
+        var state = world.Resource<GameState>();
+        var clock = world.Resource<CropClock>();
+        var catalog = world.Resource<CropCatalog>();
+        var balance = world.Resource<CropBalance>();
+
+        long hour = (long)(state.GameTimeElapsed / 3600.0);
+        if (clock.LastHour < 0) { clock.LastHour = hour; return; }
+
+        int hours = (int)Math.Min(hour - clock.LastHour, MaxHoursPerTick);
+        if (hours <= 0) return;
+        if (catalog.Count == 0) { clock.LastHour = hour; return; }
+
+        var entities = world.Query<PlantComponent, Position>();
+        if (entities.Length == 0) { clock.LastHour = hour; return; }
+
+        var plants = world.Store<PlantComponent>();
+        var positions = world.Store<Position>();
+        var glyphs = world.Store<Glyph>();
+        var source = world.Resource<WeatherDataSource>();
+
+        TileMapComponent? map = null;
+        var maps = world.Query<TileMapComponent>();
+        if (maps.Length > 0) map = world.Store<TileMapComponent>().Get(maps[0]);
+
+        float[,]? fertility = null;
+        var fertMaps = world.Query<SoilFertilityMap>();
+        if (fertMaps.Length > 0) fertility = world.Store<SoilFertilityMap>().Get(fertMaps[0]).Values;
+
+        double scale = balance.TimeScale(state.DaysPerMonth);
+
+        for (int i = 0; i < hours; i++)
+        {
+            long absoluteHour = clock.LastHour + i;          // час, который растение проживает
+            var weather = WeatherAt(source, absoluteHour);   // своя погода на каждый час (важно при промотке)
+
+            foreach (var entity in entities)
+            {
+                var p = plants.Get(entity);
+                if (p.Stage == PlantStage.Dead) continue;
+                if (!catalog.TryGet(p.CropId, out var crop)) continue;
+
+                var pos = positions.Get(entity);
+                float soil = SoilMoisture(weather, map, pos, balance);
+                float fert = FertilityAt(fertility, pos, balance);
+
+                Step(ref p, crop, weather, soil, fert, scale, balance);
+
+                var stage = CropMath.StageOf(p, crop);
+                if (stage != p.Stage)
+                {
+                    p.Stage = stage;
+                    if (glyphs.Has(entity)) glyphs.Set(entity, CropVisuals.For(crop, stage));
+                }
+
+                plants.Set(entity, p);
+            }
+        }
+
+        clock.LastHour += hours;
+    }
+
+    private static void Step(ref PlantComponent p, CropDefinition c, in WeatherData w,
+                             float soil, float fertility, double scale, CropBalance b)
+    {
+        var stage = CropMath.StageOf(p, c);
+        float smMax = stage == PlantStage.Flowering ? c.RipeningMoistureMax : c.SoilMoistMax;
+
+        // Шаг 1. Тепло (GDD-часы)
+        if (w.AirTemp > c.TBase)
+            p.GddAccumulated += (w.AirTemp - c.TBase) * scale;
+
+        // Шаг 2. Стрессы
+        float damage = 0f;
+        if (w.GroundTemp < c.TCritColdGround)
+            damage += (c.TCritColdGround - w.GroundTemp) * b.ColdDamageRate;
+        if (stage == PlantStage.Flowering && w.AirTemp < c.TCritFrostFlower)
+            damage += (c.TCritFrostFlower - w.AirTemp) * b.FrostDamageRate;
+        if (w.AirTemp > c.TCritHeat)
+            damage += (w.AirTemp - c.TCritHeat) * b.HeatDamageRate;
+        if (soil < c.SoilMoistMin)
+            damage += (c.SoilMoistMin - soil) * b.WaterDamageRate;
+        if (soil > smMax)
+            damage += (soil - smMax) * b.WaterDamageRate;
+
+        if (w.AirHumidity > c.AirHumDiseaseMin && w.AirTemp > 5f)
+            p.Disease += (w.AirHumidity - c.AirHumDiseaseMin) * b.DiseaseAccumRate * (float)scale;
+        if (p.Disease > 1f)
+            damage += (p.Disease - 1f) * b.DiseaseDamageRate;
+
+        p.Health -= (float)(damage * scale);
+        if (p.Health <= 0f)
+        {
+            p.Health = 0f;
+            p.Stage = PlantStage.Dead;
+            return;
+        }
+
+        // Шаг 3. Биомасса
+        if (stage == PlantStage.Germination || w.SolarEnergyMj <= 0f) return;
+
+        float tf = CropMath.Factor(w.AirTemp, c.TBase, c.TOptMin, c.TOptMax, c.TCritHeat);
+        float wf = CropMath.Factor(soil, c.SoilMoistMin, c.SoilMoistOptMin, c.SoilMoistOptMax, smMax);
+        if (tf <= 0f || wf <= 0f) return;
+
+        p.BiomassMj += w.SolarEnergyMj * tf * wf * fertility * p.Health * scale;
+    }
+
+    private static WeatherData WeatherAt(WeatherDataSource source, long absoluteHour)
+    {
+        if (source.HourlyData.Count > 0)
+        {
+            int index = (int)((source.StartIndex + absoluteHour) % source.HourlyData.Count);
+            return source.HourlyData[index];
+        }
+
+        // Нет CSV — мягкий дефолт, чтобы растения всё равно росли.
+        int hourOfDay = (int)(((absoluteHour % 24) + 24) % 24);
+        float sun = hourOfDay is >= 6 and <= 18
+            ? MathF.Sin((hourOfDay - 6) / 12f * MathF.PI) * 1.2f
+            : 0f;
+        return new WeatherData
+        {
+            AirTemp = 16f,
+            GroundTemp = 14f,
+            AirHumidity = 0.6f,
+            SoilMoisture = 0.55f,
+            SolarEnergyMj = sun
+        };
+    }
+
+    private static float SoilMoisture(in WeatherData w, TileMapComponent? map, Position pos, CropBalance b)
+    {
+        if (!b.UseTileMoisture || !map.HasValue) return w.SoilMoisture;
+        var m = map.Value;
+        if (pos.X < 0 || pos.Y < 0 || pos.X >= m.Width || pos.Y >= m.Height) return w.SoilMoisture;
+        return Math.Clamp(m.Tiles[pos.X, pos.Y].Moisture, 0f, 1f);
+    }
+
+    private static float FertilityAt(float[,]? values, Position pos, CropBalance b)
+    {
+        if (values == null) return b.MaxFertility;
+        if (pos.X < 0 || pos.Y < 0 || pos.X >= values.GetLength(0) || pos.Y >= values.GetLength(1))
+            return b.MaxFertility;
+        float v = values[pos.X, pos.Y];
+        return v <= 0f ? b.MaxFertility : Math.Clamp(v, b.MinFertility, b.MaxFertility);
+    }
+}.
+//конец Systems\CropGrowthSystem.cs
+.
 //начало Systems\ElapsedTimeSystem.cs
 ﻿// Systems/ElapsedTimeSystem.cs
 using AsciiFarm.Core;
@@ -3790,6 +4699,258 @@ public sealed class ElapsedTimeSystem : ISystem   // P2-10: stateless
     }
 }.
 //конец Systems\ElapsedTimeSystem.cs
+.
+//начало Systems\FarmSystem.cs
+﻿// Systems/FarmSystem.cs
+using AsciiFarm.Components;
+using AsciiFarm.Core;
+using AsciiFarm.Data;
+
+namespace AsciiFarm.Systems;
+
+[GameSystem(Order = 7)]
+public sealed class FarmSystem : ISystem
+{
+    public void Update(World world)
+    {
+        var actors = world.Query<FarmIntent, Position>();
+        if (actors.Length == 0) return;
+
+        var intents = world.Store<FarmIntent>();
+        var positions = world.Store<Position>();
+        var catalog = world.Resource<CropCatalog>();
+        var selection = world.Resource<FarmSelection>();
+        var log = world.Resource<FarmLog>();
+        var state = world.Resource<GameState>();
+
+        foreach (var actor in actors)
+        {
+            var action = intents.Get(actor).Action;
+            var pos = positions.Get(actor);
+
+            switch (action)
+            {
+                case FarmAction.CycleCrop:
+                    if (catalog.Count > 0)
+                    {
+                        selection.Index = (selection.Index + 1) % catalog.Count;
+                        log.Set($"Выбрано: {catalog.ByIndex(selection.Index)!.Name}", state.ElapsedTime);
+                    }
+                    break;
+
+                case FarmAction.Plant: Plant(world, actor, pos); break;
+                case FarmAction.Harvest: Harvest(world, actor, pos); break;
+                case FarmAction.Plant: Plant(world, actor, pos, forceYear2: false); break;
+                case FarmAction.PlantYear2: Plant(world, actor, pos, forceYear2: true); break;
+            }
+
+            intents.Remove(actor);
+        }
+    }
+
+    private static void Plant(World world, Entity actor, Position pos)
+    {
+        var catalog = world.Resource<CropCatalog>();
+        var selection = world.Resource<FarmSelection>();
+        var log = world.Resource<FarmLog>();
+        var state = world.Resource<GameState>();
+
+        var crop = catalog.ByIndex(selection.Index);
+        if (crop == null) { log.Set("Нет культур (slavic_crops.csv)", state.ElapsedTime); return; }
+
+        var maps = world.Query<TileMapComponent>();
+        if (maps.Length == 0) return;
+        var map = world.Store<TileMapComponent>().Get(maps[0]);
+        if (pos.X < 0 || pos.Y < 0 || pos.X >= map.Width || pos.Y >= map.Height) return;
+
+        var style = world.Resource<TilePalette>().Resolve(map.Tiles[pos.X, pos.Y].Symbol);
+        if (style.BlocksMovement) { log.Set("Здесь нельзя сеять", state.ElapsedTime); return; }
+        if (PlantAt(world, pos).HasValue) { log.Set("Тайл уже занят", state.ElapsedTime); return; }
+
+
+        var granary = EnsureGranary(world, actor);
+
+
+        // Двулетние: сначала семена (1-й год), при их отсутствии — корнеплод/кочан (2-й год).
+        bool year2 = false;
+        string key = crop.Id;
+        if (crop.Mode == HarvestMode.Biennial
+            && (year2 || Granary.Get(granary, crop.Id) < crop.SeedRatio)
+            && Granary.Get(granary, Granary.Root(crop.Id)) >= 1f)
+        {
+            key = Granary.Root(crop.Id);
+            year2 = true;
+        }
+
+        float cost = year2 ? 1f : crop.SeedRatio;
+        if (Granary.Get(granary, key) < cost) { log.Set($"Нет семян: {crop.Name}", state.ElapsedTime); return; }
+        Granary.Take(granary, key, cost);
+
+        var plant = world.CreateEntity();
+        world.Add(plant, new Position(pos.X, pos.Y));
+        world.Add(plant, new PlantComponent
+        {
+            CropId = crop.Id,
+            Health = 1f,
+            Disease = 0f,
+            GddAccumulated = 0,
+            BiomassMj = 0,
+            IsYear2 = year2,
+            Stage = PlantStage.Germination
+        });
+        world.Add(plant, CropVisuals.For(crop, PlantStage.Germination));
+
+        log.Set($"Посеяно: {crop.Name}{(year2 ? " (2 год)" : "")}", state.ElapsedTime);
+    }
+
+    private static void Harvest(World world, Entity actor, Position pos)
+    {
+        var log = world.Resource<FarmLog>();
+        var state = world.Resource<GameState>();
+        var balance = world.Resource<CropBalance>();
+        var catalog = world.Resource<CropCatalog>();
+
+        var found = PlantAt(world, pos);
+        if (!found.HasValue) { log.Set("Здесь ничего не растёт", state.ElapsedTime); return; }
+        var entity = found.Value;
+
+        var plants = world.Store<PlantComponent>();
+        var p = plants.Get(entity);
+        if (!catalog.TryGet(p.CropId, out var crop)) { RemovePlant(world, entity); return; }
+
+        void NotReady()
+        {
+            double target = crop.TargetGdd(p.IsYear2);
+            int pct = target > 0 ? (int)Math.Clamp(p.GddAccumulated / target * 100.0, 0, 100) : 0;
+            log.Set($"{crop.Name}: {CropMath.StageName(p.Stage)} {pct}%", state.ElapsedTime);
+        }
+
+        if (p.Stage == PlantStage.Dead || p.Health <= 0f)
+        {
+            RemovePlant(world, entity);
+            ApplyFertility(world, pos, crop.FertilityDelta, balance);
+            log.Set($"{crop.Name}: растение погибло", state.ElapsedTime);
+            return;
+        }
+
+        var granary = EnsureGranary(world, actor);
+        float yield = CropMath.Yield(p, crop, balance.MaxYieldMultiplier);
+        string message;
+
+        switch (crop.Mode)
+        {
+            case HarvestMode.GrainAndSeed:
+                if (p.GddAccumulated < crop.GddHarvest) { NotReady(); return; }
+                Granary.Add(granary, crop.Id, yield);
+                message = $"{crop.Name}: {yield:F2} зерна";
+                break;
+
+            case HarvestMode.Biennial:
+                if (!p.IsYear2)
+                {
+                    if (p.GddAccumulated < crop.GddHarvest) { NotReady(); return; }
+                    Granary.Add(granary, Granary.Vegetables, yield);
+                    Granary.Add(granary, Granary.Root(crop.Id), 1f);
+                    message = $"{crop.Name}: {yield:F2} овощей";
+                }
+                else
+                {
+                    if (p.GddAccumulated < crop.TargetGdd(true)) { NotReady(); return; }
+                    Granary.Add(granary, crop.Id, yield);
+                    message = $"{crop.Name}: {yield:F2} семян";
+                }
+                break;
+
+            default: // EarlyOrLate
+                if (p.GddAccumulated >= crop.GddHarvest)
+                {
+                    Granary.Add(granary, Granary.Fiber, yield * 0.7f);
+                    Granary.Add(granary, crop.Id, yield);
+                    message = $"{crop.Name}: волокно+семена";
+                }
+                else if (crop.GddEarlyHarvest > 0 && p.GddAccumulated >= crop.GddEarlyHarvest)
+                {
+                    Granary.Add(granary, Granary.Fiber, yield);
+                    message = $"{crop.Name}: {yield:F2} волокна";
+                }
+                else { NotReady(); return; }
+                break;
+        }
+
+        RemovePlant(world, entity);
+        ApplyFertility(world, pos, crop.FertilityDelta, balance);
+        log.Set(message, state.ElapsedTime);
+    }
+
+    private static Entity? PlantAt(World world, Position pos)
+    {
+        var positions = world.Store<Position>();
+        foreach (var e in world.Query<PlantComponent, Position>())
+        {
+            var p = positions.Get(e);
+            if (p.X == pos.X && p.Y == pos.Y) return e;
+        }
+        return null;
+    }
+
+    private static void RemovePlant(World world, Entity e)
+    {
+        world.Store<PlantComponent>().Remove(e);
+        world.Store<Glyph>().Remove(e);
+        world.Store<Position>().Remove(e);
+    }
+
+    private static GranaryComponent EnsureGranary(World world, Entity actor)
+    {
+        var store = world.Store<GranaryComponent>();
+        if (store.Has(actor))
+        {
+            var existing = store.Get(actor);
+            if (existing.Items != null) return existing;
+        }
+
+        var granary = new GranaryComponent
+        {
+            Items = new Dictionary<string, float>(StringComparer.OrdinalIgnoreCase)
+        };
+        float start = world.Resource<CropBalance>().StartingSeedUnits;
+        foreach (var crop in world.Resource<CropCatalog>().All)
+            granary.Items[crop.Id] = start;
+
+        store.Set(actor, granary);
+        return granary;
+    }
+
+    private static void ApplyFertility(World world, Position pos, float delta, CropBalance balance)
+    {
+        var maps = world.Query<TileMapComponent>();
+        if (maps.Length == 0) return;
+
+        var mapEntity = maps[0];
+        var map = world.Store<TileMapComponent>().Get(mapEntity);
+        var store = world.Store<SoilFertilityMap>();
+
+        SoilFertilityMap field;
+        if (store.Has(mapEntity) && store.Get(mapEntity).Values != null)
+        {
+            field = store.Get(mapEntity);
+        }
+        else
+        {
+            var values = new float[map.Width, map.Height];
+            for (int y = 0; y < map.Height; y++)
+                for (int x = 0; x < map.Width; x++)
+                    values[x, y] = balance.MaxFertility;
+            field = new SoilFertilityMap { Values = values };
+        }
+
+        if (pos.X < 0 || pos.Y < 0 || pos.X >= field.Width || pos.Y >= field.Height) return;
+        field.Values[pos.X, pos.Y] = Math.Clamp(field.Values[pos.X, pos.Y] + delta,
+                                                balance.MinFertility, balance.MaxFertility);
+        store.Set(mapEntity, field);
+    }
+}.
+//конец Systems\FarmSystem.cs
 .
 //начало Systems\FpsUpdateSystem.cs
 ﻿// Systems/FpsUpdateSystem.cs
@@ -3875,6 +5036,7 @@ public sealed class PlayerIntentSystem : ISystem
 
         var state = world.Resource<GameState>();
         var intents = world.Store<MoveIntent>();
+        var farmIntents = world.Store<FarmIntent>();
         Entity[]? players = null;
 
         foreach (var command in commands)   // один проход
@@ -3890,6 +5052,9 @@ public sealed class PlayerIntentSystem : ISystem
                 case GameCommand.MoveDown: Move(0, 1); break;
                 case GameCommand.MoveLeft: Move(-1, 0); break;
                 case GameCommand.MoveRight: Move(1, 0); break;
+                case GameCommand.Plant: Farm(FarmAction.Plant); break;
+                case GameCommand.Harvest: Farm(FarmAction.Harvest); break;
+                case GameCommand.CycleCrop: Farm(FarmAction.CycleCrop); break;
 
                 // Относительные скорости
                 case GameCommand.Speed1: state.TimeSpeed = state.DefaultTimeSpeed; break;
@@ -3912,6 +5077,7 @@ public sealed class PlayerIntentSystem : ISystem
                 case GameCommand.FastForward3: Forward(7 * CalendarHelper.SecondsPerDay); break;
                 case GameCommand.FastForward4: Forward(MonthSeconds(state)); break;
                 case GameCommand.FastForward5: Forward(YearSeconds(state)); break;
+                case GameCommand.PlantYear2: Farm(FarmAction.PlantYear2); break;
             }
         }
 
@@ -3921,6 +5087,12 @@ public sealed class PlayerIntentSystem : ISystem
         {
             players ??= world.Query<PlayerTag, Position>();
             foreach (var entity in players) intents.Set(entity, new MoveIntent(dx, dy));
+        }
+
+        void Farm(FarmAction action)
+        {
+            players ??= world.Query<PlayerTag, Position>();
+            foreach (var entity in players) farmIntents.Set(entity, new FarmIntent(action));
         }
 
         void Forward(double seconds) => state.FastForwardUntil = state.GameTimeElapsed + seconds;

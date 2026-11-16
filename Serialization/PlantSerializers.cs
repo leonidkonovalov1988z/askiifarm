@@ -46,38 +46,6 @@ public sealed class PlantComponentSerializer : ComponentSerializer<PlantComponen
     }
 }
 
-public sealed class SoilFertilitySerializer : ComponentSerializer<SoilFertilityMap>
-{
-    public const int MaxTiles = 2_000_000;
-    public override string TypeName => nameof(SoilFertilityMap);
-
-    public override void Serialize(BinaryWriter w, SoilFertilityMap m)
-    {
-        int width = m.Width, height = m.Height;
-        w.Write(width);
-        w.Write(height);
-        for (int y = 0; y < height; y++)
-            for (int x = 0; x < width; x++)
-                w.Write(m.Values[x, y]);
-    }
-
-    public override SoilFertilityMap Deserialize(BinaryReader r, int version)
-    {
-        int width = r.ReadInt32(), height = r.ReadInt32();
-        if (width <= 0 || height <= 0 || (long)width * height > MaxTiles)
-            throw new InvalidDataException($"SoilFertility: некорректный размер {width}x{height}.");
-        if ((long)width * height * 4 > r.BaseStream.Length - r.BaseStream.Position)
-            throw new InvalidDataException("SoilFertility: файл оборван.");
-
-        var values = new float[width, height];
-        for (int y = 0; y < height; y++)
-            for (int x = 0; x < width; x++)
-                values[x, y] = Math.Clamp(r.ReadSingle(), 0f, 1f);
-
-        return new SoilFertilityMap { Values = values };
-    }
-}
-
 public sealed class GranarySerializer : ComponentSerializer<GranaryComponent>
 {
     public const int MaxItems = 10_000;

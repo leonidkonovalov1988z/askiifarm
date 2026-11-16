@@ -17,21 +17,14 @@ public struct PlantComponent
     public PlantStage Stage;
 }
 
-/// <summary>Плодородие почвы по тайлам (0.2..1.0). Компонент на сущности карты.</summary>
-public struct SoilFertilityMap
-{
-    public float[,] Values;
-    public int Width => Values.GetLength(0);
-    public int Height => Values.GetLength(1);
-}
-
 /// <summary>Амбар: зерно/семена по культурам, посадочный материал, овощи, волокно.</summary>
 public struct GranaryComponent
 {
     public Dictionary<string, float> Items;
 }
 
-public enum FarmAction : byte { Plant, Harvest, CycleCrop }
+// РОВНО ОДНО объявление, на уровне пространства имён (не внутри Granary!)
+public enum FarmAction : byte { Plant = 0, Harvest = 1, CycleCrop = 2, PlantYear2 = 3 }
 
 [DontSave]
 public struct FarmIntent

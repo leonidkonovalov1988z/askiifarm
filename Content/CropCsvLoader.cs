@@ -85,7 +85,7 @@ public static class CropCsvLoader
                 SolarMjTarget = D("solar_mj_target"),
                 Mode = ParseMode(S("harvest_mode")),
                 SeedRatio = F("seed_ratio"),
-                FertilityDelta = F("fertility_delta")
+                SoilDelta = F("fertility_delta")
             };
 
             if (crop.GddHarvest <= 0 || crop.SolarMjTarget <= 0 || crop.SeedRatio <= 0) continue;

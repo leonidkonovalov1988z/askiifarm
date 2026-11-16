@@ -8,7 +8,7 @@ namespace AsciiFarm.Systems;
 [GameSystem(Order = 8)]
 public sealed class CropGrowthSystem : ISystem
 {
-    private const int MaxHoursPerTick = 960;   // предохранитель; остаток догоняется на следующих тиках
+    private const int MaxHoursPerTick = 960;
 
     public void Update(World world)
     {
@@ -36,16 +36,12 @@ public sealed class CropGrowthSystem : ISystem
         var maps = world.Query<TileMapComponent>();
         if (maps.Length > 0) map = world.Store<TileMapComponent>().Get(maps[0]);
 
-        float[,]? fertility = null;
-        var fertMaps = world.Query<SoilFertilityMap>();
-        if (fertMaps.Length > 0) fertility = world.Store<SoilFertilityMap>().Get(fertMaps[0]).Values;
-
         double scale = balance.TimeScale(state.DaysPerMonth);
 
         for (int i = 0; i < hours; i++)
         {
-            long absoluteHour = clock.LastHour + i;          // час, который растение проживает
-            var weather = WeatherAt(source, absoluteHour);   // своя погода на каждый час (важно при промотке)
+            long absoluteHour = clock.LastHour + i;
+            var weather = WeatherAt(source, absoluteHour);
 
             foreach (var entity in entities)
             {
@@ -55,9 +51,14 @@ public sealed class CropGrowthSystem : ISystem
 
                 var pos = positions.Get(entity);
                 float soil = SoilMoisture(weather, map, pos, balance);
-                float fert = FertilityAt(fertility, pos, balance);
+                float nutrient = NutrientFactor(map, pos, balance);
 
-                Step(ref p, crop, weather, soil, fert, scale, balance);
+                double before = p.BiomassMj;
+                Step(ref p, crop, weather, soil, nutrient, scale, balance);
+                double gained = p.BiomassMj - before;
+
+                // Вынос N/P/K пропорционально приросту биомассы — каждый час.
+                if (gained > 0) ApplyUptake(map, pos, crop, gained);
 
                 var stage = CropMath.StageOf(p, crop);
                 if (stage != p.Stage)
@@ -74,7 +75,7 @@ public sealed class CropGrowthSystem : ISystem
     }
 
     private static void Step(ref PlantComponent p, CropDefinition c, in WeatherData w,
-                             float soil, float fertility, double scale, CropBalance b)
+                             float soil, float nutrient, double scale, CropBalance b)
     {
         var stage = CropMath.StageOf(p, c);
         float smMax = stage == PlantStage.Flowering ? c.RipeningMoistureMax : c.SoilMoistMax;
@@ -116,7 +117,31 @@ public sealed class CropGrowthSystem : ISystem
         float wf = CropMath.Factor(soil, c.SoilMoistMin, c.SoilMoistOptMin, c.SoilMoistOptMax, smMax);
         if (tf <= 0f || wf <= 0f) return;
 
-        p.BiomassMj += w.SolarEnergyMj * tf * wf * fertility * p.Health * scale;
+        p.BiomassMj += w.SolarEnergyMj * tf * wf * nutrient * p.Health * scale;
+    }
+
+    /// <summary>Списание (или обогащение) N/P/K прямо в TileData. Массив общий — изменения видны всем.</summary>
+    private static void ApplyUptake(TileMapComponent? map, Position pos, CropDefinition c, double gainedMj)
+    {
+        if (!map.HasValue || c.SolarMjTarget <= 0 || c.SoilDelta == 0f) return;
+        var m = map.Value;
+        if (pos.X < 0 || pos.Y < 0 || pos.X >= m.Width || pos.Y >= m.Height) return;
+
+        float share = (float)(gainedMj / c.SolarMjTarget);
+        float delta = c.SoilDelta * share;
+
+        ref var tile = ref m.Tiles[pos.X, pos.Y];
+        tile.Nitrogen = Math.Clamp(tile.Nitrogen + delta, 0f, 1f);
+        tile.Phosphorus = Math.Clamp(tile.Phosphorus + delta, 0f, 1f);
+        tile.Potassium = Math.Clamp(tile.Potassium + delta, 0f, 1f);
+    }
+
+    private static float NutrientFactor(TileMapComponent? map, Position pos, CropBalance b)
+    {
+        if (!map.HasValue) return 1f;
+        var m = map.Value;
+        if (pos.X < 0 || pos.Y < 0 || pos.X >= m.Width || pos.Y >= m.Height) return 1f;
+        return CropMath.NutritionOf(m.Tiles[pos.X, pos.Y], b).Factor;
     }
 
     private static WeatherData WeatherAt(WeatherDataSource source, long absoluteHour)
@@ -127,7 +152,6 @@ public sealed class CropGrowthSystem : ISystem
             return source.HourlyData[index];
         }
 
-        // Нет CSV — мягкий дефолт, чтобы растения всё равно росли.
         int hourOfDay = (int)(((absoluteHour % 24) + 24) % 24);
         float sun = hourOfDay is >= 6 and <= 18
             ? MathF.Sin((hourOfDay - 6) / 12f * MathF.PI) * 1.2f
@@ -148,14 +172,5 @@ public sealed class CropGrowthSystem : ISystem
         var m = map.Value;
         if (pos.X < 0 || pos.Y < 0 || pos.X >= m.Width || pos.Y >= m.Height) return w.SoilMoisture;
         return Math.Clamp(m.Tiles[pos.X, pos.Y].Moisture, 0f, 1f);
-    }
-
-    private static float FertilityAt(float[,]? values, Position pos, CropBalance b)
-    {
-        if (values == null) return b.MaxFertility;
-        if (pos.X < 0 || pos.Y < 0 || pos.X >= values.GetLength(0) || pos.Y >= values.GetLength(1))
-            return b.MaxFertility;
-        float v = values[pos.X, pos.Y];
-        return v <= 0f ? b.MaxFertility : Math.Clamp(v, b.MinFertility, b.MaxFertility);
     }
 }

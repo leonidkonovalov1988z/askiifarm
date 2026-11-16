@@ -53,6 +53,7 @@ public static class GameContent
         Bind(GameCommand.Plant, ConsoleKey.E);
         Bind(GameCommand.Harvest, ConsoleKey.R);
         Bind(GameCommand.CycleCrop, ConsoleKey.Tab);
+        Bind(GameCommand.PlantYear2, ConsoleKey.T);
 
         return b;
     }

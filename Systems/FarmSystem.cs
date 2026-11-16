@@ -35,7 +35,8 @@ public sealed class FarmSystem : ISystem
                     }
                     break;
 
-                case FarmAction.Plant: Plant(world, actor, pos); break;
+                case FarmAction.Plant: Plant(world, actor, pos, forceYear2: false); break;
+                case FarmAction.PlantYear2: Plant(world, actor, pos, forceYear2: true); break;
                 case FarmAction.Harvest: Harvest(world, actor, pos); break;
             }
 
@@ -43,7 +44,7 @@ public sealed class FarmSystem : ISystem
         }
     }
 
-    private static void Plant(World world, Entity actor, Position pos)
+    private static void Plant(World world, Entity actor, Position pos, bool forceYear2)
     {
         var catalog = world.Resource<CropCatalog>();
         var selection = world.Resource<FarmSelection>();
@@ -64,11 +65,18 @@ public sealed class FarmSystem : ISystem
 
         var granary = EnsureGranary(world, actor);
 
-        // Двулетние: сначала семена (1-й год), при их отсутствии — корнеплод/кочан (2-й год).
+        if (forceYear2 &&
+            (crop.Mode != HarvestMode.Biennial || Granary.Get(granary, Granary.Root(crop.Id)) < 1f))
+        {
+            log.Set($"Нет посадочного материала: {crop.Name}", state.ElapsedTime);
+            return;
+        }
+
+        // Двулетние: семена → 1-й год; корнеплод/кочан → 2-й год (на семена).
         bool year2 = false;
         string key = crop.Id;
         if (crop.Mode == HarvestMode.Biennial
-            && Granary.Get(granary, crop.Id) < crop.SeedRatio
+            && (forceYear2 || Granary.Get(granary, crop.Id) < crop.SeedRatio)
             && Granary.Get(granary, Granary.Root(crop.Id)) >= 1f)
         {
             key = Granary.Root(crop.Id);
@@ -121,7 +129,6 @@ public sealed class FarmSystem : ISystem
         if (p.Stage == PlantStage.Dead || p.Health <= 0f)
         {
             RemovePlant(world, entity);
-            ApplyFertility(world, pos, crop.FertilityDelta, balance);
             log.Set($"{crop.Name}: растение погибло", state.ElapsedTime);
             return;
         }
@@ -170,8 +177,8 @@ public sealed class FarmSystem : ISystem
                 break;
         }
 
+        // NPK уже списан во время роста (CropGrowthSystem.ApplyUptake) — здесь ничего не трогаем.
         RemovePlant(world, entity);
-        ApplyFertility(world, pos, crop.FertilityDelta, balance);
         log.Set(message, state.ElapsedTime);
     }
 
@@ -212,34 +219,5 @@ public sealed class FarmSystem : ISystem
 
         store.Set(actor, granary);
         return granary;
-    }
-
-    private static void ApplyFertility(World world, Position pos, float delta, CropBalance balance)
-    {
-        var maps = world.Query<TileMapComponent>();
-        if (maps.Length == 0) return;
-
-        var mapEntity = maps[0];
-        var map = world.Store<TileMapComponent>().Get(mapEntity);
-        var store = world.Store<SoilFertilityMap>();
-
-        SoilFertilityMap field;
-        if (store.Has(mapEntity) && store.Get(mapEntity).Values != null)
-        {
-            field = store.Get(mapEntity);
-        }
-        else
-        {
-            var values = new float[map.Width, map.Height];
-            for (int y = 0; y < map.Height; y++)
-                for (int x = 0; x < map.Width; x++)
-                    values[x, y] = balance.MaxFertility;
-            field = new SoilFertilityMap { Values = values };
-        }
-
-        if (pos.X < 0 || pos.Y < 0 || pos.X >= field.Width || pos.Y >= field.Height) return;
-        field.Values[pos.X, pos.Y] = Math.Clamp(field.Values[pos.X, pos.Y] + delta,
-                                                balance.MinFertility, balance.MaxFertility);
-        store.Set(mapEntity, field);
     }
 }
