@@ -1,6 +1,6 @@
-﻿using AsciiFarm.Rendering;
+﻿// App/RenderLoop.cs
+using AsciiFarm.Rendering;
 using AsciiFarm.Systems;
-using askiifarm.Rendering;
 
 namespace AsciiFarm.App;
 
@@ -10,47 +10,32 @@ public sealed class RenderLoop
     private readonly FrameExchange<RenderFrame> _frames;
     private readonly ConsolePresentSystem _present;
     private readonly int _frameMs;
-    private Func<RenderFrame> _frameFactory;
 
+    // P1-6: никаких Console.Error.WriteLine — альтернативный буфер этого не прощает.
     public RenderLoop(DoubleBufferedConsole console, FrameExchange<RenderFrame> frames,
-        ConsolePresentSystem present, int frameMs, Func<RenderFrame> frameFactory)
+                      ConsolePresentSystem present, int frameMs)
     {
         _console = console;
         _frames = frames;
         _present = present;
         _frameMs = frameMs;
-        _frameFactory = frameFactory;
     }
 
     public void Run(CancellationToken token)
     {
         _console.AttachToCurrentThread();
         _frames.AttachReader();
-
         var (lastWidth, lastHeight) = _console.GetWindowSize();
-        Console.Error.WriteLine($"[RenderLoop] Старт: {lastWidth}x{lastHeight}");
 
         while (!token.IsCancellationRequested)
         {
-            var (currentWidth, currentHeight) = _console.GetWindowSize();
-
-            if (currentWidth != lastWidth || currentHeight != lastHeight)
+            var (w, h) = _console.GetWindowSize();
+            if (w != lastWidth || h != lastHeight)
             {
-                Console.Error.WriteLine($"[RenderLoop] Изменение: {lastWidth}x{lastHeight} -> {currentWidth}x{currentHeight}");
-                Console.Error.WriteLine($"[RenderLoop] Буфер: {_console.Width}x{_console.Height}");
-
-                lastWidth = currentWidth;
-                lastHeight = currentHeight;
-
-                int newWidth = currentWidth;
-                int newHeight = currentHeight;
-                _frameFactory = () => new RenderFrame(newWidth, newHeight);
-
-                Console.Error.WriteLine($"[RenderLoop] Вызываем Resize({currentWidth}, {currentHeight})");
-                _console.Resize(currentWidth, currentHeight);
-                _frames.Resize(_frameFactory);
-
-                Console.Error.WriteLine($"[RenderLoop] Resize завершён. Новый буфер: {_console.Width}x{_console.Height}");
+                lastWidth = w; lastHeight = h;
+                int nw = w, nh = h;
+                _console.Resize(nw, nh);
+                _frames.Resize(() => new RenderFrame(nw, nh));   // применит писатель
             }
 
             _present.Present();

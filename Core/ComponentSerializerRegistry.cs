@@ -42,4 +42,7 @@ public sealed class ComponentSerializerRegistry
         }
         return registry;
     }
+    // Core/ComponentSerializerRegistry.cs — добавить типизированный доступ
+    public ComponentSerializer<T>? Get<T>() where T : struct =>
+        _byType.TryGetValue(typeof(T), out var s) ? s as ComponentSerializer<T> : null;
 }

@@ -1,63 +1,90 @@
 ﻿// Data/CalendarHelper.cs
 using System;
+
 namespace AsciiFarm.Data;
 
 public static class CalendarHelper
 {
-    /// <summary>
-    /// Количество дней в году для настраиваемого календаря.
-    /// </summary>
-    public static int GetDaysInYear(int daysPerMonth)
-    {
-        if (daysPerMonth == 0) return 365;
-        return daysPerMonth * 12;
-    }
+    public const double SecondsPerMinute = 60.0;
+    public const double SecondsPerHour = 3600.0;
+    public const double SecondsPerDay = 86400.0;
+    public const int MonthsPerYear = 12;
 
-    /// <summary>
-    /// Форматирует игровое время с учётом кастомного календаря.
-    /// </summary>
-    // Data/CalendarHelper.cs
-    // Data/CalendarHelper.cs
-    public static string FormatGameTime(DateTime startDate, double gameSeconds, int daysPerMonth)
+    /// <summary>Дата/время игрового календаря.</summary>
+    public readonly record struct GameDate(int Year, int Month, int Day, int Hour, int Minute, int Second);
+
+    /// <summary>Дней в игровом году. 0 = реальный календарь (365).</summary>
+    public static int GetDaysInYear(int daysPerMonth) =>
+        daysPerMonth > 0 ? daysPerMonth * MonthsPerYear : 365;
+
+    /// <summary>Дней в игровом месяце. 0 = реальный календарь.</summary>
+    public static int GetDaysInMonth(int year, int month, int daysPerMonth) =>
+        daysPerMonth > 0
+            ? daysPerMonth
+            : DateTime.DaysInMonth(year, Math.Clamp(month, 1, 12));
+
+    /// <summary>Текущая игровая дата с учётом кастомного календаря.</summary>
+    public static GameDate GetGameDate(DateTime startDate, double gameSeconds, int daysPerMonth)
     {
-        if (daysPerMonth == 0)
+        if (daysPerMonth <= 0)
         {
-            return startDate.AddSeconds(gameSeconds).ToString("dd.MM.yyyy HH:mm:ss");
+            var real = AddSecondsSafe(startDate, gameSeconds);
+            return new GameDate(real.Year, real.Month, real.Day, real.Hour, real.Minute, real.Second);
         }
 
-        int daysPerYear = daysPerMonth * 12;
+        int daysPerYear = daysPerMonth * MonthsPerYear;
 
-        // Пересчитываем начальную дату в координаты кастомного календаря
-        // startDate.Month и startDate.Day — из реального календаря
-        // Нам нужно преобразовать их в день года кастомного календаря
-        // Для простоты: считаем, что 1 мая реального = 1 мая кастомного (тот же номер месяца и дня)
-        int startMonth = startDate.Month;
-        int startDay = startDate.Day;
+        int startMonth = Math.Clamp(startDate.Month, 1, 12);
+        int startDay = Math.Clamp(startDate.Day, 1, daysPerMonth);
+        int startDayOfYear = (startMonth - 1) * daysPerMonth + (startDay - 1);   // 0-based
 
-        // Ограничиваем в пределах кастомного календаря
-        if (startMonth > 12) startMonth = 12;
-        if (startDay > daysPerMonth) startDay = daysPerMonth;
+        long totalSeconds = (long)gameSeconds
+                            + startDayOfYear * 86400L
+                            + startDate.Hour * 3600L
+                            + startDate.Minute * 60L
+                            + startDate.Second;
 
-        int startDayOfYear = (startMonth - 1) * daysPerMonth + (startDay - 1); // 0-based
-        int startHour = startDate.Hour;
-        int startMinute = startDate.Minute;
-        int startSecond = startDate.Second;
-
-        // Общее время в секундах с начала кастомного года
-        long totalSeconds = (long)gameSeconds + (startDayOfYear * 86400) + (startHour * 3600) + (startMinute * 60) + startSecond;
-
-        long totalDays = totalSeconds / 86400;
-        long remainingSeconds = totalSeconds % 86400;
-
+        long totalDays = totalSeconds / 86400L;
+        long remSeconds = totalSeconds % 86400L;
         long years = totalDays / daysPerYear;
-        long remainingDays = totalDays % daysPerYear;
-        int month = (int)(remainingDays / daysPerMonth) + 1;
-        int day = (int)(remainingDays % daysPerMonth) + 1;
-        int hour = (int)(remainingSeconds / 3600);
-        int minute = (int)((remainingSeconds % 3600) / 60);
-        int second = (int)(remainingSeconds % 60);
+        long remDays = totalDays % daysPerYear;
 
-        int year = startDate.Year + (int)years;
-        return $"{day:D2}.{month:D2}.{year:D4} {hour:D2}:{minute:D2}:{second:D2}";
+        return new GameDate(
+            startDate.Year + (int)years,
+            (int)(remDays / daysPerMonth) + 1,
+            (int)(remDays % daysPerMonth) + 1,
+            (int)(remSeconds / 3600),
+            (int)(remSeconds % 3600 / 60),
+            (int)(remSeconds % 60));
+    }
+
+    /// <summary>Длина игрового месяца в секундах (для P+4 / X+4).</summary>
+    public static double GetMonthSeconds(DateTime startDate, double gameSeconds, int daysPerMonth)
+    {
+        if (daysPerMonth > 0) return daysPerMonth * SecondsPerDay;
+        var d = GetGameDate(startDate, gameSeconds, daysPerMonth);
+        return DateTime.DaysInMonth(d.Year, d.Month) * SecondsPerDay;
+    }
+
+    /// <summary>Длина игрового года в секундах: 12 игровых месяцев (для P+5 / X+5).</summary>
+    public static double GetYearSeconds(DateTime startDate, double gameSeconds, int daysPerMonth)
+    {
+        if (daysPerMonth > 0) return daysPerMonth * MonthsPerYear * SecondsPerDay;
+        var d = GetGameDate(startDate, gameSeconds, daysPerMonth);
+        return (DateTime.IsLeapYear(d.Year) ? 366 : 365) * SecondsPerDay;
+    }
+
+    /// <summary>Форматирует игровое время с учётом кастомного календаря.</summary>
+    public static string FormatGameTime(DateTime startDate, double gameSeconds, int daysPerMonth)
+    {
+        var d = GetGameDate(startDate, gameSeconds, daysPerMonth);
+        return $"{d.Day:D2}.{d.Month:D2}.{d.Year:D4} {d.Hour:D2}:{d.Minute:D2}:{d.Second:D2}";
+    }
+
+    // Защита от выхода за DateTime.MaxValue при длинных промотках в режиме реального календаря.
+    private static DateTime AddSecondsSafe(DateTime start, double seconds)
+    {
+        double max = (DateTime.MaxValue - start).TotalSeconds;
+        return start.AddSeconds(Math.Clamp(seconds, 0.0, max));
     }
 }

@@ -1,38 +1,27 @@
 ﻿// Systems/ElapsedTimeSystem.cs
 using AsciiFarm.Core;
 using AsciiFarm.Data;
-using System.Diagnostics;
+
 namespace AsciiFarm.Systems;
 
 [GameSystem(Order = 1)]
-public sealed class ElapsedTimeSystem : ISystem
+public sealed class ElapsedTimeSystem : ISystem   // P2-10: stateless
 {
-    private readonly Stopwatch _tickTimer = Stopwatch.StartNew();
-    private double _lastTickTime = 0;
-
     public void Update(World world)
     {
         var state = world.Resource<GameState>();
+        var clock = world.Resource<SimulationClock>();
         var fpsCounter = world.Resource<FpsCounter>();
 
-        // Реальное время между тиками — считаем всегда
-        double now = _tickTimer.Elapsed.TotalSeconds;
-        double realDeltaTime = now - _lastTickTime;
-        _lastTickTime = now;
-        realDeltaTime = Math.Min(realDeltaTime, 0.1);
+        double realDeltaTime = Math.Min(clock.NextDelta(), 0.1);
 
-        // Реальное время всегда растёт на реальное время между тиками
         state.ElapsedTime += realDeltaTime;
         state.DeltaTime = (float)realDeltaTime;
-        state.Tick++;
+        state.Tick++;                       // единственный инкремент Tick в проекте
         fpsCounter.RecordTick();
 
-        // При перемотке игровое время уже добавлено в SimulationLoop — не дублируем
-        if (state.FastForwardUntil.HasValue) return;
+        if (state.FastForwardUntil.HasValue) return;   // время уже добавлено в SimulationLoop
 
-        // В обычном режиме: игровое время = реальное × скорость, но не более MaxTimeStep
-        double effectiveDeltaTime = realDeltaTime * state.TimeSpeed;
-        effectiveDeltaTime = Math.Min(effectiveDeltaTime, state.MaxTimeStep);
-        state.GameTimeElapsed += effectiveDeltaTime;
+        state.GameTimeElapsed += Math.Min(realDeltaTime * state.TimeSpeed, state.MaxTimeStep);
     }
 }

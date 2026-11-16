@@ -2,7 +2,6 @@
 using AsciiFarm.Components;
 using AsciiFarm.Data;
 using AsciiFarm.Input;
-using askiifarm;
 namespace AsciiFarm.Content;
 
 /// <summary>
@@ -51,7 +50,9 @@ public static class GameContent
         Bind(GameCommand.MoveLeft, ConsoleKey.A, ConsoleKey.LeftArrow);
         Bind(GameCommand.MoveRight, ConsoleKey.D, ConsoleKey.RightArrow);
         Bind(GameCommand.Exit, ConsoleKey.Escape);
-
+        Bind(GameCommand.Plant, ConsoleKey.E);
+        Bind(GameCommand.Harvest, ConsoleKey.R);
+        Bind(GameCommand.CycleCrop, ConsoleKey.Tab);
 
         return b;
     }

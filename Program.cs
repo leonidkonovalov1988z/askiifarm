@@ -1,6 +1,6 @@
 ﻿// Program.cs
 using AsciiFarm.App;
-namespace askiifarm;
+namespace AsciiFarm;
 
 internal static class Program
 {

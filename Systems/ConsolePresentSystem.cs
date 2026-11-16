@@ -1,22 +1,24 @@
-﻿// Rendering/ConsolePresentSystem.cs
+﻿// Systems/ConsolePresentSystem.cs
 using AsciiFarm.Data;
 using AsciiFarm.Rendering;
-using askiifarm;
-using askiifarm.Rendering;
+using System.Diagnostics;
+
 namespace AsciiFarm.Systems;
 
 public sealed class ConsolePresentSystem
 {
     private readonly DoubleBufferedConsole _console;
     private readonly FrameExchange<RenderFrame> _frames;
-    private readonly FpsCounter _fpsCounter;  // ДОБАВИТЬ
+    private readonly FpsCounter _fpsCounter;
+    private readonly Stopwatch _clock = Stopwatch.StartNew();   // P0-3: реальное время
 
-    public ConsolePresentSystem(DoubleBufferedConsole console, FrameExchange<RenderFrame> frames,
-                                FpsCounter fpsCounter)  // ДОБАВИТЬ ПАРАМЕТР
+    public ConsolePresentSystem(DoubleBufferedConsole console,
+                                FrameExchange<RenderFrame> frames,
+                                FpsCounter fpsCounter)
     {
         _console = console;
         _frames = frames;
-        _fpsCounter = fpsCounter;  // ДОБАВИТЬ
+        _fpsCounter = fpsCounter;
     }
 
     public void Present()
@@ -29,9 +31,9 @@ public sealed class ConsolePresentSystem
                     int i = y * frame.Width + x;
                     _console.PutChar(x, y, frame.Symbols[i], frame.Foreground[i], frame.Background[i]);
                 }
-            _fpsCounter.RecordFrame(frame.Tick);
+
+            _fpsCounter.RecordFrame(_clock.Elapsed.TotalSeconds);  // не frame.Tick!
         }
-        // Вызываем Draw() всегда, даже если нет свежего кадра
         _console.Draw();
     }
 }

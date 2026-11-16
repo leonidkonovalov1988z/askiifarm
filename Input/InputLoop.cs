@@ -1,10 +1,8 @@
 ﻿// Input/InputLoop.cs
 using AsciiFarm.Data;
+
 namespace AsciiFarm.Input;
 
-/// <summary>
-/// Тело потока ввода. Ссылки на World нет по построению.
-/// </summary>
 public sealed class InputLoop
 {
     private enum Modifier { None, Speed, FastForward }
@@ -28,63 +26,49 @@ public sealed class InputLoop
             bool worked = false;
             while (Console.KeyAvailable)
             {
-                var keyInfo = Console.ReadKey(intercept: true);
-                var key = keyInfo.Key;
+                var key = Console.ReadKey(intercept: true).Key;
 
-                // Модификаторы: запоминаем последний
-                if (key == ConsoleKey.X) { _lastModifier = Modifier.Speed; worked = true; continue; }
-                if (key == ConsoleKey.P) { _lastModifier = Modifier.FastForward; worked = true; continue; }
+                if (key == _bindings.SpeedModifier)
+                { _lastModifier = Modifier.Speed; worked = true; continue; }
 
-                // Цифры 1-4 с модификатором
-                if (key >= ConsoleKey.D1 && key <= ConsoleKey.D5)
+                if (key == _bindings.FastForwardModifier)
+                { _lastModifier = Modifier.FastForward; worked = true; continue; }
+
+                if (key >= ConsoleKey.D1 && key <= ConsoleKey.D5 && _lastModifier != Modifier.None)
                 {
                     int n = key - ConsoleKey.D1 + 1;
-                    if (_lastModifier == Modifier.Speed)
-                    {
-                        var cmd = n switch
-                        {
-                            1 => GameCommand.Speed1,
-                            2 => GameCommand.Speed2,
-                            3 => GameCommand.Speed3,
-                            4 => GameCommand.Speed4,
-                            5 => GameCommand.Speed5,
-                            _ => GameCommand.None
-                        };
-                        _channel.Post(cmd);
-                        _lastModifier = Modifier.None;
-                        worked = true;
-                        continue;
-                    }
-                    if (_lastModifier == Modifier.FastForward)
-                    {
-                        var cmd = n switch
-                        {
-                            1 => GameCommand.FastForward1,
-                            2 => GameCommand.FastForward2,
-                            3 => GameCommand.FastForward3,
-                            4 => GameCommand.FastForward4,
-                            5 => GameCommand.FastForward5,
-                            _ => GameCommand.None
-                        };
-                        _channel.Post(cmd);
-                        _lastModifier = Modifier.None;
-                        worked = true;
-                        continue;
-                    }
-                }
-
-                // Сброс модификатора при любой другой клавише (кроме X/P)
-                if (_lastModifier != Modifier.None && key != ConsoleKey.X && key != ConsoleKey.P)
+                    _channel.Post(_lastModifier == Modifier.Speed ? SpeedCommand(n) : ForwardCommand(n));
                     _lastModifier = Modifier.None;
-
-                // Обычные команды из биндингов
-                if (_bindings.Map.TryGetValue(key, out var command))
-                {
-                    _channel.Post(command);
                     worked = true;
+                    continue;
                 }
+
+                _lastModifier = Modifier.None;   // любая другая клавиша сбрасывает модификатор
+
+                if (_bindings.Map.TryGetValue(key, out var command))
+                { _channel.Post(command); worked = true; }
             }
             if (!worked) Thread.Sleep(_pollDelayMs);
         }
     }
+
+    private static GameCommand SpeedCommand(int n) => n switch
+    {
+        1 => GameCommand.Speed1,
+        2 => GameCommand.Speed2,
+        3 => GameCommand.Speed3,
+        4 => GameCommand.Speed4,
+        5 => GameCommand.Speed5,
+        _ => GameCommand.None
+    };
+
+    private static GameCommand ForwardCommand(int n) => n switch
+    {
+        1 => GameCommand.FastForward1,
+        2 => GameCommand.FastForward2,
+        3 => GameCommand.FastForward3,
+        4 => GameCommand.FastForward4,
+        5 => GameCommand.FastForward5,
+        _ => GameCommand.None
+    };
 }

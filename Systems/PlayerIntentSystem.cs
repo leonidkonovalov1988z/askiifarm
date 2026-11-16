@@ -3,6 +3,7 @@ using AsciiFarm.Components;
 using AsciiFarm.Core;
 using AsciiFarm.Data;
 using AsciiFarm.Input;
+
 namespace AsciiFarm.Systems;
 
 [GameSystem(Order = 3)]
@@ -10,60 +11,75 @@ public sealed class PlayerIntentSystem : ISystem
 {
     public void Update(World world)
     {
-        var state = world.Resource<GameState>();
         var commands = world.Resource<CommandBuffer>().Items;
+        if (commands.Count == 0) return;
+
+        var state = world.Resource<GameState>();
         var intents = world.Store<MoveIntent>();
-        var players = world.Query<PlayerTag, Position>();
+        var farmIntents = world.Store<FarmIntent>();
+        Entity[]? players = null;
 
-        foreach (var command in commands)
+        foreach (var command in commands)   // один проход
         {
-            if (command == GameCommand.Exit)
-            {
-                state.IsRunning = false;
-                state.NeedsSave = true;
-                continue;
-            }
-
-            var (dx, dy) = command switch
-            {
-                GameCommand.MoveUp => (0, -1),
-                GameCommand.MoveDown => (0, 1),
-                GameCommand.MoveLeft => (-1, 0),
-                GameCommand.MoveRight => (1, 0),
-                _ => (0, 0)
-            };
-
-            if (dx == 0 && dy == 0) continue;
-
-            foreach (var entity in players)
-                intents.Set(entity, new MoveIntent(dx, dy));
-        }
-
-        // Обработка команд управления временем
-        foreach (var command in commands)
-        {
-            // Systems/PlayerIntentSystem.cs
-            // ... внутри foreach (var command in commands)
             switch (command)
             {
-                // Относительные скорости (от базовой DefaultTimeSpeed, например 48)
-                case GameCommand.Speed1: state.TimeSpeed = state.DefaultTimeSpeed; break;          // x1 от базы (48x)
-                case GameCommand.Speed2: state.TimeSpeed = state.DefaultTimeSpeed * 10; break;     // x10 от базы (480x)
+                case GameCommand.Exit:
+                    state.IsRunning = false;
+                    state.NeedsSave = true;
+                    break;
 
-                // Абсолютные скорости для масштабного ускорения
-                case GameCommand.Speed3: state.TimeSpeed = 1440.0; break;      // 1 игровой день за 1 реальную минуту
-                case GameCommand.Speed4: state.TimeSpeed = 43200.0; break;     // 1 игровой месяц за 1 реальную минуту
-                case GameCommand.Speed5: state.TimeSpeed = 518400.0; break;    // 1 игровой год за 1 реальную минуту
+                case GameCommand.MoveUp: Move(0, -1); break;
+                case GameCommand.MoveDown: Move(0, 1); break;
+                case GameCommand.MoveLeft: Move(-1, 0); break;
+                case GameCommand.MoveRight: Move(1, 0); break;
+                case GameCommand.Plant: Farm(FarmAction.Plant); break;
+                case GameCommand.Harvest: Farm(FarmAction.Harvest); break;
+                case GameCommand.CycleCrop: Farm(FarmAction.CycleCrop); break;
 
-                // Промотка (абсолютные значения в секундах)
-                case GameCommand.FastForward1: state.FastForwardUntil = state.GameTimeElapsed + 3600.0; break;       // +1 час
-                case GameCommand.FastForward2: state.FastForwardUntil = state.GameTimeElapsed + 86400.0; break;      // +1 день
-                case GameCommand.FastForward3: state.FastForwardUntil = state.GameTimeElapsed + 604800.0; break;     // +1 неделя
-                case GameCommand.FastForward4: state.FastForwardUntil = state.GameTimeElapsed + 2592000.0; break;    // +1 месяц
-                case GameCommand.FastForward5: state.FastForwardUntil = state.GameTimeElapsed + 31536000.0; break;   // +1 год
+                // Относительные скорости
+                case GameCommand.Speed1: state.TimeSpeed = state.DefaultTimeSpeed; break;
+                case GameCommand.Speed2: state.TimeSpeed = state.DefaultTimeSpeed * 10; break;
+
+                // Абсолютные: сутки / месяц / год ИГРОВОГО календаря за реальную минуту
+                case GameCommand.Speed3:
+                    state.TimeSpeed = CalendarHelper.SecondsPerDay / CalendarHelper.SecondsPerMinute;
+                    break;
+                case GameCommand.Speed4:
+                    state.TimeSpeed = MonthSeconds(state) / CalendarHelper.SecondsPerMinute;
+                    break;
+                case GameCommand.Speed5:
+                    state.TimeSpeed = YearSeconds(state) / CalendarHelper.SecondsPerMinute;
+                    break;
+
+                // Промотка: час / сутки / неделя / месяц / год ИГРОВОГО календаря
+                case GameCommand.FastForward1: Forward(CalendarHelper.SecondsPerHour); break;
+                case GameCommand.FastForward2: Forward(CalendarHelper.SecondsPerDay); break;
+                case GameCommand.FastForward3: Forward(7 * CalendarHelper.SecondsPerDay); break;
+                case GameCommand.FastForward4: Forward(MonthSeconds(state)); break;
+                case GameCommand.FastForward5: Forward(YearSeconds(state)); break;
             }
         }
 
         commands.Clear();
+
+        void Move(int dx, int dy)
+        {
+            players ??= world.Query<PlayerTag, Position>();
+            foreach (var entity in players) intents.Set(entity, new MoveIntent(dx, dy));
+        }
+
+        void Farm(FarmAction action)
+        {
+            players ??= world.Query<PlayerTag, Position>();
+            foreach (var entity in players) farmIntents.Set(entity, new FarmIntent(action));
+        }
+
+        void Forward(double seconds) => state.FastForwardUntil = state.GameTimeElapsed + seconds;
     }
+
+    private static double MonthSeconds(GameState s) =>
+        CalendarHelper.GetMonthSeconds(s.GameStartDate, s.GameTimeElapsed, s.DaysPerMonth);
+
+    private static double YearSeconds(GameState s) =>
+        CalendarHelper.GetYearSeconds(s.GameStartDate, s.GameTimeElapsed, s.DaysPerMonth);
 }

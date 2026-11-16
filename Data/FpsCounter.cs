@@ -1,27 +1,31 @@
 ﻿// Data/FpsCounter.cs
-using System.Collections.Generic;
 using System.Diagnostics;
+
 namespace AsciiFarm.Data;
 
+/// <summary>Потокобезопасный счётчик: RecordFrame — render-поток, RecordTick — симуляция.</summary>
 public sealed class FpsCounter
 {
     private const int SampleSize = 60;
-    private readonly Queue<double> _frameTimes = new();
+
     private readonly object _gate = new();
-
-    // Для реального FPS (рендер)
-    private int _framesThisSecond = 0;
+    private readonly Queue<double> _frameTimes = new();
     private readonly Stopwatch _renderTimer = Stopwatch.StartNew();
-
-    // Для TPS (симуляция)
-    private int _ticksThisSecond = 0;
     private readonly Stopwatch _tickTimer = Stopwatch.StartNew();
 
-    public float CurrentFps { get; private set; }
-    public float AverageFps { get; private set; }
-    public int RealFps { get; private set; }
-    public int TicksPerSecond { get; private set; }
+    private int _framesThisSecond;
+    private int _ticksThisSecond;
+    private float _currentFps;
+    private float _averageFps;
+    private int _realFps;
+    private int _tps;
 
+    public float CurrentFps { get { lock (_gate) return _currentFps; } }
+    public float AverageFps { get { lock (_gate) return _averageFps; } }
+    public int RealFps { get { lock (_gate) return _realFps; } }
+    public int TicksPerSecond { get { lock (_gate) return _tps; } }
+
+    /// <param name="timestampSeconds">Монотонное реальное время (Stopwatch), НЕ номер тика.</param>
     public void RecordFrame(double timestampSeconds)
     {
         lock (_gate)
@@ -31,18 +35,15 @@ public sealed class FpsCounter
 
             if (_frameTimes.Count >= 2)
             {
-                var first = _frameTimes.Peek();
-                var last = _frameTimes.ToArray()[^1];
-                double duration = last - first;
+                double duration = timestampSeconds - _frameTimes.Peek();   // без ToArray()
                 if (duration > 0.001)
-                    CurrentFps = (float)((_frameTimes.Count - 1) / duration);
+                    _currentFps = (float)((_frameTimes.Count - 1) / duration);
             }
 
-            // Считаем реальный FPS (рендер)
             _framesThisSecond++;
             if (_renderTimer.ElapsedMilliseconds >= 1000)
             {
-                RealFps = _framesThisSecond;
+                _realFps = _framesThisSecond;
                 _framesThisSecond = 0;
                 _renderTimer.Restart();
             }
@@ -56,7 +57,7 @@ public sealed class FpsCounter
             _ticksThisSecond++;
             if (_tickTimer.ElapsedMilliseconds >= 1000)
             {
-                TicksPerSecond = _ticksThisSecond;
+                _tps = _ticksThisSecond;
                 _ticksThisSecond = 0;
                 _tickTimer.Restart();
             }
@@ -66,8 +67,6 @@ public sealed class FpsCounter
     public void UpdateAverage(float instantFps)
     {
         lock (_gate)
-        {
-            AverageFps = AverageFps == 0 ? instantFps : AverageFps * 0.9f + instantFps * 0.1f;
-        }
+            _averageFps = _averageFps == 0 ? instantFps : _averageFps * 0.9f + instantFps * 0.1f;
     }
 }

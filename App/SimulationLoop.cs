@@ -37,7 +37,7 @@ public sealed class SimulationLoop
 
         while (!token.IsCancellationRequested && state.IsRunning)
         {
-            // Промотка: крутим максимально быстро, добавляем только игровое время
+            // App/SimulationLoop.cs — фрагмент Run(), ветка промотки
             if (state.FastForwardUntil.HasValue)
             {
                 while (state.GameTimeElapsed < state.FastForwardUntil.Value
@@ -46,9 +46,8 @@ public sealed class SimulationLoop
                 {
                     double remaining = state.FastForwardUntil.Value - state.GameTimeElapsed;
                     double step = Math.Min(remaining, state.MaxTimeStep);
-
-                    state.GameTimeElapsed += step;   // ← только игровое время
-                    state.Tick++;
+                    state.GameTimeElapsed += step;   // только игровое время
+                                                     // P0-2: Tick инкрементирует ТОЛЬКО ElapsedTimeSystem
 
                     using (_world.Guard.Enter())
                     {

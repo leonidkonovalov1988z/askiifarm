@@ -7,7 +7,7 @@ using System.Text.Json.Serialization;
 using AsciiFarm.Components;
 using AsciiFarm.Data;
 using AsciiFarm.Input;
-using askiifarm;
+using AsciiFarm.Core;
 
 namespace AsciiFarm.Content;
 
@@ -16,6 +16,7 @@ namespace AsciiFarm.Content;
 /// </summary>
 public sealed class ContentLoader
 {
+
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
         PropertyNameCaseInsensitive = true,
@@ -40,6 +41,8 @@ public sealed class ContentLoader
     private sealed class KeyBindingsDto
     {
         public Dictionary<string, string> Bindings { get; set; } = new();
+        public string SpeedModifier { get; set; } = "X";
+        public string FastForwardModifier { get; set; } = "P";
     }
 
     // DTO для персонажей
@@ -58,10 +61,8 @@ public sealed class ContentLoader
 
     public string ContentRoot { get; }
 
-    public ContentLoader(string contentRoot)
-    {
-        ContentRoot = contentRoot;
-    }
+    public ContentLoader(string contentRoot) => ContentRoot = SafePath.Resolve(contentRoot);
+
 
     public TilePalette LoadPalette(string fileName = "palette.json")
     {
@@ -83,19 +84,21 @@ public sealed class ContentLoader
 
     public KeyBindings LoadKeyBindings(string fileName = "keybindings.json")
     {
-        var path = Path.Combine(ContentRoot, fileName);
+        var path = PathFor(fileName);
         var dto = JsonSerializer.Deserialize<KeyBindingsDto>(File.ReadAllText(path), JsonOptions)
-            ?? throw new InvalidOperationException($"Не удалось прочитать {path}");
+                  ?? throw new InvalidOperationException($"Не удалось прочитать {path}");
 
         var bindings = new KeyBindings();
         foreach (var kvp in dto.Bindings)
-        {
             if (Enum.TryParse<ConsoleKey>(kvp.Key, true, out var key) &&
                 Enum.TryParse<GameCommand>(kvp.Value, true, out var cmd))
-            {
                 bindings.Map[key] = cmd;
-            }
-        }
+
+        if (Enum.TryParse<ConsoleKey>(dto.SpeedModifier, true, out var speed))
+            bindings.SpeedModifier = speed;
+        if (Enum.TryParse<ConsoleKey>(dto.FastForwardModifier, true, out var forward))
+            bindings.FastForwardModifier = forward;
+
         return bindings;
     }
 
@@ -121,4 +124,6 @@ public sealed class ContentLoader
 
     private static TileStyle ToStyle(TileStyleDto dto) =>
         new(dto.Foreground, dto.Background, dto.BlocksMovement);
+
+    private string PathFor(string fileName) => SafePath.Resolve(Path.Combine(ContentRoot, fileName));
 }

@@ -1,5 +1,7 @@
 ﻿{
-  "bindings": {
+  "SpeedModifier": "X",
+  "FastForwardModifier": "P",
+  "Bindings": {
     "W": "MoveUp",
     "UpArrow": "MoveUp",
     "S": "MoveDown",
@@ -8,6 +10,9 @@
     "LeftArrow": "MoveLeft",
     "D": "MoveRight",
     "RightArrow": "MoveRight",
-    "Escape": "Exit"
+    "Escape": "Exit",
+    "E": "Plant",
+    "R": "Harvest",
+    "Tab": "CycleCrop"
   }
 }

@@ -1,3 +1,10 @@
+//начало AssemblyInfo.cs
+﻿// AssemblyInfo.cs
+using System.Runtime.Versioning;
+
+[assembly: SupportedOSPlatform("windows")]
+//конец AssemblyInfo.cs
+
 //начало Cp437Symbols.cs
 ﻿using System;
 using System.Collections.Generic;
@@ -5,115 +12,114 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace askiifarm
+namespace AsciiFarm;
+
+public static class Cp437Symbols
 {
-    public static class Cp437Symbols
-    {
-        // --- Лица, масти и знаки ---
-        public const char WhiteSmilingFace = '\u263A';      // ☺
-        public const char BlackSmilingFace = '\u263B';      // ☻
-        public const char BlackHeartSuit = '\u2665';        // ♥
-        public const char BlackDiamondSuit = '\u2666';      // ♦
-        public const char BlackClubSuit = '\u2663';         // ♣
-        public const char BlackSpadeSuit = '\u2660';        // ♠
-        public const char Bullet = '\u2022';                // •
-        public const char InverseBullet = '\u25D8';         // ◘
-        public const char WhiteCircle = '\u25CB';           // ○
-        public const char InverseWhiteCircle = '\u25D9';    // ◙
-        public const char MaleSign = '\u2642';              // ♂
-        public const char FemaleSign = '\u2640';            // ♀
-        public const char EighthNote = '\u266A';            // ♪
-        public const char BeamedEighthNotes = '\u266B';     // ♫
-        public const char WhiteSunWithRays = '\u263C';      // ☼
-        public const char PilcrowSign = '\u00B6';           // ¶
-        public const char SectionSign = '\u00A7';           // §
-        public const char House = '\u2302';                 // ⌂
+    // --- Лица, масти и знаки ---
+    public const char WhiteSmilingFace = '\u263A';      // ☺
+    public const char BlackSmilingFace = '\u263B';      // ☻
+    public const char BlackHeartSuit = '\u2665';        // ♥
+    public const char BlackDiamondSuit = '\u2666';      // ♦
+    public const char BlackClubSuit = '\u2663';         // ♣
+    public const char BlackSpadeSuit = '\u2660';        // ♠
+    public const char Bullet = '\u2022';                // •
+    public const char InverseBullet = '\u25D8';         // ◘
+    public const char WhiteCircle = '\u25CB';           // ○
+    public const char InverseWhiteCircle = '\u25D9';    // ◙
+    public const char MaleSign = '\u2642';              // ♂
+    public const char FemaleSign = '\u2640';            // ♀
+    public const char EighthNote = '\u266A';            // ♪
+    public const char BeamedEighthNotes = '\u266B';     // ♫
+    public const char WhiteSunWithRays = '\u263C';      // ☼
+    public const char PilcrowSign = '\u00B6';           // ¶
+    public const char SectionSign = '\u00A7';           // §
+    public const char House = '\u2302';                 // ⌂
 
-        // --- Стрелки и указатели ---
-        public const char BlackRightPointingPointer = '\u25BA'; // ►
-        public const char BlackLeftPointingPointer = '\u25C4';  // ◄
-        public const char UpDownArrow = '\u2195';               // ↕
-        public const char UpDownArrowWithBase = '\u21A8';       // ↨
-        public const char UpwardsArrow = '\u2191';              // ↑
-        public const char DownwardsArrow = '\u2193';            // ↓
-        public const char RightwardsArrow = '\u2192';           // →
-        public const char LeftwardsArrow = '\u2190';            // ←
-        public const char LeftRightArrow = '\u2194';            // ↔
-        public const char BlackUpPointingTriangle = '\u25B2';   // ▲
-        public const char BlackDownPointingTriangle = '\u25BC'; // ▼
+    // --- Стрелки и указатели ---
+    public const char BlackRightPointingPointer = '\u25BA'; // ►
+    public const char BlackLeftPointingPointer = '\u25C4';  // ◄
+    public const char UpDownArrow = '\u2195';               // ↕
+    public const char UpDownArrowWithBase = '\u21A8';       // ↨
+    public const char UpwardsArrow = '\u2191';              // ↑
+    public const char DownwardsArrow = '\u2193';            // ↓
+    public const char RightwardsArrow = '\u2192';           // →
+    public const char LeftwardsArrow = '\u2190';            // ←
+    public const char LeftRightArrow = '\u2194';            // ↔
+    public const char BlackUpPointingTriangle = '\u25B2';   // ▲
+    public const char BlackDownPointingTriangle = '\u25BC'; // ▼
 
-        // --- Блоки и градиенты ---
-        public const char LightShade = '\u2591';        // ░
-        public const char MediumShade = '\u2592';       // ▒
-        public const char DarkShade = '\u2593';         // ▓
-        public const char FullBlock = '\u2588';         // █
-        public const char LowerHalfBlock = '\u2584';    // ▄
-        public const char LeftHalfBlock = '\u258C';     // ▌
-        public const char RightHalfBlock = '\u2590';    // ▐
-        public const char UpperHalfBlock = '\u2580';    // ▀
-        public const char BlackSquare = '\u25A0';       // ■
-        public const char BlackRectangle = '\u25AC';    // ▬
+    // --- Блоки и градиенты ---
+    public const char LightShade = '\u2591';        // ░
+    public const char MediumShade = '\u2592';       // ▒
+    public const char DarkShade = '\u2593';         // ▓
+    public const char FullBlock = '\u2588';         // █
+    public const char LowerHalfBlock = '\u2584';    // ▄
+    public const char LeftHalfBlock = '\u258C';     // ▌
+    public const char RightHalfBlock = '\u2590';    // ▐
+    public const char UpperHalfBlock = '\u2580';    // ▀
+    public const char BlackSquare = '\u25A0';       // ■
+    public const char BlackRectangle = '\u25AC';    // ▬
 
-        // --- Одинарные рамки (Box Drawings Light) ---
-        public const char BoxDrawingsLightHorizontal = '\u2500';          // ─
-        public const char BoxDrawingsLightVertical = '\u2502';            // │
-        public const char BoxDrawingsLightDownAndRight = '\u250C';        // ┌
-        public const char BoxDrawingsLightDownAndLeft = '\u2510';         // ┐
-        public const char BoxDrawingsLightUpAndRight = '\u2514';          // └
-        public const char BoxDrawingsLightUpAndLeft = '\u2518';           // ┘
-        public const char BoxDrawingsLightVerticalAndRight = '\u251C';    // ├
-        public const char BoxDrawingsLightVerticalAndLeft = '\u2524';     // ┤
-        public const char BoxDrawingsLightDownAndHorizontal = '\u252C';   // ┬
-        public const char BoxDrawingsLightUpAndHorizontal = '\u2534';     // ┴
-        public const char BoxDrawingsLightVerticalAndHorizontal = '\u253C'; // ┼
+    // --- Одинарные рамки (Box Drawings Light) ---
+    public const char BoxDrawingsLightHorizontal = '\u2500';          // ─
+    public const char BoxDrawingsLightVertical = '\u2502';            // │
+    public const char BoxDrawingsLightDownAndRight = '\u250C';        // ┌
+    public const char BoxDrawingsLightDownAndLeft = '\u2510';         // ┐
+    public const char BoxDrawingsLightUpAndRight = '\u2514';          // └
+    public const char BoxDrawingsLightUpAndLeft = '\u2518';           // ┘
+    public const char BoxDrawingsLightVerticalAndRight = '\u251C';    // ├
+    public const char BoxDrawingsLightVerticalAndLeft = '\u2524';     // ┤
+    public const char BoxDrawingsLightDownAndHorizontal = '\u252C';   // ┬
+    public const char BoxDrawingsLightUpAndHorizontal = '\u2534';     // ┴
+    public const char BoxDrawingsLightVerticalAndHorizontal = '\u253C'; // ┼
 
-        // --- Двойные рамки (Box Drawings Double) ---
-        public const char BoxDrawingsDoubleHorizontal = '\u2550';          // ═
-        public const char BoxDrawingsDoubleVertical = '\u2551';            // ║
-        public const char BoxDrawingsDoubleDownAndRight = '\u2554';        // ╔
-        public const char BoxDrawingsDoubleDownAndLeft = '\u2557';         // ╗
-        public const char BoxDrawingsDoubleUpAndRight = '\u255A';          // ╚
-        public const char BoxDrawingsDoubleUpAndLeft = '\u255D';           // ╝
-        public const char BoxDrawingsDoubleVerticalAndRight = '\u2560';    // ╠
-        public const char BoxDrawingsDoubleVerticalAndLeft = '\u2563';     // ╣
-        public const char BoxDrawingsDoubleDownAndHorizontal = '\u2566';   // ╦
-        public const char BoxDrawingsDoubleUpAndHorizontal = '\u2569';     // ╩
-        public const char BoxDrawingsDoubleVerticalAndHorizontal = '\u256C'; // ╬
+    // --- Двойные рамки (Box Drawings Double) ---
+    public const char BoxDrawingsDoubleHorizontal = '\u2550';          // ═
+    public const char BoxDrawingsDoubleVertical = '\u2551';            // ║
+    public const char BoxDrawingsDoubleDownAndRight = '\u2554';        // ╔
+    public const char BoxDrawingsDoubleDownAndLeft = '\u2557';         // ╗
+    public const char BoxDrawingsDoubleUpAndRight = '\u255A';          // ╚
+    public const char BoxDrawingsDoubleUpAndLeft = '\u255D';           // ╝
+    public const char BoxDrawingsDoubleVerticalAndRight = '\u2560';    // ╠
+    public const char BoxDrawingsDoubleVerticalAndLeft = '\u2563';     // ╣
+    public const char BoxDrawingsDoubleDownAndHorizontal = '\u2566';   // ╦
+    public const char BoxDrawingsDoubleUpAndHorizontal = '\u2569';     // ╩
+    public const char BoxDrawingsDoubleVerticalAndHorizontal = '\u256C'; // ╬
 
-        // --- Комбинированные рамки (Single & Double) ---
-        public const char BoxDrawingsDownSingleAndRightDouble = '\u2552'; // ╒
-        public const char BoxDrawingsDownDoubleAndRightSingle = '\u2553'; // ╓
-        public const char BoxDrawingsDownSingleAndLeftDouble = '\u2555';  // ╕
-        public const char BoxDrawingsDownDoubleAndLeftSingle = '\u2556';  // ╖
-        public const char BoxDrawingsUpSingleAndRightDouble = '\u2558';   // ╘
-        public const char BoxDrawingsUpDoubleAndRightSingle = '\u2559';   // ╙
-        public const char BoxDrawingsUpSingleAndLeftDouble = '\u255B';    // ╛
-        public const char BoxDrawingsUpDoubleAndLeftSingle = '\u255C';    // ╜
-        public const char BoxDrawingsVerticalSingleAndRightDouble = '\u255E'; // ╞
-        public const char BoxDrawingsVerticalDoubleAndRightSingle = '\u255F'; // ╟
-        public const char BoxDrawingsVerticalSingleAndLeftDouble = '\u2561';  // ╡
-        public const char BoxDrawingsVerticalDoubleAndLeftSingle = '\u2562';  // ╢
-        public const char BoxDrawingsDownSingleAndHorizontalDouble = '\u2564'; // ╤
-        public const char BoxDrawingsDownDoubleAndHorizontalSingle = '\u2565'; // ╥
-        public const char BoxDrawingsUpSingleAndHorizontalDouble = '\u2567';   // ╧
-        public const char BoxDrawingsUpDoubleAndHorizontalSingle = '\u2568';   // ╨
-        public const char BoxDrawingsVerticalSingleAndHorizontalDouble = '\u256A'; // ╪
-        public const char BoxDrawingsVerticalDoubleAndHorizontalSingle = '\u256B'; // ╫
+    // --- Комбинированные рамки (Single & Double) ---
+    public const char BoxDrawingsDownSingleAndRightDouble = '\u2552'; // ╒
+    public const char BoxDrawingsDownDoubleAndRightSingle = '\u2553'; // ╓
+    public const char BoxDrawingsDownSingleAndLeftDouble = '\u2555';  // ╕
+    public const char BoxDrawingsDownDoubleAndLeftSingle = '\u2556';  // ╖
+    public const char BoxDrawingsUpSingleAndRightDouble = '\u2558';   // ╘
+    public const char BoxDrawingsUpDoubleAndRightSingle = '\u2559';   // ╙
+    public const char BoxDrawingsUpSingleAndLeftDouble = '\u255B';    // ╛
+    public const char BoxDrawingsUpDoubleAndLeftSingle = '\u255C';    // ╜
+    public const char BoxDrawingsVerticalSingleAndRightDouble = '\u255E'; // ╞
+    public const char BoxDrawingsVerticalDoubleAndRightSingle = '\u255F'; // ╟
+    public const char BoxDrawingsVerticalSingleAndLeftDouble = '\u2561';  // ╡
+    public const char BoxDrawingsVerticalDoubleAndLeftSingle = '\u2562';  // ╢
+    public const char BoxDrawingsDownSingleAndHorizontalDouble = '\u2564'; // ╤
+    public const char BoxDrawingsDownDoubleAndHorizontalSingle = '\u2565'; // ╥
+    public const char BoxDrawingsUpSingleAndHorizontalDouble = '\u2567';   // ╧
+    public const char BoxDrawingsUpDoubleAndHorizontalSingle = '\u2568';   // ╨
+    public const char BoxDrawingsVerticalSingleAndHorizontalDouble = '\u256A'; // ╪
+    public const char BoxDrawingsVerticalDoubleAndHorizontalSingle = '\u256B'; // ╫
 
-        // --- Математические и прочие символы ---
-        public const char DoubleExclamationMark = '\u203C';    // ‼
-        public const char RightAngle = '\u221F';               // ∟
-        public const char IdenticalTo = '\u2261';              // ≡
-        public const char PlusMinusSign = '\u00B1';            // ±
-        public const char GreaterThanOrEqualTo = '\u2265';     // ≥
-        public const char LessThanOrEqualTo = '\u2264';        // ≤
-        public const char DivisionSign = '\u00F7';             // ÷
-        public const char AlmostEqualTo = '\u2248';            // ≈
-        public const char DegreeSign = '\u00B0';               // °
-        public const char BulletOperator = '\u2219';           // ∙
-        public const char MiddleDot = '\u00B7';                // ·
-        public const char SquareRoot = '\u221A';               // √
-    }
+    // --- Математические и прочие символы ---
+    public const char DoubleExclamationMark = '\u203C';    // ‼
+    public const char RightAngle = '\u221F';               // ∟
+    public const char IdenticalTo = '\u2261';              // ≡
+    public const char PlusMinusSign = '\u00B1';            // ±
+    public const char GreaterThanOrEqualTo = '\u2265';     // ≥
+    public const char LessThanOrEqualTo = '\u2264';        // ≤
+    public const char DivisionSign = '\u00F7';             // ÷
+    public const char AlmostEqualTo = '\u2248';            // ≈
+    public const char DegreeSign = '\u00B0';               // °
+    public const char BulletOperator = '\u2219';           // ∙
+    public const char MiddleDot = '\u00B7';                // ·
+    public const char SquareRoot = '\u221A';               // √
 }
 
 //конец Cp437Symbols.cs
@@ -121,7 +127,7 @@ namespace askiifarm
 //начало Program.cs
 ﻿// Program.cs
 using AsciiFarm.App;
-namespace askiifarm;
+namespace AsciiFarm;
 
 internal static class Program
 {
@@ -130,7 +136,7 @@ internal static class Program
 //конец Program.cs
 
 //начало App\GameApplication.cs
-﻿using AsciiFarm.Components;
+﻿// App/GameApplication.cs
 using AsciiFarm.Content;
 using AsciiFarm.Core;
 using AsciiFarm.Data;
@@ -138,8 +144,8 @@ using AsciiFarm.Input;
 using AsciiFarm.Rendering;
 using AsciiFarm.Serialization;
 using AsciiFarm.Systems;
-using askiifarm.Rendering;
 using System.Collections.Concurrent;
+using System.Reflection;
 
 namespace AsciiFarm.App;
 
@@ -153,7 +159,6 @@ public sealed class GameApplication
         if (Console.IsInputRedirected)
             throw new InvalidOperationException("Нужна настоящая консоль: ввод перенаправлен.");
 
-        // 1. Сначала пытаемся установить размер окна консоли
         try
         {
             Console.BufferWidth = _settings.ScreenWidth;
@@ -161,82 +166,59 @@ public sealed class GameApplication
             Console.WindowWidth = _settings.ScreenWidth;
             Console.WindowHeight = _settings.ScreenHeight;
         }
-        catch
-        {
-            // Если не удалось — используем текущий размер
-        }
+        catch { /* остаёмся на текущем размере */ }
 
-        // 2. Получаем реальный размер окна (может отличаться от запрошенного)
         int actualWidth = Console.WindowWidth;
         int actualHeight = Console.WindowHeight;
 
-        // 3. Создаём мир и канал команд
         var world = GameWorldBuilder.Build(_settings);
         var channel = new CommandChannel(_settings.CommandQueueCapacity);
-
-        // 4. Factory для создания кадров нужного размера
-        Func<RenderFrame> frameFactory = () => new RenderFrame(actualWidth, actualHeight);
-        var frames = new FrameExchange<RenderFrame>(frameFactory);
+        var frames = new FrameExchange<RenderFrame>(() => new RenderFrame(actualWidth, actualHeight));
 
         using var console = new DoubleBufferedConsole(actualWidth, actualHeight);
         using var shutdown = new CancellationTokenSource();
         var errors = new ConcurrentQueue<Exception>();
 
-        // 5. Загружаем привязки
-        KeyBindings bindings;
-        if (_settings.UseJsonContent && Directory.Exists(_settings.ContentRoot))
-        {
-            bindings = new ContentLoader(_settings.ContentRoot).LoadKeyBindings();
-        }
-        else
-        {
-            bindings = GameContent.CreateKeyBindings();
-        }
+        KeyBindings bindings = _settings.UseJsonContent && Directory.Exists(_settings.ContentRoot)
+            ? new ContentLoader(_settings.ContentRoot).LoadKeyBindings()
+            : GameContent.CreateKeyBindings();
 
-        // 6. Создаём симуляцию
+        var snapshot = new SnapshotSystem(frames, new MapRenderer(), new EntityRenderer(), new HudRenderer());
+
         var simulation = new SimulationLoop(
             world, channel, SystemPipeline.CreateSimulationSystems(),
-            new SnapshotSystem(frames), frames, shutdown, _settings.SimulationFps);
+            snapshot, frames, shutdown, _settings.SimulationFps);
 
-        // 7. Создаём рендер с передачей factory
         var fpsCounter = world.Resource<FpsCounter>();
-        var render = new RenderLoop(
-            console, frames,
+        var render = new RenderLoop(console, frames,
             new ConsolePresentSystem(console, frames, fpsCounter),
-            1000 / _settings.RenderFps,
-            frameFactory);
+            1000 / _settings.RenderFps);
 
-        // 8. Создаём ввод
         var input = new InputLoop(channel, bindings, _settings.InputPollMs);
 
-        // 9. Запускаем потоки
         var threads = new[]
         {
             Start("Simulation", () => simulation.Run(shutdown.Token), shutdown, errors),
             Start("Render",     () => render.Run(shutdown.Token),     shutdown, errors),
             Start("Input",      () => input.Run(shutdown.Token),      shutdown, errors),
         };
-
         foreach (var thread in threads) thread.Join();
-        channel.Close();
 
+        channel.Close();
         if (!errors.IsEmpty) throw new AggregateException("Сбой игрового потока.", errors);
 
         world.Guard.Detach();
-        var state = world.Resource<GameState>();
-        if (state.NeedsSave) SaveGame(world);
+        if (world.Resource<GameState>().NeedsSave) SaveGame(world);
     }
 
     private void SaveGame(World world)
     {
-        var registry = ComponentSerializerRegistry.AutoRegister(
-            System.Reflection.Assembly.GetExecutingAssembly());
-        var saveSystem = new ComponentSaveSystem(registry);
-        saveSystem.Save(_settings.MapPath, world);
+        var registry = ComponentSerializerRegistry.AutoRegister(Assembly.GetExecutingAssembly());
+        new ComponentSaveSystem(registry).Save(SafePath.Resolve(_settings.MapPath), world);
     }
 
     private static Thread Start(string name, Action body,
-        CancellationTokenSource shutdown, ConcurrentQueue<Exception> errors)
+                                CancellationTokenSource shutdown, ConcurrentQueue<Exception> errors)
     {
         var thread = new Thread(() =>
         {
@@ -287,28 +269,32 @@ using AsciiFarm.Content;
 using AsciiFarm.Core;
 using AsciiFarm.Data;
 using AsciiFarm.Serialization;
-using askiifarm.Serialization;
+using AsciiFarm.Systems;
 using System.Reflection;
+
 namespace AsciiFarm.App;
 
 public static class GameWorldBuilder
 {
-    // App/GameWorldBuilder.cs
     public static World Build(GameSettings settings)
     {
         var world = new World();
+
+        // P2-17: все пути проходят песочницу рабочей директории
+        string mapPath = SafePath.Resolve(settings.MapPath);
+        string weatherPath = SafePath.Resolve(settings.WeatherCsvPath);
+
         var registry = ComponentSerializerRegistry.AutoRegister(Assembly.GetExecutingAssembly());
         var saveSystem = new ComponentSaveSystem(registry);
 
-        if (ComponentSaveSystem.IsNewFormat(settings.MapPath))
+        if (ComponentSaveSystem.IsNewFormat(mapPath))
         {
-            saveSystem.Load(settings.MapPath, world);
+            saveSystem.Load(mapPath, world);
         }
-        else if (File.Exists(settings.MapPath))
+        else if (File.Exists(mapPath))
         {
-            // МИГРАЦИЯ: читаем старый формат
-            var legacyStorage = new GameStorage();
-            var legacyData = legacyStorage.LoadLatest<GameDataV0_0_3>(settings.MapPath);
+            // МИГРАЦИЯ: старый формат -> новый
+            var legacyData = new GameStorage().LoadLatest<GameDataV0_0_3>(mapPath);
 
             var map = world.CreateEntity();
             world.Add(map, new TileMapComponent { Tiles = MigrateOldMap(legacyData.Map) });
@@ -318,28 +304,24 @@ public static class GameWorldBuilder
             world.Add(player, new PlayerTag());
             world.Add(player, new Glyph
             {
-                Symbol = '☺',
+                Symbol = Cp437Symbols.WhiteSmilingFace,
                 Foreground = ConsoleColor.Yellow,
                 Background = ConsoleColor.Black,
                 Layer = 10
             });
 
-            // Сразу сохраняем в новом формате
-            saveSystem.Save(settings.MapPath, world);
+            saveSystem.Save(mapPath, world);
         }
         else
         {
-            throw new FileNotFoundException($"Файл сохранения не найден: {settings.MapPath}");
+            throw new FileNotFoundException($"Файл сохранения не найден: {mapPath}");
         }
 
-        // Ресурсы (не сохраняются, создаём всегда)
+        // --- Контент ---
         TilePalette palette;
         CharacterPalette charPalette;
-
         if (settings.UseJsonContent && Directory.Exists(settings.ContentRoot))
-        {
             (palette, _, charPalette) = GameContent.LoadFromFiles(settings.ContentRoot);
-        }
         else
         {
             palette = GameContent.CreatePalette();
@@ -353,35 +335,17 @@ public static class GameWorldBuilder
         world.SetResource(new FpsLimiter(settings.SimulationFps));
         world.SetResource(settings);
 
-        // Загрузка погоды
-        var weatherData = WeatherCsvLoader.Load(settings.WeatherCsvPath, out var weatherError);
+        // --- P2-10: состояние систем живёт в ресурсах ---
+        world.SetResource(new SimulationClock());
+        world.SetResource(new WeatherSystemState());
+        world.SetResource(new WaterColorCache());
+
+        // --- Погода (P0-1: ровно одна регистрация каждого ресурса) ---
+        var weatherData = WeatherCsvLoader.Load(weatherPath, out var weatherError);
         if (settings.DaysPerMonth != 0)
-        {
             weatherData = WeatherCsvLoader.CompressWeatherData(weatherData, settings.DaysPerMonth);
-        }
 
-        // Вычисляем StartIndex математически
-        int startIndex;
-        if (settings.DaysPerMonth == 0)
-        {
-            // Реальный календарь
-            int dayOfYear = settings.GameStartDate.DayOfYear - 1; // 0-based
-            startIndex = dayOfYear * 24 + settings.GameStartDate.Hour;
-        }
-        else
-        {
-            // Кастомный календарь
-            int month = settings.GameStartDate.Month;
-            int day = settings.GameStartDate.Day;
-            if (month > 12) month = 12;
-            if (day > settings.DaysPerMonth) day = settings.DaysPerMonth;
-            int dayOfYear = (month - 1) * settings.DaysPerMonth + (day - 1);
-            startIndex = dayOfYear * 24 + settings.GameStartDate.Hour;
-        }
-
-        // Ограничиваем в пределах данных
-        startIndex = Math.Max(0, Math.Min(startIndex, weatherData.Count - 1));
-
+        int startIndex = ComputeStartIndex(settings, weatherData.Count);
         world.SetResource(new WeatherDataSource
         {
             HourlyData = weatherData,
@@ -390,15 +354,6 @@ public static class GameWorldBuilder
         });
         world.SetResource(new WeatherCurrent());
 
-        world.SetResource(new WeatherDataSource
-        {
-            HourlyData = weatherData,
-            LoadError = weatherError,
-            StartIndex = startIndex
-        });
-        world.SetResource(new WeatherCurrent());
-
-        // СОЗДАЁМ GameState ВСЕГДА (независимо от сохранения)
         world.SetResource(new GameState
         {
             GameStartDate = settings.GameStartDate,
@@ -408,75 +363,64 @@ public static class GameWorldBuilder
             DaysPerMonth = settings.DaysPerMonth
         });
 
-        // Создаём и регистрируем провайдеры информации о тайле
+        // --- Провайдеры информации о тайле (P0-1: каждый ровно один раз) ---
         var tileInfoRegistry = new TileInfoRegistry();
-        //tileInfoRegistry.Register(new TilePaletteInfoProvider());
+        tileInfoRegistry.Register(new TerrainInfoProvider());
+        tileInfoRegistry.Register(new EntityInspectorProvider());
         tileInfoRegistry.Register(new WeatherTileInfoProvider());
         world.SetResource(tileInfoRegistry);
 
-        // App/GameWorldBuilder.cs (внутри метода Build, перед return world;)
-
-        // 1. Создаём и регистрируем провайдеры информации о тайле
-        tileInfoRegistry.Register(new TerrainInfoProvider());       // Показывает NPK, влагу, символ
-        tileInfoRegistry.Register(new EntityInspectorProvider());   // АВТОМАТИЧЕСКИ показывает все компоненты на тайле
-        tileInfoRegistry.Register(new WeatherTileInfoProvider());   // Показывает погоду
-        world.SetResource(tileInfoRegistry);
-
-        // 2. (ОПЦИОНАЛЬНО) Зарегистрируйте правила отображения для будущих компонентов здесь.
-        // Например, когда вы создадите компонент PlantComponent, добавьте одну строку:
-        // ComponentDisplayRegistry.Register<PlantComponent>(p => $"{p.SpeciesName}, Рост: {p.GrowthStage:P0}");
-
-        return world;
-
-        return world;
+        return world;   // P0-1: единственный return
     }
-    /// <summary>
-    /// Правила миграции: назначаем NPK и влажность на основе старого символа тайла.
-    /// </summary>
+
+    private static int ComputeStartIndex(GameSettings settings, int dataCount)
+    {
+        if (dataCount == 0) return 0;
+
+        int startIndex;
+        if (settings.DaysPerMonth == 0)
+        {
+            startIndex = (settings.GameStartDate.DayOfYear - 1) * 24 + settings.GameStartDate.Hour;
+        }
+        else
+        {
+            int month = Math.Clamp(settings.GameStartDate.Month, 1, 12);
+            int day = Math.Clamp(settings.GameStartDate.Day, 1, settings.DaysPerMonth);
+            int dayOfYear = (month - 1) * settings.DaysPerMonth + (day - 1);
+            startIndex = dayOfYear * 24 + settings.GameStartDate.Hour;
+        }
+        return Math.Clamp(startIndex, 0, dataCount - 1);
+    }
+
     private static TileData[,] MigrateOldMap(char[,] oldMap)
     {
-        int width = oldMap.GetLength(0);
-        int height = oldMap.GetLength(1);
+        int width = oldMap.GetLength(0), height = oldMap.GetLength(1);
         var newMap = new TileData[width, height];
-
         for (int y = 0; y < height; y++)
-        {
             for (int x = 0; x < width; x++)
             {
                 char c = oldMap[x, y];
                 newMap[x, y] = c switch
                 {
-                    // Вода
-                    '≈' => new TileData { Symbol = c, Nitrogen = 0f, Phosphorus = 0f, Potassium = 0f, Moisture = 1.0f },
-
-                    // Густая растительность / кусты
+                    '≈' => new TileData { Symbol = c, Moisture = 1.0f },
                     '♣' or '♠' => new TileData { Symbol = c, Nitrogen = 0.7f, Phosphorus = 0.5f, Potassium = 0.6f, Moisture = 0.7f },
-
-                    // Обычная почва / трава
                     '.' or ',' or '\'' or '`' or ';' => new TileData { Symbol = c, Nitrogen = 0.5f, Phosphorus = 0.3f, Potassium = 0.4f, Moisture = 0.6f },
-
-                    // Камень, стены, структуры (бесплодные)
                     '#' or '▒' or '┌' or '┐' or '└' or '┘' or '─' or '│' or '┬' or '┴' or '├' or '┤' or '┼' or '╪'
-                    or '╔' or '╗' or '╚' or '╝' or '═' or '║' or '╠' or '╣' or '╦' or '╩' or '╬'
-                    => new TileData { Symbol = c, Nitrogen = 0f, Phosphorus = 0f, Potassium = 0f, Moisture = 0f },
-
-                    // Пустынная или истощенная земля
+                        or '╔' or '╗' or '╚' or '╝' or '═' or '║' or '╠' or '╣' or '╦' or '╩' or '╬'
+                        => new TileData { Symbol = c },
                     ' ' => new TileData { Symbol = c, Nitrogen = 0.1f, Phosphorus = 0.1f, Potassium = 0.1f, Moisture = 0.1f },
-
-                    // Значения по умолчанию для всего остального
                     _ => new TileData { Symbol = c, Nitrogen = 0.3f, Phosphorus = 0.3f, Potassium = 0.3f, Moisture = 0.4f }
                 };
             }
-        }
         return newMap;
     }
 }.
 //конец App\GameWorldBuilder.cs
 .
 //начало App\RenderLoop.cs
-﻿using AsciiFarm.Rendering;
+﻿// App/RenderLoop.cs
+using AsciiFarm.Rendering;
 using AsciiFarm.Systems;
-using askiifarm.Rendering;
 
 namespace AsciiFarm.App;
 
@@ -486,47 +430,32 @@ public sealed class RenderLoop
     private readonly FrameExchange<RenderFrame> _frames;
     private readonly ConsolePresentSystem _present;
     private readonly int _frameMs;
-    private Func<RenderFrame> _frameFactory;
 
+    // P1-6: никаких Console.Error.WriteLine — альтернативный буфер этого не прощает.
     public RenderLoop(DoubleBufferedConsole console, FrameExchange<RenderFrame> frames,
-        ConsolePresentSystem present, int frameMs, Func<RenderFrame> frameFactory)
+                      ConsolePresentSystem present, int frameMs)
     {
         _console = console;
         _frames = frames;
         _present = present;
         _frameMs = frameMs;
-        _frameFactory = frameFactory;
     }
 
     public void Run(CancellationToken token)
     {
         _console.AttachToCurrentThread();
         _frames.AttachReader();
-
         var (lastWidth, lastHeight) = _console.GetWindowSize();
-        Console.Error.WriteLine($"[RenderLoop] Старт: {lastWidth}x{lastHeight}");
 
         while (!token.IsCancellationRequested)
         {
-            var (currentWidth, currentHeight) = _console.GetWindowSize();
-
-            if (currentWidth != lastWidth || currentHeight != lastHeight)
+            var (w, h) = _console.GetWindowSize();
+            if (w != lastWidth || h != lastHeight)
             {
-                Console.Error.WriteLine($"[RenderLoop] Изменение: {lastWidth}x{lastHeight} -> {currentWidth}x{currentHeight}");
-                Console.Error.WriteLine($"[RenderLoop] Буфер: {_console.Width}x{_console.Height}");
-
-                lastWidth = currentWidth;
-                lastHeight = currentHeight;
-
-                int newWidth = currentWidth;
-                int newHeight = currentHeight;
-                _frameFactory = () => new RenderFrame(newWidth, newHeight);
-
-                Console.Error.WriteLine($"[RenderLoop] Вызываем Resize({currentWidth}, {currentHeight})");
-                _console.Resize(currentWidth, currentHeight);
-                _frames.Resize(_frameFactory);
-
-                Console.Error.WriteLine($"[RenderLoop] Resize завершён. Новый буфер: {_console.Width}x{_console.Height}");
+                lastWidth = w; lastHeight = h;
+                int nw = w, nh = h;
+                _console.Resize(nw, nh);
+                _frames.Resize(() => new RenderFrame(nw, nh));   // применит писатель
             }
 
             _present.Present();
@@ -576,7 +505,7 @@ public sealed class SimulationLoop
 
         while (!token.IsCancellationRequested && state.IsRunning)
         {
-            // Промотка: крутим максимально быстро, добавляем только игровое время
+            // App/SimulationLoop.cs — фрагмент Run(), ветка промотки
             if (state.FastForwardUntil.HasValue)
             {
                 while (state.GameTimeElapsed < state.FastForwardUntil.Value
@@ -585,9 +514,8 @@ public sealed class SimulationLoop
                 {
                     double remaining = state.FastForwardUntil.Value - state.GameTimeElapsed;
                     double step = Math.Min(remaining, state.MaxTimeStep);
-
-                    state.GameTimeElapsed += step;   // ← только игровое время
-                    state.Tick++;
+                    state.GameTimeElapsed += step;   // только игровое время
+                                                     // P0-2: Tick инкрементирует ТОЛЬКО ElapsedTimeSystem
 
                     using (_world.Guard.Enter())
                     {
@@ -686,7 +614,7 @@ using System.Text.Json.Serialization;
 using AsciiFarm.Components;
 using AsciiFarm.Data;
 using AsciiFarm.Input;
-using askiifarm;
+using AsciiFarm.Core;
 
 namespace AsciiFarm.Content;
 
@@ -695,6 +623,7 @@ namespace AsciiFarm.Content;
 /// </summary>
 public sealed class ContentLoader
 {
+
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
         PropertyNameCaseInsensitive = true,
@@ -719,6 +648,8 @@ public sealed class ContentLoader
     private sealed class KeyBindingsDto
     {
         public Dictionary<string, string> Bindings { get; set; } = new();
+        public string SpeedModifier { get; set; } = "X";
+        public string FastForwardModifier { get; set; } = "P";
     }
 
     // DTO для персонажей
@@ -737,10 +668,8 @@ public sealed class ContentLoader
 
     public string ContentRoot { get; }
 
-    public ContentLoader(string contentRoot)
-    {
-        ContentRoot = contentRoot;
-    }
+    public ContentLoader(string contentRoot) => ContentRoot = SafePath.Resolve(contentRoot);
+
 
     public TilePalette LoadPalette(string fileName = "palette.json")
     {
@@ -762,19 +691,21 @@ public sealed class ContentLoader
 
     public KeyBindings LoadKeyBindings(string fileName = "keybindings.json")
     {
-        var path = Path.Combine(ContentRoot, fileName);
+        var path = PathFor(fileName);
         var dto = JsonSerializer.Deserialize<KeyBindingsDto>(File.ReadAllText(path), JsonOptions)
-            ?? throw new InvalidOperationException($"Не удалось прочитать {path}");
+                  ?? throw new InvalidOperationException($"Не удалось прочитать {path}");
 
         var bindings = new KeyBindings();
         foreach (var kvp in dto.Bindings)
-        {
             if (Enum.TryParse<ConsoleKey>(kvp.Key, true, out var key) &&
                 Enum.TryParse<GameCommand>(kvp.Value, true, out var cmd))
-            {
                 bindings.Map[key] = cmd;
-            }
-        }
+
+        if (Enum.TryParse<ConsoleKey>(dto.SpeedModifier, true, out var speed))
+            bindings.SpeedModifier = speed;
+        if (Enum.TryParse<ConsoleKey>(dto.FastForwardModifier, true, out var forward))
+            bindings.FastForwardModifier = forward;
+
         return bindings;
     }
 
@@ -800,6 +731,8 @@ public sealed class ContentLoader
 
     private static TileStyle ToStyle(TileStyleDto dto) =>
         new(dto.Foreground, dto.Background, dto.BlocksMovement);
+
+    private string PathFor(string fileName) => SafePath.Resolve(Path.Combine(ContentRoot, fileName));
 }.
 //конец Content\ContentLoader.cs
 .
@@ -808,7 +741,6 @@ public sealed class ContentLoader
 using AsciiFarm.Components;
 using AsciiFarm.Data;
 using AsciiFarm.Input;
-using askiifarm;
 namespace AsciiFarm.Content;
 
 /// <summary>
@@ -1208,6 +1140,9 @@ public sealed class ComponentSerializerRegistry
         }
         return registry;
     }
+    // Core/ComponentSerializerRegistry.cs — добавить типизированный доступ
+    public ComponentSerializer<T>? Get<T>() where T : struct =>
+        _byType.TryGetValue(typeof(T), out var s) ? s as ComponentSerializer<T> : null;
 }.
 //конец Core\ComponentSerializerRegistry.cs
 .
@@ -1215,16 +1150,20 @@ public sealed class ComponentSerializerRegistry
 ﻿// Core/ComponentStore.cs
 namespace AsciiFarm.Core;
 
+/// <summary>Типобезопасный обход компонентов: T известен статически, boxing нет.</summary>
+public interface IComponentVisitor
+{
+    void Visit<T>(Entity entity, in T component) where T : struct;
+}
+
 public interface IComponentStore
 {
     int Count { get; }
+    int StructureVersion { get; }          // меняется только при добавлении/удалении сущности
     IReadOnlyCollection<Entity> Entities { get; }
     bool Has(Entity entity);
     void Remove(Entity entity);
-    // ДОБАВИТЬ ЭТО:
-    IEnumerable<(Entity Entity, object Component)> AllComponentsBoxed();
-    // ДОБАВИТЬ ЭТО:
-    bool TryGetBoxed(Entity entity, out object component);
+    void Accept(IComponentVisitor visitor);
 }
 
 /// <summary>Только хранилище данных. Никакой игровой логики.</summary>
@@ -1233,33 +1172,34 @@ public sealed class ComponentStore<T> : IComponentStore where T : struct
     private readonly Dictionary<Entity, T> _items = new();
 
     public int Count => _items.Count;
+    public int StructureVersion { get; private set; }
     public IReadOnlyCollection<Entity> Entities => _items.Keys;
 
     public bool Has(Entity entity) => _items.ContainsKey(entity);
-    public void Set(Entity entity, T component) => _items[entity] = component;
-    public T Get(Entity entity) => _items[entity];
-    public bool TryGet(Entity entity, out T component) => _items.TryGetValue(entity, out component);
-    public void Remove(Entity entity) => _items.Remove(entity);
-    // Добавить в конец класса ComponentStore<T>
 
-    /// <summary>
-    /// Итератор по всем компонентам (упакованный в object для универсального доступа).
-    /// </summary>
-    public IEnumerable<(Entity Entity, object Component)> AllComponentsBoxed()
+    public void Set(Entity entity, T component)
     {
-        foreach (var kvp in _items)
-            yield return (kvp.Key, kvp.Value);
+        if (!_items.ContainsKey(entity)) StructureVersion++;   // перезапись значения версию не меняет
+        _items[entity] = component;
     }
 
-    public bool TryGetBoxed(Entity entity, out object component)
+    public T Get(Entity entity) => _items[entity];
+    public bool TryGet(Entity entity, out T component) => _items.TryGetValue(entity, out component);
+
+    public void Remove(Entity entity)
     {
-        if (_items.TryGetValue(entity, out var c))
-        {
-            component = c;
-            return true;
-        }
-        component = null;
-        return false;
+        if (_items.Remove(entity)) StructureVersion++;
+    }
+
+    public void Accept(IComponentVisitor visitor)
+    {
+        foreach (var kvp in _items) visitor.Visit(kvp.Key, kvp.Value);
+    }
+
+    /// <summary>Альтернатива для простых случаев: делегат типизирован, компонент не упаковывается.</summary>
+    public void Visit(Action<Entity, T> action)
+    {
+        foreach (var kvp in _items) action(kvp.Key, kvp.Value);
     }
 }.
 //конец Core\ComponentStore.cs
@@ -1346,45 +1286,40 @@ public sealed class GameSystemAttribute : Attribute
 //конец Core\GameSystemAttribute.cs
 .
 //начало Core\IComponentSerializer.cs
-﻿using System;
+﻿// Core/IComponentSerializer.cs
+using System;
 using System.IO;
+
 namespace AsciiFarm.Core;
 
-/// <summary>
-/// Интерфейс сериализации компонента. Каждый компонент имеет свой сериализатор.
-/// </summary>
 public interface IComponentSerializer
 {
-    /// <summary>Тип компонента (например, typeof(Position)).</summary>
     Type ComponentType { get; }
-
-    /// <summary>Имя типа для хранения в файле.</summary>
     string TypeName { get; }
-
-    /// <summary>Текущая версия формата сериализации.</summary>
     int Version { get; }
-
     void Serialize(BinaryWriter writer, object component);
     object Deserialize(BinaryReader reader, int version);
+
+    /// <summary>P2-16: делегат применения к миру, строится один раз, без рефлексии.</summary>
+    Action<World, Entity, object> Applier { get; }
 }
 
-/// <summary>
-/// Базовый класс для типобезопасных сериализаторов.
-/// </summary>
 public abstract class ComponentSerializer<T> : IComponentSerializer where T : struct
 {
+    private Action<World, Entity, object>? _applier;
+
     public Type ComponentType => typeof(T);
     public abstract string TypeName { get; }
     public virtual int Version => 1;
 
+    public Action<World, Entity, object> Applier =>
+        _applier ??= static (world, entity, component) => world.Add(entity, (T)component);
+
     public abstract void Serialize(BinaryWriter writer, T component);
     public abstract T Deserialize(BinaryReader reader, int version);
 
-    void IComponentSerializer.Serialize(BinaryWriter writer, object component) =>
-        Serialize(writer, (T)component);
-
-    object IComponentSerializer.Deserialize(BinaryReader reader, int version) =>
-        Deserialize(reader, version);
+    void IComponentSerializer.Serialize(BinaryWriter writer, object component) => Serialize(writer, (T)component);
+    object IComponentSerializer.Deserialize(BinaryReader reader, int version) => Deserialize(reader, version);
 }.
 //конец Core\IComponentSerializer.cs
 .
@@ -1398,6 +1333,47 @@ public interface ISystem
     void Update(World world);
 }.
 //конец Core\ISystem.cs
+.
+//начало Core\SafePath.cs
+﻿// Core/SafePath.cs
+namespace AsciiFarm.Core;
+
+/// <summary>
+/// Песочница путей: ни один файл не читается/пишется вне рабочей директории.
+/// Корень по умолчанию — текущая директория (как и было у относительных путей).
+/// Можно переопределить: SafePath.Root = AppContext.BaseDirectory.
+/// </summary>
+public static class SafePath
+{
+    private static readonly StringComparison Cmp =
+        OperatingSystem.IsWindows() ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal;
+
+    private static string _root = Path.GetFullPath(Directory.GetCurrentDirectory());
+
+    public static string Root
+    {
+        get => _root;
+        set => _root = Path.GetFullPath(value);
+    }
+
+    public static string Resolve(string path)
+    {
+        if (string.IsNullOrWhiteSpace(path))
+            throw new ArgumentException("Путь пуст.", nameof(path));
+        if (path.IndexOfAny(Path.GetInvalidPathChars()) >= 0)
+            throw new ArgumentException($"Недопустимые символы в пути: '{path}'.", nameof(path));
+
+        string full = Path.GetFullPath(Path.IsPathRooted(path) ? path : Path.Combine(_root, path));
+        string prefix = _root.EndsWith(Path.DirectorySeparatorChar) ? _root : _root + Path.DirectorySeparatorChar;
+
+        if (!full.StartsWith(prefix, Cmp) && !string.Equals(full, _root, Cmp))
+            throw new UnauthorizedAccessException(
+                $"Путь '{path}' выходит за пределы рабочей директории '{_root}'.");
+
+        return full;
+    }
+}.
+//конец Core\SafePath.cs
 .
 //начало Core\ThreadGuard.cs
 ﻿// Core/ThreadGuard.cs
@@ -1458,17 +1434,24 @@ public sealed class ThreadGuard
 .
 //начало Core\World.cs
 ﻿// Core/World.cs
+using System;
+using System.Collections.Generic;
+using System.Linq;
+
 namespace AsciiFarm.Core;
 
 /// <summary>
-/// Данные мира. Принадлежит РОВНО ОДНОМУ потоку (симуляции).
-/// Render- и Input-потоки ссылки на World не получают вообще.
+/// Данные мира. Принадлежат РОВНО ОДНОМУ потоку (симуляции).
+/// ВНИМАНИЕ: массивы из Query&lt;...&gt; кэшируются — вызывающий код не должен их изменять.
+/// Нужна мутабельная копия — делайте .ToArray() самостоятельно.
 /// </summary>
 public sealed class World
 {
     private readonly Dictionary<Type, IComponentStore> _stores = new();
     private readonly Dictionary<Type, object> _resources = new();
+    private readonly Dictionary<QueryKey, CachedQuery> _queryCache = new();
     private int _nextEntityId;
+    private int _schemaVersion;   // растёт при появлении нового типа компонента
 
     public ThreadGuard Guard { get; } = new("World");
 
@@ -1485,26 +1468,54 @@ public sealed class World
         {
             store = new ComponentStore<T>();
             _stores[typeof(T)] = store;
+            _schemaVersion++;
+            _queryCache.Clear();
         }
         return (ComponentStore<T>)store;
     }
 
     public void Add<T>(Entity entity, T component) where T : struct => Store<T>().Set(entity, component);
 
-    // Запросы материализуются в массив: системы могут спокойно удалять компоненты в цикле.
-    public Entity[] Query<TA>() where TA : struct => Store<TA>().Entities.ToArray();
+    public Entity[] Query<TA>() where TA : struct
+    {
+        IComponentStore a = Store<TA>();
+        var key = new QueryKey(typeof(TA), null, null);
+        if (TryGetCached(key, a, null, null, out var hit)) return hit;
+
+        var result = a.Entities.ToArray();
+        PutCache(key, a, null, null, result);
+        return result;
+    }
 
     public Entity[] Query<TA, TB>() where TA : struct where TB : struct
     {
-        IComponentStore a = Store<TA>(), b = Store<TB>();
-        var (small, large) = a.Count <= b.Count ? (a, b) : (b, a);
-        return small.Entities.Where(large.Has).ToArray();
+        IComponentStore a = Store<TA>();
+        IComponentStore b = Store<TB>();
+        var key = new QueryKey(typeof(TA), typeof(TB), null);
+        if (TryGetCached(key, a, b, null, out var hit)) return hit;
+
+        IComponentStore small = a.Count <= b.Count ? a : b;
+        IComponentStore large = a.Count <= b.Count ? b : a;
+
+        var result = small.Entities.Where(large.Has).ToArray();
+        PutCache(key, a, b, null, result);
+        return result;
     }
 
     public Entity[] Query<TA, TB, TC>() where TA : struct where TB : struct where TC : struct
     {
+        IComponentStore a = Store<TA>();
+        IComponentStore b = Store<TB>();
         IComponentStore c = Store<TC>();
-        return Query<TA, TB>().Where(c.Has).ToArray();
+        var key = new QueryKey(typeof(TA), typeof(TB), typeof(TC));
+        if (TryGetCached(key, a, b, c, out var hit)) return hit;
+
+        IComponentStore small = a.Count <= b.Count ? a : b;
+        IComponentStore large = a.Count <= b.Count ? b : a;
+
+        var result = small.Entities.Where(e => large.Has(e) && c.Has(e)).ToArray();
+        PutCache(key, a, b, c, result);
+        return result;
     }
 
     public T Resource<T>() where T : class
@@ -1513,97 +1524,154 @@ public sealed class World
         return (T)_resources[typeof(T)];
     }
 
+    /// <summary>Отсутствие ресурса — не исключение.</summary>
+    public bool TryGetResource<T>(out T? resource) where T : class
+    {
+        Guard.Validate();
+        if (_resources.TryGetValue(typeof(T), out var obj) && obj is T typed)
+        {
+            resource = typed;
+            return true;
+        }
+        resource = null;
+        return false;
+    }
+
     public void SetResource<T>(T resource) where T : class
     {
         Guard.Validate();
         _resources[typeof(T)] = resource;
     }
-    // Добавить в конец класса World, перед закрывающей скобкой
 
-    /// <summary>
-    /// Итератор по всем хранилищам компонентов.
-    /// </summary>
+    /// <summary>Итератор по всем хранилищам компонентов.</summary>
     public IEnumerable<(Type ComponentType, IComponentStore Store)> AllStores()
     {
         Guard.Validate();
-        foreach (var kvp in _stores)
-            yield return (kvp.Key, kvp.Value);
+        foreach (var kvp in _stores) yield return (kvp.Key, kvp.Value);
     }
 
-    /// <summary>
-    /// Резервирует ID сущности, чтобы новые сущности не получили уже использованный ID.
-    /// </summary>
+    /// <summary>Резервирует ID, чтобы новые сущности не конфликтовали с загруженными.</summary>
     public void ReserveId(int id)
     {
         Guard.Validate();
-        if (id >= _nextEntityId)
-            _nextEntityId = id + 1;
+        if (id >= _nextEntityId) _nextEntityId = id + 1;
     }
+
+    // --- кэш запросов: инвалидация по структурным версиям хранилищ ---
+    private bool TryGetCached(QueryKey key, IComponentStore a, IComponentStore? b, IComponentStore? c,
+                              out Entity[] result)
+    {
+        if (_queryCache.TryGetValue(key, out var cached)
+            && cached.Schema == _schemaVersion
+            && cached.Va == a.StructureVersion
+            && cached.Vb == (b?.StructureVersion ?? 0)
+            && cached.Vc == (c?.StructureVersion ?? 0))
+        {
+            result = cached.Entities;
+            return true;
+        }
+        result = Array.Empty<Entity>();
+        return false;
+    }
+
+    private void PutCache(QueryKey key, IComponentStore a, IComponentStore? b, IComponentStore? c, Entity[] result) =>
+        _queryCache[key] = new CachedQuery(_schemaVersion, a.StructureVersion,
+                                           b?.StructureVersion ?? 0, c?.StructureVersion ?? 0, result);
+
+    private readonly record struct QueryKey(Type A, Type? B, Type? C);
+    private readonly record struct CachedQuery(int Schema, int Va, int Vb, int Vc, Entity[] Entities);
 }.
 //конец Core\World.cs
 .
 //начало Data\CalendarHelper.cs
 ﻿// Data/CalendarHelper.cs
 using System;
+
 namespace AsciiFarm.Data;
 
 public static class CalendarHelper
 {
-    /// <summary>
-    /// Количество дней в году для настраиваемого календаря.
-    /// </summary>
-    public static int GetDaysInYear(int daysPerMonth)
-    {
-        if (daysPerMonth == 0) return 365;
-        return daysPerMonth * 12;
-    }
+    public const double SecondsPerMinute = 60.0;
+    public const double SecondsPerHour = 3600.0;
+    public const double SecondsPerDay = 86400.0;
+    public const int MonthsPerYear = 12;
 
-    /// <summary>
-    /// Форматирует игровое время с учётом кастомного календаря.
-    /// </summary>
-    // Data/CalendarHelper.cs
-    // Data/CalendarHelper.cs
-    public static string FormatGameTime(DateTime startDate, double gameSeconds, int daysPerMonth)
+    /// <summary>Дата/время игрового календаря.</summary>
+    public readonly record struct GameDate(int Year, int Month, int Day, int Hour, int Minute, int Second);
+
+    /// <summary>Дней в игровом году. 0 = реальный календарь (365).</summary>
+    public static int GetDaysInYear(int daysPerMonth) =>
+        daysPerMonth > 0 ? daysPerMonth * MonthsPerYear : 365;
+
+    /// <summary>Дней в игровом месяце. 0 = реальный календарь.</summary>
+    public static int GetDaysInMonth(int year, int month, int daysPerMonth) =>
+        daysPerMonth > 0
+            ? daysPerMonth
+            : DateTime.DaysInMonth(year, Math.Clamp(month, 1, 12));
+
+    /// <summary>Текущая игровая дата с учётом кастомного календаря.</summary>
+    public static GameDate GetGameDate(DateTime startDate, double gameSeconds, int daysPerMonth)
     {
-        if (daysPerMonth == 0)
+        if (daysPerMonth <= 0)
         {
-            return startDate.AddSeconds(gameSeconds).ToString("dd.MM.yyyy HH:mm:ss");
+            var real = AddSecondsSafe(startDate, gameSeconds);
+            return new GameDate(real.Year, real.Month, real.Day, real.Hour, real.Minute, real.Second);
         }
 
-        int daysPerYear = daysPerMonth * 12;
+        int daysPerYear = daysPerMonth * MonthsPerYear;
 
-        // Пересчитываем начальную дату в координаты кастомного календаря
-        // startDate.Month и startDate.Day — из реального календаря
-        // Нам нужно преобразовать их в день года кастомного календаря
-        // Для простоты: считаем, что 1 мая реального = 1 мая кастомного (тот же номер месяца и дня)
-        int startMonth = startDate.Month;
-        int startDay = startDate.Day;
+        int startMonth = Math.Clamp(startDate.Month, 1, 12);
+        int startDay = Math.Clamp(startDate.Day, 1, daysPerMonth);
+        int startDayOfYear = (startMonth - 1) * daysPerMonth + (startDay - 1);   // 0-based
 
-        // Ограничиваем в пределах кастомного календаря
-        if (startMonth > 12) startMonth = 12;
-        if (startDay > daysPerMonth) startDay = daysPerMonth;
+        long totalSeconds = (long)gameSeconds
+                            + startDayOfYear * 86400L
+                            + startDate.Hour * 3600L
+                            + startDate.Minute * 60L
+                            + startDate.Second;
 
-        int startDayOfYear = (startMonth - 1) * daysPerMonth + (startDay - 1); // 0-based
-        int startHour = startDate.Hour;
-        int startMinute = startDate.Minute;
-        int startSecond = startDate.Second;
-
-        // Общее время в секундах с начала кастомного года
-        long totalSeconds = (long)gameSeconds + (startDayOfYear * 86400) + (startHour * 3600) + (startMinute * 60) + startSecond;
-
-        long totalDays = totalSeconds / 86400;
-        long remainingSeconds = totalSeconds % 86400;
-
+        long totalDays = totalSeconds / 86400L;
+        long remSeconds = totalSeconds % 86400L;
         long years = totalDays / daysPerYear;
-        long remainingDays = totalDays % daysPerYear;
-        int month = (int)(remainingDays / daysPerMonth) + 1;
-        int day = (int)(remainingDays % daysPerMonth) + 1;
-        int hour = (int)(remainingSeconds / 3600);
-        int minute = (int)((remainingSeconds % 3600) / 60);
-        int second = (int)(remainingSeconds % 60);
+        long remDays = totalDays % daysPerYear;
 
-        int year = startDate.Year + (int)years;
-        return $"{day:D2}.{month:D2}.{year:D4} {hour:D2}:{minute:D2}:{second:D2}";
+        return new GameDate(
+            startDate.Year + (int)years,
+            (int)(remDays / daysPerMonth) + 1,
+            (int)(remDays % daysPerMonth) + 1,
+            (int)(remSeconds / 3600),
+            (int)(remSeconds % 3600 / 60),
+            (int)(remSeconds % 60));
+    }
+
+    /// <summary>Длина игрового месяца в секундах (для P+4 / X+4).</summary>
+    public static double GetMonthSeconds(DateTime startDate, double gameSeconds, int daysPerMonth)
+    {
+        if (daysPerMonth > 0) return daysPerMonth * SecondsPerDay;
+        var d = GetGameDate(startDate, gameSeconds, daysPerMonth);
+        return DateTime.DaysInMonth(d.Year, d.Month) * SecondsPerDay;
+    }
+
+    /// <summary>Длина игрового года в секундах: 12 игровых месяцев (для P+5 / X+5).</summary>
+    public static double GetYearSeconds(DateTime startDate, double gameSeconds, int daysPerMonth)
+    {
+        if (daysPerMonth > 0) return daysPerMonth * MonthsPerYear * SecondsPerDay;
+        var d = GetGameDate(startDate, gameSeconds, daysPerMonth);
+        return (DateTime.IsLeapYear(d.Year) ? 366 : 365) * SecondsPerDay;
+    }
+
+    /// <summary>Форматирует игровое время с учётом кастомного календаря.</summary>
+    public static string FormatGameTime(DateTime startDate, double gameSeconds, int daysPerMonth)
+    {
+        var d = GetGameDate(startDate, gameSeconds, daysPerMonth);
+        return $"{d.Day:D2}.{d.Month:D2}.{d.Year:D4} {d.Hour:D2}:{d.Minute:D2}:{d.Second:D2}";
+    }
+
+    // Защита от выхода за DateTime.MaxValue при длинных промотках в режиме реального календаря.
+    private static DateTime AddSecondsSafe(DateTime start, double seconds)
+    {
+        double max = (DateTime.MaxValue - start).TotalSeconds;
+        return start.AddSeconds(Math.Clamp(seconds, 0.0, max));
     }
 }.
 //конец Data\CalendarHelper.cs
@@ -1641,68 +1709,51 @@ public sealed class CommandBuffer
 .
 //начало Data\ComponentDisplayRegistry.cs
 ﻿// Data/ComponentDisplayRegistry.cs
-using System;
-using System.Collections.Generic;
-
 namespace AsciiFarm.Data;
 
-/// <summary>
-/// Реестр правил форматирования компонентов для отображения в UI.
-/// Позволяет добавлять поддержку новых компонентов без изменения кода отрисовки.
-/// </summary>
 public static class ComponentDisplayRegistry
 {
-    private static readonly Dictionary<Type, Func<object, string>> Formatters = new();
+    private static readonly Dictionary<Type, object> Formatters = new();   // Func<T, string>
 
-    /// <summary>
-    /// Зарегистрировать правило отображения для компонента.
-    /// Пример: ComponentDisplayRegistry.Register<PlantComponent>(p => $"{p.Species} (Рост: {p.Growth:P0})");
-    /// </summary>
-    public static void Register<T>(Func<T, string> formatter)
-    {
-        Formatters[typeof(T)] = obj => formatter((T)obj);
-    }
+    public static void Register<T>(Func<T, string> formatter) => Formatters[typeof(T)] = formatter;
 
-    /// <summary>
-    /// Получить строковое представление компонента. Если правило не задано, вызывает ToString().
-    /// </summary>
-    public static string Format(object component)
-    {
-        if (component == null) return "null";
-
-        if (Formatters.TryGetValue(component.GetType(), out var formatter))
-            return formatter(component);
-
-        return component.ToString(); // Запасной вариант
-    }
+    /// <summary>Типобезопасный формат: без упаковки структуры в object.</summary>
+    public static string Format<T>(in T component) =>
+        Formatters.TryGetValue(typeof(T), out var f)
+            ? ((Func<T, string>)f)(component)
+            : component?.ToString() ?? "null";
 }.
 //конец Data\ComponentDisplayRegistry.cs
 .
 //начало Data\FpsCounter.cs
 ﻿// Data/FpsCounter.cs
-using System.Collections.Generic;
 using System.Diagnostics;
+
 namespace AsciiFarm.Data;
 
+/// <summary>Потокобезопасный счётчик: RecordFrame — render-поток, RecordTick — симуляция.</summary>
 public sealed class FpsCounter
 {
     private const int SampleSize = 60;
-    private readonly Queue<double> _frameTimes = new();
+
     private readonly object _gate = new();
-
-    // Для реального FPS (рендер)
-    private int _framesThisSecond = 0;
+    private readonly Queue<double> _frameTimes = new();
     private readonly Stopwatch _renderTimer = Stopwatch.StartNew();
-
-    // Для TPS (симуляция)
-    private int _ticksThisSecond = 0;
     private readonly Stopwatch _tickTimer = Stopwatch.StartNew();
 
-    public float CurrentFps { get; private set; }
-    public float AverageFps { get; private set; }
-    public int RealFps { get; private set; }
-    public int TicksPerSecond { get; private set; }
+    private int _framesThisSecond;
+    private int _ticksThisSecond;
+    private float _currentFps;
+    private float _averageFps;
+    private int _realFps;
+    private int _tps;
 
+    public float CurrentFps { get { lock (_gate) return _currentFps; } }
+    public float AverageFps { get { lock (_gate) return _averageFps; } }
+    public int RealFps { get { lock (_gate) return _realFps; } }
+    public int TicksPerSecond { get { lock (_gate) return _tps; } }
+
+    /// <param name="timestampSeconds">Монотонное реальное время (Stopwatch), НЕ номер тика.</param>
     public void RecordFrame(double timestampSeconds)
     {
         lock (_gate)
@@ -1712,18 +1763,15 @@ public sealed class FpsCounter
 
             if (_frameTimes.Count >= 2)
             {
-                var first = _frameTimes.Peek();
-                var last = _frameTimes.ToArray()[^1];
-                double duration = last - first;
+                double duration = timestampSeconds - _frameTimes.Peek();   // без ToArray()
                 if (duration > 0.001)
-                    CurrentFps = (float)((_frameTimes.Count - 1) / duration);
+                    _currentFps = (float)((_frameTimes.Count - 1) / duration);
             }
 
-            // Считаем реальный FPS (рендер)
             _framesThisSecond++;
             if (_renderTimer.ElapsedMilliseconds >= 1000)
             {
-                RealFps = _framesThisSecond;
+                _realFps = _framesThisSecond;
                 _framesThisSecond = 0;
                 _renderTimer.Restart();
             }
@@ -1737,7 +1785,7 @@ public sealed class FpsCounter
             _ticksThisSecond++;
             if (_tickTimer.ElapsedMilliseconds >= 1000)
             {
-                TicksPerSecond = _ticksThisSecond;
+                _tps = _ticksThisSecond;
                 _ticksThisSecond = 0;
                 _tickTimer.Restart();
             }
@@ -1747,9 +1795,7 @@ public sealed class FpsCounter
     public void UpdateAverage(float instantFps)
     {
         lock (_gate)
-        {
-            AverageFps = AverageFps == 0 ? instantFps : AverageFps * 0.9f + instantFps * 0.1f;
-        }
+            _averageFps = _averageFps == 0 ? instantFps : _averageFps * 0.9f + instantFps * 0.1f;
     }
 }.
 //конец Data\FpsCounter.cs
@@ -1794,12 +1840,45 @@ using AsciiFarm.Input;
 
 namespace AsciiFarm.Data;
 
-/// <summary>Заполняется при старте, дальше только читается потоком ввода.</summary>
 public sealed class KeyBindings
 {
     public Dictionary<ConsoleKey, GameCommand> Map { get; } = new();
+
+    // P1-9: модификаторы — данные, а не хардкод
+    public ConsoleKey SpeedModifier { get; set; } = ConsoleKey.X;
+    public ConsoleKey FastForwardModifier { get; set; } = ConsoleKey.P;
 }.
 //конец Data\KeyBindings.cs
+.
+//начало Data\SimulationClock.cs
+﻿// Data/SimulationClock.cs
+using System.Diagnostics;
+
+namespace AsciiFarm.Data;
+
+/// <summary>Ресурс мира: источник реальной дельты. Первый тик даёт 0, а не «время с постройки мира».</summary>
+public sealed class SimulationClock
+{
+    private readonly Stopwatch _timer = new();
+    private double _last;
+    private bool _started;
+
+    public double NextDelta()
+    {
+        if (!_started)
+        {
+            _started = true;
+            _timer.Start();
+            _last = 0;
+            return 0.0;
+        }
+        double now = _timer.Elapsed.TotalSeconds;
+        double delta = now - _last;
+        _last = now;
+        return delta;
+    }
+}.
+//конец Data\SimulationClock.cs
 .
 //начало Data\TileInfoProviders.cs
 ﻿// Data/TileInfoProviders.cs
@@ -1838,39 +1917,40 @@ public sealed class TerrainInfoProvider : ITileInfoProvider
 /// АВТОМАТИЧЕСКИЙ ИНСПЕКТОР: находит ВСЕ сущности на данных координатах 
 /// и выводит их компоненты через ComponentDisplayRegistry.
 /// </summary>
+// Data/TileInfoProviders.cs — заменить EntityInspectorProvider (остальные провайдеры без изменений)
 public sealed class EntityInspectorProvider : ITileInfoProvider
 {
     public IEnumerable<string> GetInfo(int x, int y, char tile, World world)
     {
         var positions = world.Store<Position>();
 
-        // Ищем все сущности, чья позиция совпадает с (x, y)
         foreach (var entity in positions.Entities)
         {
             var pos = positions.Get(entity);
-            if (pos.X == x && pos.Y == y)
-            {
-                yield return $"── Объект (ID: {entity.Id}) ──";
+            if (pos.X != x || pos.Y != y) continue;
 
-                // Перебираем все хранилища компонентов в мире
-                foreach (var (compType, store) in world.AllStores())
-                {
-                    // Проверяем, есть ли у этой сущности данный компонент
-                    if (store.TryGetBoxed(entity, out var comp))
-                    {
-                        // Координаты мы уже показали, не дублируем
-                        if (compType == typeof(Position)) continue;
+            yield return $"── Объект (ID: {entity.Id}) ──";
 
-                        // Используем реестр для красивого вывода
-                        string display = ComponentDisplayRegistry.Format(comp);
-                        yield return $"  {compType.Name}: {display}";
-                    }
-                }
-            }
+            var visitor = new InspectorVisitor(entity);
+            foreach (var (_, store) in world.AllStores()) store.Accept(visitor);
+            foreach (var line in visitor.Lines) yield return line;
+        }
+    }
+
+    private sealed class InspectorVisitor : IComponentVisitor
+    {
+        private readonly int _targetId;
+        public List<string> Lines { get; } = new();
+        public InspectorVisitor(Entity target) => _targetId = target.Id;
+
+        public void Visit<T>(Entity entity, in T component) where T : struct
+        {
+            if (entity.Id != _targetId) return;
+            if (typeof(T) == typeof(Position)) return;   // координаты уже показаны
+            Lines.Add($"  {typeof(T).Name}: {ComponentDisplayRegistry.Format(in component)}");
         }
     }
 }
-
 /// <summary>Информация о погоде (глобальная, не зависит от X,Y, но оставим для совместимости).</summary>
 public sealed class WeatherTileInfoProvider : ITileInfoProvider
 {
@@ -1939,6 +2019,18 @@ public static class TilePaletteExtensions
 }.
 //конец Data\TilePaletteExtensions.cs
 .
+//начало Data\WaterColorCache.cs
+﻿// Data/WaterColorCache.cs
+namespace AsciiFarm.Data;
+
+/// <summary>Переиспользуемый кэш цветов воды. Живёт в мире, не пересоздаётся каждый тик.</summary>
+public sealed class WaterColorCache
+{
+    public Dictionary<(int X, int Y), TileStyle> Colors { get; } = new();
+    public int LastBucket { get; set; } = int.MinValue;
+}.
+//конец Data\WaterColorCache.cs
+.
 //начало Data\WeatherCurrent.cs
 ﻿// Data/WeatherCurrent.cs
 namespace AsciiFarm.Data;
@@ -1987,6 +2079,17 @@ public sealed class WeatherDataSource
     public int StartIndex { get; set; } = 0;  // НОВОЕ: индекс первой записи, соответствующей GameStartDate
 }.
 //конец Data\WeatherDataSource.cs
+.
+//начало Data\WeatherSystemState.cs
+﻿// Data/WeatherSystemState.cs
+namespace AsciiFarm.Data;
+
+/// <summary>Состояние WeatherSystem, вынесено из системы в ресурс мира.</summary>
+public sealed class WeatherSystemState
+{
+    public int LastWeatherIndex { get; set; } = -1;
+}.
+//конец Data\WeatherSystemState.cs
 .
 //начало Input\CommandChannel.cs
 ﻿// Input/CommandChannel.cs
@@ -2043,11 +2146,9 @@ public enum GameCommand
 //начало Input\InputLoop.cs
 ﻿// Input/InputLoop.cs
 using AsciiFarm.Data;
+
 namespace AsciiFarm.Input;
 
-/// <summary>
-/// Тело потока ввода. Ссылки на World нет по построению.
-/// </summary>
 public sealed class InputLoop
 {
     private enum Modifier { None, Speed, FastForward }
@@ -2071,65 +2172,51 @@ public sealed class InputLoop
             bool worked = false;
             while (Console.KeyAvailable)
             {
-                var keyInfo = Console.ReadKey(intercept: true);
-                var key = keyInfo.Key;
+                var key = Console.ReadKey(intercept: true).Key;
 
-                // Модификаторы: запоминаем последний
-                if (key == ConsoleKey.X) { _lastModifier = Modifier.Speed; worked = true; continue; }
-                if (key == ConsoleKey.P) { _lastModifier = Modifier.FastForward; worked = true; continue; }
+                if (key == _bindings.SpeedModifier)
+                { _lastModifier = Modifier.Speed; worked = true; continue; }
 
-                // Цифры 1-4 с модификатором
-                if (key >= ConsoleKey.D1 && key <= ConsoleKey.D5)
+                if (key == _bindings.FastForwardModifier)
+                { _lastModifier = Modifier.FastForward; worked = true; continue; }
+
+                if (key >= ConsoleKey.D1 && key <= ConsoleKey.D5 && _lastModifier != Modifier.None)
                 {
                     int n = key - ConsoleKey.D1 + 1;
-                    if (_lastModifier == Modifier.Speed)
-                    {
-                        var cmd = n switch
-                        {
-                            1 => GameCommand.Speed1,
-                            2 => GameCommand.Speed2,
-                            3 => GameCommand.Speed3,
-                            4 => GameCommand.Speed4,
-                            5 => GameCommand.Speed5,
-                            _ => GameCommand.None
-                        };
-                        _channel.Post(cmd);
-                        _lastModifier = Modifier.None;
-                        worked = true;
-                        continue;
-                    }
-                    if (_lastModifier == Modifier.FastForward)
-                    {
-                        var cmd = n switch
-                        {
-                            1 => GameCommand.FastForward1,
-                            2 => GameCommand.FastForward2,
-                            3 => GameCommand.FastForward3,
-                            4 => GameCommand.FastForward4,
-                            5 => GameCommand.FastForward5,
-                            _ => GameCommand.None
-                        };
-                        _channel.Post(cmd);
-                        _lastModifier = Modifier.None;
-                        worked = true;
-                        continue;
-                    }
-                }
-
-                // Сброс модификатора при любой другой клавише (кроме X/P)
-                if (_lastModifier != Modifier.None && key != ConsoleKey.X && key != ConsoleKey.P)
+                    _channel.Post(_lastModifier == Modifier.Speed ? SpeedCommand(n) : ForwardCommand(n));
                     _lastModifier = Modifier.None;
-
-                // Обычные команды из биндингов
-                if (_bindings.Map.TryGetValue(key, out var command))
-                {
-                    _channel.Post(command);
                     worked = true;
+                    continue;
                 }
+
+                _lastModifier = Modifier.None;   // любая другая клавиша сбрасывает модификатор
+
+                if (_bindings.Map.TryGetValue(key, out var command))
+                { _channel.Post(command); worked = true; }
             }
             if (!worked) Thread.Sleep(_pollDelayMs);
         }
     }
+
+    private static GameCommand SpeedCommand(int n) => n switch
+    {
+        1 => GameCommand.Speed1,
+        2 => GameCommand.Speed2,
+        3 => GameCommand.Speed3,
+        4 => GameCommand.Speed4,
+        5 => GameCommand.Speed5,
+        _ => GameCommand.None
+    };
+
+    private static GameCommand ForwardCommand(int n) => n switch
+    {
+        1 => GameCommand.FastForward1,
+        2 => GameCommand.FastForward2,
+        3 => GameCommand.FastForward3,
+        4 => GameCommand.FastForward4,
+        5 => GameCommand.FastForward5,
+        _ => GameCommand.None
+    };
 }.
 //конец Input\InputLoop.cs
 .
@@ -2139,413 +2226,475 @@ using System.ComponentModel;
 using System.Runtime.InteropServices;
 using Microsoft.Win32.SafeHandles;
 
-namespace askiifarm.Rendering
+namespace AsciiFarm.Rendering;
+
+public sealed class DoubleBufferedConsole : IDisposable
 {
-    public sealed class DoubleBufferedConsole : IDisposable
+    private const int STD_OUTPUT_HANDLE = -11;
+    private const uint GENERIC_READ = 0x80000000;
+    private const uint GENERIC_WRITE = 0x40000000;
+    private const uint FILE_SHARE_READ = 0x00000001;
+    private const uint FILE_SHARE_WRITE = 0x00000002;
+    private const uint CONSOLE_TEXTMODE_BUFFER = 1;
+
+    private readonly AsciiFarm.Core.ThreadGuard _guard = new("Console");
+    public void AttachToCurrentThread() => _guard.AttachToCurrentThread();
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct COORD { public short X; public short Y; }
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct SMALL_RECT
     {
-        private const int STD_OUTPUT_HANDLE = -11;
-        private const uint GENERIC_READ = 0x80000000;
-        private const uint GENERIC_WRITE = 0x40000000;
-        private const uint FILE_SHARE_READ = 0x00000001;
-        private const uint FILE_SHARE_WRITE = 0x00000002;
-        private const uint CONSOLE_TEXTMODE_BUFFER = 1;
+        public short Left;
+        public short Top;
+        public short Right;
+        public short Bottom;
+    }
 
-        private readonly AsciiFarm.Core.ThreadGuard _guard = new("Console");
-        public void AttachToCurrentThread() => _guard.AttachToCurrentThread();
+    [StructLayout(LayoutKind.Explicit, CharSet = CharSet.Unicode)]
+    private struct CHAR_INFO
+    {
+        [FieldOffset(0)] public char UnicodeChar;
+        [FieldOffset(0)] public byte AsciiChar;
+        [FieldOffset(2)] public short Attributes;
+    }
 
-        [StructLayout(LayoutKind.Sequential)]
-        private struct COORD { public short X; public short Y; }
+    [StructLayout(LayoutKind.Sequential)]
+    private struct CONSOLE_SCREEN_BUFFER_INFO
+    {
+        public COORD dwSize;
+        public COORD dwCursorPosition;
+        public short wAttributes;
+        public SMALL_RECT srWindow;
+        public COORD dwMaximumWindowSize;
+    }
 
-        [StructLayout(LayoutKind.Sequential)]
-        private struct SMALL_RECT
+    [DllImport("kernel32.dll", SetLastError = true)]
+    private static extern nint GetStdHandle(int nStdHandle);
+
+    [DllImport("kernel32.dll", SetLastError = true)]
+    private static extern COORD GetLargestConsoleWindowSize(SafeFileHandle hConsoleOutput);
+
+    [DllImport("kernel32.dll", SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static extern bool SetConsoleScreenBufferSize(SafeFileHandle hConsoleOutput, COORD dwSize);
+
+    [DllImport("kernel32.dll", SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static extern bool SetConsoleWindowInfo(
+        SafeFileHandle hConsoleOutput,
+        [MarshalAs(UnmanagedType.Bool)] bool bAbsolute,
+        ref SMALL_RECT lpConsoleWindow);
+
+    [DllImport("kernel32.dll", SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static extern bool GetConsoleScreenBufferInfo(
+        SafeFileHandle hConsoleOutput,
+        out CONSOLE_SCREEN_BUFFER_INFO lpConsoleScreenBufferInfo);
+
+    [DllImport("kernel32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static extern bool WriteConsoleOutput(
+        SafeFileHandle hConsoleOutput,
+        CHAR_INFO[] lpBuffer,
+        COORD dwBufferSize,
+        COORD dwBufferCoord,
+        ref SMALL_RECT lpConsoleWriteRegion);
+
+    [DllImport("kernel32.dll", SetLastError = true)]
+    private static extern SafeFileHandle CreateConsoleScreenBuffer(
+        uint dwDesiredAccess,
+        uint dwShareMode,
+        nint lpSecurityAttributes,
+        uint dwFlags,
+        nint lpScreenBufferData);
+
+    [DllImport("kernel32.dll", SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static extern bool SetConsoleActiveScreenBuffer(SafeFileHandle hConsoleOutput);
+
+    private readonly SafeFileHandle _stdout;
+    private SafeFileHandle _buffer;
+    private CHAR_INFO[] _cells;
+    private int _width;
+    private int _height;
+    private bool _dirty;
+    private bool _disposed;
+
+    public int Width => _width;
+    public int Height => _height;
+    public ConsoleColor DefaultForeground { get; set; }
+    public ConsoleColor DefaultBackground { get; set; }
+
+    public DoubleBufferedConsole(
+        int width, int height,
+        ConsoleColor defaultForeground = ConsoleColor.Gray,
+        ConsoleColor defaultBackground = ConsoleColor.Black)
+    {
+        if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            throw new PlatformNotSupportedException("Поддерживается только Windows.");
+        if (Console.IsOutputRedirected)
+            throw new InvalidOperationException("Вывод консоли перенаправлен. Нужна настоящая консоль.");
+
+        ValidateSize(width, height);
+        _width = width;
+        _height = height;
+        DefaultForeground = defaultForeground;
+        DefaultBackground = defaultBackground;
+
+        _stdout = OpenStandardOutput();
+
+        try
         {
-            public short Left;
-            public short Top;
-            public short Right;
-            public short Bottom;
-        }
-
-        [StructLayout(LayoutKind.Explicit, CharSet = CharSet.Unicode)]
-        private struct CHAR_INFO
-        {
-            [FieldOffset(0)] public char UnicodeChar;
-            [FieldOffset(0)] public byte AsciiChar;
-            [FieldOffset(2)] public short Attributes;
-        }
-
-        [StructLayout(LayoutKind.Sequential)]
-        private struct CONSOLE_SCREEN_BUFFER_INFO
-        {
-            public COORD dwSize;
-            public COORD dwCursorPosition;
-            public short wAttributes;
-            public SMALL_RECT srWindow;
-            public COORD dwMaximumWindowSize;
-        }
-
-        [DllImport("kernel32.dll", SetLastError = true)]
-        private static extern nint GetStdHandle(int nStdHandle);
-
-        [DllImport("kernel32.dll", SetLastError = true)]
-        private static extern COORD GetLargestConsoleWindowSize(SafeFileHandle hConsoleOutput);
-
-        [DllImport("kernel32.dll", SetLastError = true)]
-        [return: MarshalAs(UnmanagedType.Bool)]
-        private static extern bool SetConsoleScreenBufferSize(SafeFileHandle hConsoleOutput, COORD dwSize);
-
-        [DllImport("kernel32.dll", SetLastError = true)]
-        [return: MarshalAs(UnmanagedType.Bool)]
-        private static extern bool SetConsoleWindowInfo(
-            SafeFileHandle hConsoleOutput,
-            [MarshalAs(UnmanagedType.Bool)] bool bAbsolute,
-            ref SMALL_RECT lpConsoleWindow);
-
-        [DllImport("kernel32.dll", SetLastError = true)]
-        [return: MarshalAs(UnmanagedType.Bool)]
-        private static extern bool GetConsoleScreenBufferInfo(
-            SafeFileHandle hConsoleOutput,
-            out CONSOLE_SCREEN_BUFFER_INFO lpConsoleScreenBufferInfo);
-
-        [DllImport("kernel32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
-        [return: MarshalAs(UnmanagedType.Bool)]
-        private static extern bool WriteConsoleOutput(
-            SafeFileHandle hConsoleOutput,
-            CHAR_INFO[] lpBuffer,
-            COORD dwBufferSize,
-            COORD dwBufferCoord,
-            ref SMALL_RECT lpConsoleWriteRegion);
-
-        [DllImport("kernel32.dll", SetLastError = true)]
-        private static extern SafeFileHandle CreateConsoleScreenBuffer(
-            uint dwDesiredAccess,
-            uint dwShareMode,
-            nint lpSecurityAttributes,
-            uint dwFlags,
-            nint lpScreenBufferData);
-
-        [DllImport("kernel32.dll", SetLastError = true)]
-        [return: MarshalAs(UnmanagedType.Bool)]
-        private static extern bool SetConsoleActiveScreenBuffer(SafeFileHandle hConsoleOutput);
-
-        private readonly SafeFileHandle _stdout;
-        private SafeFileHandle _buffer;
-        private CHAR_INFO[] _cells;
-        private int _width;
-        private int _height;
-        private bool _dirty;
-        private bool _disposed;
-
-        public int Width => _width;
-        public int Height => _height;
-        public ConsoleColor DefaultForeground { get; set; }
-        public ConsoleColor DefaultBackground { get; set; }
-
-        public DoubleBufferedConsole(
-            int width, int height,
-            ConsoleColor defaultForeground = ConsoleColor.Gray,
-            ConsoleColor defaultBackground = ConsoleColor.Black)
-        {
-            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-                throw new PlatformNotSupportedException("Поддерживается только Windows.");
-            if (Console.IsOutputRedirected)
-                throw new InvalidOperationException("Вывод консоли перенаправлен. Нужна настоящая консоль.");
-
-            ValidateSize(width, height);
-            _width = width;
-            _height = height;
-            DefaultForeground = defaultForeground;
-            DefaultBackground = defaultBackground;
-
-            _stdout = OpenStandardOutput();
-
-            try
-            {
-                ValidateAgainstLargestWindowSize(width, height);
-                _buffer = CreateBuffer();
-
-                // КЛЮЧЕВОЕ ИСПРАВЛЕНИЕ: буфер должен быть активным ДО работы с его окном.
-                // SetConsoleWindowInfo на неактивном буфере возвращает ERROR_INVALID_PARAMETER.
-                SetActiveBuffer(_buffer);
-
-                SetBufferSize(width, height);
-
-                _cells = new CHAR_INFO[width * height];
-                FillCells(_cells, ' ', MakeAttribute(DefaultForeground, DefaultBackground));
-                WriteBuffer(_buffer, _cells, width, height);
-                _dirty = false;
-
-                try { Console.CursorVisible = false; } catch { }
-            }
-            catch
-            {
-                _buffer?.Dispose();
-                _stdout.Dispose();
-                throw;
-            }
-        }
-
-        public void PutChar(int x, int y, char character, ConsoleColor foreground, ConsoleColor background)
-        {
-            _guard.Validate();
-            CheckNotDisposed();
-            if ((uint)x >= (uint)_width || (uint)y >= (uint)_height) return;
-            int index = y * _width + x;
-            _cells[index].UnicodeChar = character;
-            _cells[index].Attributes = MakeAttribute(foreground, background);
-            _dirty = true;
-        }
-
-        public void Draw(bool force = false)
-        {
-            _guard.Validate();
-            CheckNotDisposed();
-            if (!_dirty && !force) return;
-            WriteBuffer(_buffer, _cells, _width, _height);
-            _dirty = false;
-        }
-
-        public void Clear()
-        {
-            _guard.Validate();
-            CheckNotDisposed();
-            Fill(' ', DefaultForeground, DefaultBackground);
-        }
-
-        public void Fill(char character, ConsoleColor foreground, ConsoleColor background)
-        {
-            _guard.Validate();
-            CheckNotDisposed();
-            short attributes = MakeAttribute(foreground, background);
-            FillCells(_cells, character, attributes);
-            _dirty = true;
-        }
-
-        public void FillRect(int x, int y, int width, int height, char character,
-            ConsoleColor foreground, ConsoleColor background)
-        {
-            _guard.Validate();
-            CheckNotDisposed();
-            if (width < 0 || height < 0)
-                throw new ArgumentOutOfRangeException(nameof(width), "Размер не может быть отрицательным.");
-            if (width == 0 || height == 0) return;
-
-            int left = Math.Max(0, x);
-            int top = Math.Max(0, y);
-            int right = (int)Math.Min(_width, (long)x + width);
-            int bottom = (int)Math.Min(_height, (long)y + height);
-            if (left >= right || top >= bottom) return;
-
-            short attributes = MakeAttribute(foreground, background);
-            for (int yy = top; yy < bottom; yy++)
-            {
-                int rowStart = yy * _width;
-                for (int xx = left; xx < right; xx++)
-                {
-                    int index = rowStart + xx;
-                    _cells[index].UnicodeChar = character;
-                    _cells[index].Attributes = attributes;
-                }
-            }
-            _dirty = true;
-        }
-
-        public void Resize(int width, int height)
-        {
-            _guard.Validate();
-            CheckNotDisposed();
-            ValidateSize(width, height);
-            if (width == _width && height == _height) return;
             ValidateAgainstLargestWindowSize(width, height);
+            _buffer = CreateBuffer();
+
+            // КЛЮЧЕВОЕ ИСПРАВЛЕНИЕ: буфер должен быть активным ДО работы с его окном.
+            // SetConsoleWindowInfo на неактивном буфере возвращает ERROR_INVALID_PARAMETER.
+            SetActiveBuffer(_buffer);
 
             SetBufferSize(width, height);
 
             _cells = new CHAR_INFO[width * height];
             FillCells(_cells, ' ', MakeAttribute(DefaultForeground, DefaultBackground));
-            _width = width;
-            _height = height;
-
-            // Сразу затираем весь буфер пробелами, не дожидаясь свежего кадра.
-            // Это убирает мусор, который conhost оставляет в новых ячейках при растяжении.
             WriteBuffer(_buffer, _cells, width, height);
             _dirty = false;
+
+            try { Console.CursorVisible = false; } catch { }
         }
-
-        public (int Width, int Height) GetWindowSize()
+        catch
         {
-            _guard.Validate();
-            CheckNotDisposed();
-            if (GetConsoleScreenBufferInfo(_buffer, out var info))
-            {
-                int w = info.srWindow.Right - info.srWindow.Left + 1;
-                int h = info.srWindow.Bottom - info.srWindow.Top + 1;
-                return (w, h);
-            }
-            return (_width, _height);
-        }
-
-        public void Dispose()
-        {
-            if (_disposed) return;
-            _disposed = true;
-
-            try
-            {
-                if (_stdout != null && !_stdout.IsInvalid)
-                    SetConsoleActiveScreenBuffer(_stdout);
-            }
-            catch { }
-
             _buffer?.Dispose();
-            _stdout?.Dispose();
-
-            try { Console.CursorVisible = true; } catch { }
+            _stdout.Dispose();
+            throw;
         }
+    }
 
-        private void CheckNotDisposed()
+    public void PutChar(int x, int y, char character, ConsoleColor foreground, ConsoleColor background)
+    {
+        _guard.Validate();
+        CheckNotDisposed();
+        if ((uint)x >= (uint)_width || (uint)y >= (uint)_height) return;
+        int index = y * _width + x;
+        _cells[index].UnicodeChar = character;
+        _cells[index].Attributes = MakeAttribute(foreground, background);
+        _dirty = true;
+    }
+
+    public void Draw(bool force = false)
+    {
+        _guard.Validate();
+        CheckNotDisposed();
+        if (!_dirty && !force) return;
+        WriteBuffer(_buffer, _cells, _width, _height);
+        _dirty = false;
+    }
+
+    public void Clear()
+    {
+        _guard.Validate();
+        CheckNotDisposed();
+        Fill(' ', DefaultForeground, DefaultBackground);
+    }
+
+    public void Fill(char character, ConsoleColor foreground, ConsoleColor background)
+    {
+        _guard.Validate();
+        CheckNotDisposed();
+        short attributes = MakeAttribute(foreground, background);
+        FillCells(_cells, character, attributes);
+        _dirty = true;
+    }
+
+    public void FillRect(int x, int y, int width, int height, char character,
+        ConsoleColor foreground, ConsoleColor background)
+    {
+        _guard.Validate();
+        CheckNotDisposed();
+        if (width < 0 || height < 0)
+            throw new ArgumentOutOfRangeException(nameof(width), "Размер не может быть отрицательным.");
+        if (width == 0 || height == 0) return;
+
+        int left = Math.Max(0, x);
+        int top = Math.Max(0, y);
+        int right = (int)Math.Min(_width, (long)x + width);
+        int bottom = (int)Math.Min(_height, (long)y + height);
+        if (left >= right || top >= bottom) return;
+
+        short attributes = MakeAttribute(foreground, background);
+        for (int yy = top; yy < bottom; yy++)
         {
-            if (_disposed) throw new ObjectDisposedException(nameof(DoubleBufferedConsole));
-        }
-
-        private static void ValidateSize(int width, int height)
-        {
-            if (width <= 0 || height <= 0)
-                throw new ArgumentOutOfRangeException(nameof(width), "Размеры должны быть положительными.");
-            if (width > short.MaxValue || height > short.MaxValue)
-                throw new ArgumentOutOfRangeException(nameof(width), "Размеры слишком большие для COORD.");
-            if ((long)width * height > int.MaxValue)
-                throw new ArgumentOutOfRangeException(nameof(width), "Слишком много ячеек.");
-        }
-
-        private void ValidateAgainstLargestWindowSize(int width, int height)
-        {
-            COORD largest = GetLargestConsoleWindowSize(_stdout);
-            if (largest.X > 0 && largest.Y > 0 && (width > largest.X || height > largest.Y))
-                throw new ArgumentOutOfRangeException(
-                    nameof(width),
-                    $"Размер окна консоли не может быть больше {largest.X}x{largest.Y}.");
-        }
-
-        private static SafeFileHandle OpenStandardOutput()
-        {
-            SafeFileHandle handle = new SafeFileHandle(GetStdHandle(STD_OUTPUT_HANDLE), false);
-            if (handle.IsInvalid) throw new Win32Exception(Marshal.GetLastWin32Error());
-            return handle;
-        }
-
-        private SafeFileHandle CreateBuffer()
-        {
-            SafeFileHandle handle = CreateConsoleScreenBuffer(
-                GENERIC_READ | GENERIC_WRITE,
-                FILE_SHARE_READ | FILE_SHARE_WRITE,
-                nint.Zero,
-                CONSOLE_TEXTMODE_BUFFER,
-                nint.Zero);
-            if (handle.IsInvalid) throw new Win32Exception(Marshal.GetLastWin32Error());
-            return handle;
-        }
-
-        /// <summary>
-        /// Устанавливает размер буфера и окна.
-        /// Соблюдает инвариант Windows: размер окна не может превышать размер буфера.
-        /// Никаких «трюков» с 1×1 — только корректная последовательность.
-        /// </summary>
-        private void SetBufferSize(int width, int height)
-        {
-            if (!GetConsoleScreenBufferInfo(_buffer, out var info))
-                throw new Win32Exception(Marshal.GetLastWin32Error());
-
-            int curBufW = info.dwSize.X;
-            int curBufH = info.dwSize.Y;
-            int curWinW = info.srWindow.Right - info.srWindow.Left + 1;
-            int curWinH = info.srWindow.Bottom - info.srWindow.Top + 1;
-
-            COORD size = new COORD { X = (short)width, Y = (short)height };
-            SMALL_RECT target = new SMALL_RECT
+            int rowStart = yy * _width;
+            for (int xx = left; xx < right; xx++)
             {
-                Left = 0,
-                Top = 0,
-                Right = (short)(width - 1),
-                Bottom = (short)(height - 1)
-            };
-
-            // Если уменьшаем буфер, а текущее окно больше нового буфера —
-            // сначала уменьшаем окно до целевого размера (это всегда разрешено).
-            if (width < curWinW || height < curWinH)
-            {
-                SMALL_RECT interim = target;
-                if (width > curBufW) interim.Right = (short)(curBufW - 1);
-                if (height > curBufH) interim.Bottom = (short)(curBufH - 1);
-                if (!SetConsoleWindowInfo(_buffer, true, ref interim))
-                    throw new Win32Exception(Marshal.GetLastWin32Error());
-            }
-
-            // Меняем размер буфера.
-            if (!SetConsoleScreenBufferSize(_buffer, size))
-                throw new Win32Exception(Marshal.GetLastWin32Error());
-
-            // Устанавливаем финальный размер окна.
-            if (!SetConsoleWindowInfo(_buffer, true, ref target))
-                throw new Win32Exception(Marshal.GetLastWin32Error());
-        }
-
-        private static void WriteBuffer(SafeFileHandle handle, CHAR_INFO[] cells, int width, int height)
-        {
-            COORD bufferSize = new COORD { X = (short)width, Y = (short)height };
-            COORD bufferCoord = new COORD { X = 0, Y = 0 };
-            SMALL_RECT region = new SMALL_RECT
-            {
-                Left = 0,
-                Top = 0,
-                Right = (short)(width - 1),
-                Bottom = (short)(height - 1)
-            };
-            if (!WriteConsoleOutput(handle, cells, bufferSize, bufferCoord, ref region))
-                throw new Win32Exception(Marshal.GetLastWin32Error());
-        }
-
-        private static void SetActiveBuffer(SafeFileHandle handle)
-        {
-            if (!SetConsoleActiveScreenBuffer(handle))
-                throw new Win32Exception(Marshal.GetLastWin32Error());
-        }
-
-        private static void FillCells(CHAR_INFO[] cells, char character, short attributes)
-        {
-            for (int i = 0; i < cells.Length; i++)
-            {
-                cells[i].UnicodeChar = character;
-                cells[i].Attributes = attributes;
+                int index = rowStart + xx;
+                _cells[index].UnicodeChar = character;
+                _cells[index].Attributes = attributes;
             }
         }
+        _dirty = true;
+    }
 
-        private static short MakeAttribute(ConsoleColor foreground, ConsoleColor background)
+    public void Resize(int width, int height)
+    {
+        _guard.Validate();
+        CheckNotDisposed();
+        ValidateSize(width, height);
+        if (width == _width && height == _height) return;
+        ValidateAgainstLargestWindowSize(width, height);
+
+        SetBufferSize(width, height);
+
+        _cells = new CHAR_INFO[width * height];
+        FillCells(_cells, ' ', MakeAttribute(DefaultForeground, DefaultBackground));
+        _width = width;
+        _height = height;
+
+        // Сразу затираем весь буфер пробелами, не дожидаясь свежего кадра.
+        // Это убирает мусор, который conhost оставляет в новых ячейках при растяжении.
+        WriteBuffer(_buffer, _cells, width, height);
+        _dirty = false;
+    }
+
+    public (int Width, int Height) GetWindowSize()
+    {
+        _guard.Validate();
+        CheckNotDisposed();
+        if (GetConsoleScreenBufferInfo(_buffer, out var info))
         {
-            int fg = (int)foreground;
-            int bg = (int)background;
-            if ((fg & ~0xF) != 0 || (bg & ~0xF) != 0)
-                throw new ArgumentOutOfRangeException(nameof(foreground), "ConsoleColor должен быть в диапазоне 0..15.");
-            return (short)(fg | bg << 4);
+            int w = info.srWindow.Right - info.srWindow.Left + 1;
+            int h = info.srWindow.Bottom - info.srWindow.Top + 1;
+            return (w, h);
         }
+        return (_width, _height);
+    }
+
+    public void Dispose()
+    {
+        if (_disposed) return;
+        _disposed = true;
+
+        try
+        {
+            if (_stdout != null && !_stdout.IsInvalid)
+                SetConsoleActiveScreenBuffer(_stdout);
+        }
+        catch { }
+
+        _buffer?.Dispose();
+        _stdout?.Dispose();
+
+        try { Console.CursorVisible = true; } catch { }
+    }
+
+    private void CheckNotDisposed()
+    {
+        if (_disposed) throw new ObjectDisposedException(nameof(DoubleBufferedConsole));
+    }
+
+    private static void ValidateSize(int width, int height)
+    {
+        if (width <= 0 || height <= 0)
+            throw new ArgumentOutOfRangeException(nameof(width), "Размеры должны быть положительными.");
+        if (width > short.MaxValue || height > short.MaxValue)
+            throw new ArgumentOutOfRangeException(nameof(width), "Размеры слишком большие для COORD.");
+        if ((long)width * height > int.MaxValue)
+            throw new ArgumentOutOfRangeException(nameof(width), "Слишком много ячеек.");
+    }
+
+    private void ValidateAgainstLargestWindowSize(int width, int height)
+    {
+        COORD largest = GetLargestConsoleWindowSize(_stdout);
+        if (largest.X > 0 && largest.Y > 0 && (width > largest.X || height > largest.Y))
+            throw new ArgumentOutOfRangeException(
+                nameof(width),
+                $"Размер окна консоли не может быть больше {largest.X}x{largest.Y}.");
+    }
+
+    private static SafeFileHandle OpenStandardOutput()
+    {
+        SafeFileHandle handle = new SafeFileHandle(GetStdHandle(STD_OUTPUT_HANDLE), false);
+        if (handle.IsInvalid) throw new Win32Exception(Marshal.GetLastWin32Error());
+        return handle;
+    }
+
+    private SafeFileHandle CreateBuffer()
+    {
+        SafeFileHandle handle = CreateConsoleScreenBuffer(
+            GENERIC_READ | GENERIC_WRITE,
+            FILE_SHARE_READ | FILE_SHARE_WRITE,
+            nint.Zero,
+            CONSOLE_TEXTMODE_BUFFER,
+            nint.Zero);
+        if (handle.IsInvalid) throw new Win32Exception(Marshal.GetLastWin32Error());
+        return handle;
+    }
+
+    /// <summary>
+    /// Устанавливает размер буфера и окна.
+    /// Соблюдает инвариант Windows: размер окна не может превышать размер буфера.
+    /// Никаких «трюков» с 1×1 — только корректная последовательность.
+    /// </summary>
+    private void SetBufferSize(int width, int height)
+    {
+        if (!GetConsoleScreenBufferInfo(_buffer, out var info))
+            throw new Win32Exception(Marshal.GetLastWin32Error());
+
+        int curBufW = info.dwSize.X;
+        int curBufH = info.dwSize.Y;
+        int curWinW = info.srWindow.Right - info.srWindow.Left + 1;
+        int curWinH = info.srWindow.Bottom - info.srWindow.Top + 1;
+
+        COORD size = new COORD { X = (short)width, Y = (short)height };
+        SMALL_RECT target = new SMALL_RECT
+        {
+            Left = 0,
+            Top = 0,
+            Right = (short)(width - 1),
+            Bottom = (short)(height - 1)
+        };
+
+        // Если уменьшаем буфер, а текущее окно больше нового буфера —
+        // сначала уменьшаем окно до целевого размера (это всегда разрешено).
+        if (width < curWinW || height < curWinH)
+        {
+            SMALL_RECT interim = target;
+            if (width > curBufW) interim.Right = (short)(curBufW - 1);
+            if (height > curBufH) interim.Bottom = (short)(curBufH - 1);
+            if (!SetConsoleWindowInfo(_buffer, true, ref interim))
+                throw new Win32Exception(Marshal.GetLastWin32Error());
+        }
+
+        // Меняем размер буфера.
+        if (!SetConsoleScreenBufferSize(_buffer, size))
+            throw new Win32Exception(Marshal.GetLastWin32Error());
+
+        // Устанавливаем финальный размер окна.
+        if (!SetConsoleWindowInfo(_buffer, true, ref target))
+            throw new Win32Exception(Marshal.GetLastWin32Error());
+    }
+
+    private static void WriteBuffer(SafeFileHandle handle, CHAR_INFO[] cells, int width, int height)
+    {
+        COORD bufferSize = new COORD { X = (short)width, Y = (short)height };
+        COORD bufferCoord = new COORD { X = 0, Y = 0 };
+        SMALL_RECT region = new SMALL_RECT
+        {
+            Left = 0,
+            Top = 0,
+            Right = (short)(width - 1),
+            Bottom = (short)(height - 1)
+        };
+        if (!WriteConsoleOutput(handle, cells, bufferSize, bufferCoord, ref region))
+            throw new Win32Exception(Marshal.GetLastWin32Error());
+    }
+
+    private static void SetActiveBuffer(SafeFileHandle handle)
+    {
+        if (!SetConsoleActiveScreenBuffer(handle))
+            throw new Win32Exception(Marshal.GetLastWin32Error());
+    }
+
+    private static void FillCells(CHAR_INFO[] cells, char character, short attributes)
+    {
+        for (int i = 0; i < cells.Length; i++)
+        {
+            cells[i].UnicodeChar = character;
+            cells[i].Attributes = attributes;
+        }
+    }
+
+    private static short MakeAttribute(ConsoleColor foreground, ConsoleColor background)
+    {
+        int fg = (int)foreground;
+        int bg = (int)background;
+        if ((fg & ~0xF) != 0 || (bg & ~0xF) != 0)
+            throw new ArgumentOutOfRangeException(nameof(foreground), "ConsoleColor должен быть в диапазоне 0..15.");
+        return (short)(fg | bg << 4);
     }
 }.
 //конец Rendering\DoubleBufferedConsole.cs
 .
+//начало Rendering\EntityRenderer.cs
+﻿// Rendering/EntityRenderer.cs
+using AsciiFarm.Components;
+using AsciiFarm.Core;
+using AsciiFarm.Data;
+
+namespace AsciiFarm.Rendering;
+
+public sealed class EntityRenderer : IFrameRenderer
+{
+    public void Render(RenderFrame frame, World world)
+    {
+        var characterPalette = world.Resource<CharacterPalette>();
+        var glyphs = world.Store<Glyph>();
+        var positions = world.Store<Position>();
+        var playerTags = world.Store<PlayerTag>();
+
+        foreach (var entity in world.Query<Glyph, Position>().OrderBy(e => glyphs.Get(e).Layer))
+        {
+            var glyph = glyphs.Get(entity);
+            var pos = positions.Get(entity);
+            if (playerTags.Has(entity))
+                glyph = characterPalette.Get(characterPalette.DefaultPlayerKey);
+            FrameDraw.Put(frame, pos.X, pos.Y, glyph.Symbol, glyph.Foreground, glyph.Background);
+        }
+    }
+}.
+//конец Rendering\EntityRenderer.cs
+.
+//начало Rendering\FrameDraw.cs
+﻿// Rendering/FrameDraw.cs
+namespace AsciiFarm.Rendering;
+
+/// <summary>Общие примитивы рисования в кадр. Всё с обрезкой по границам.</summary>
+public static class FrameDraw
+{
+    public static void Put(RenderFrame f, int x, int y, char symbol, ConsoleColor fg, ConsoleColor bg)
+    {
+        if ((uint)x >= (uint)f.Width || (uint)y >= (uint)f.Height) return;
+        int i = y * f.Width + x;
+        f.Symbols[i] = symbol;
+        f.Foreground[i] = fg;
+        f.Background[i] = bg;
+    }
+
+    public static void Text(RenderFrame f, int x, int y, string text, ConsoleColor fg,
+                            ConsoleColor bg = ConsoleColor.Black)
+    {
+        for (int i = 0; i < text.Length; i++) Put(f, x + i, y, text[i], fg, bg);
+    }
+
+    public static void Clear(RenderFrame f, char symbol, ConsoleColor fg, ConsoleColor bg)
+    {
+        Array.Fill(f.Symbols, symbol);
+        Array.Fill(f.Foreground, fg);
+        Array.Fill(f.Background, bg);
+    }
+}.
+//конец Rendering\FrameDraw.cs
+.
 //начало Rendering\FrameExchange.cs
-﻿using AsciiFarm.Core;
+﻿// Rendering/FrameExchange.cs
+using AsciiFarm.Core;
 
 namespace AsciiFarm.Rendering;
 
 public sealed class FrameExchange<T> where T : class
 {
-    private T[] _buffers;  // Убрали readonly
     private readonly object _gate = new();
     private readonly ThreadGuard _writerGuard = new("FrameExchange.Writer");
     private readonly ThreadGuard _readerGuard = new("FrameExchange.Reader");
 
+    private T[] _buffers;
     private int _writeIndex;
     private int _readIndex = 1;
     private int _readyIndex = 2;
     private bool _hasFreshFrame;
+
+    private Func<T>? _pendingResize;   // защищён _gate; применяет только писатель
 
     public FrameExchange(Func<T> factory) =>
         _buffers = new[] { factory(), factory(), factory() };
@@ -2555,7 +2704,12 @@ public sealed class FrameExchange<T> where T : class
 
     public T WriteBuffer
     {
-        get { _writerGuard.Validate(); return _buffers[_writeIndex]; }
+        get
+        {
+            _writerGuard.Validate();
+            ApplyPendingResize();                 // безопасная точка: кадр ещё не начат
+            lock (_gate) return _buffers[_writeIndex];
+        }
     }
 
     public void Publish()
@@ -2580,17 +2734,33 @@ public sealed class FrameExchange<T> where T : class
                 frame = _buffers[_readIndex];
                 return true;
             }
+            frame = _buffers[_readIndex];
+            return false;
         }
-        frame = _buffers[_readIndex];
-        return false;
     }
 
-    /// <summary>Пересоздаёт все буферы (при изменении размера окна).</summary>
+    /// <summary>Заявка на смену размера (вызывается из render-потока).</summary>
     public void Resize(Func<T> factory)
     {
+        lock (_gate) _pendingResize = factory;
+    }
+
+    private void ApplyPendingResize()
+    {
+        Func<T>? factory;
         lock (_gate)
         {
-            _buffers = new[] { factory(), factory(), factory() };
+            factory = _pendingResize;
+            if (factory == null) return;
+            _pendingResize = null;
+        }
+
+        // Аллокация вне замка; _buffers меняет только писатель.
+        var newBuffers = new[] { factory(), factory(), factory() };
+
+        lock (_gate)
+        {
+            _buffers = newBuffers;
             _writeIndex = 0;
             _readIndex = 1;
             _readyIndex = 2;
@@ -2599,6 +2769,151 @@ public sealed class FrameExchange<T> where T : class
     }
 }.
 //конец Rendering\FrameExchange.cs
+.
+//начало Rendering\HudRenderer.cs
+﻿// Rendering/HudRenderer.cs
+using AsciiFarm.Components;
+using AsciiFarm.Core;
+using AsciiFarm.Data;
+
+namespace AsciiFarm.Rendering;
+
+public sealed class HudRenderer : IFrameRenderer
+{
+    private const int ColWidth = 20;
+    private const int Gap = 2;
+
+    public void Render(RenderFrame frame, World world)
+    {
+        int totalWidth = ColWidth * 2 + Gap;
+        if (frame.Width < totalWidth + 5) return;
+
+        int startX = frame.Width - totalWidth;
+        int col1 = startX;
+        int col2 = startX + ColWidth + Gap;
+
+        DrawDateTime(frame, col1, 0, world.Resource<GameState>());
+        DrawTileInfo(frame, world, col1, Math.Max(0, frame.Height - 12));
+        DrawStats(frame, col2, 0, world.Resource<FpsCounter>());
+        DrawWeather(frame, col2, 3, world);
+    }
+
+    private static void DrawDateTime(RenderFrame f, int x, int y, GameState state)
+    {
+        string gameTime = CalendarHelper.FormatGameTime(state.GameStartDate, state.GameTimeElapsed, state.DaysPerMonth);
+        var parts = gameTime.Split(' ');
+        var real = TimeSpan.FromSeconds(state.ElapsedTime);
+
+        FrameDraw.Text(f, x, y++, "── ВРЕМЯ ──", ConsoleColor.Cyan);
+        FrameDraw.Text(f, x, y++, parts.Length > 0 ? parts[0] : "", ConsoleColor.White);
+        FrameDraw.Text(f, x, y++, parts.Length > 1 ? parts[1] : "", ConsoleColor.Yellow);
+        FrameDraw.Text(f, x, y++, $"Скорость: x{state.TimeSpeed:F0}", ConsoleColor.Green);
+        FrameDraw.Text(f, x, y, $"Реальное: {(int)real.TotalHours:D2}:{real.Minutes:D2}:{real.Seconds:D2}", ConsoleColor.DarkGray);
+    }
+
+    private static void DrawTileInfo(RenderFrame f, World world, int x, int y)
+    {
+        var players = world.Query<PlayerTag, Position>();
+        var maps = world.Query<TileMapComponent>();
+        if (players.Length == 0 || maps.Length == 0) return;
+
+        var map = world.Store<TileMapComponent>().Get(maps[0]);
+        var pos = world.Store<Position>().Get(players[0]);
+        if (pos.X < 0 || pos.Y < 0 || pos.X >= map.Width || pos.Y >= map.Height) return;
+
+        char tile = map.Tiles[pos.X, pos.Y].Symbol;
+        FrameDraw.Text(f, x, y++, "── ТАЙЛ ──", ConsoleColor.Cyan);
+        FrameDraw.Text(f, x, y++, $"Позиция: ({pos.X}, {pos.Y})", ConsoleColor.White);
+
+        // без ToList(): строки идут потоком
+        foreach (var line in world.Resource<TileInfoRegistry>().GetAllInfo(pos.X, pos.Y, tile, world))
+        {
+            if (y >= f.Height) break;
+            FrameDraw.Text(f, x, y++, line, ConsoleColor.Gray);
+        }
+    }
+
+    private static void DrawStats(RenderFrame f, int x, int y, FpsCounter fps)
+    {
+        FrameDraw.Text(f, x, y++, "── СТАТИСТИКА ──", ConsoleColor.Cyan);
+        FrameDraw.Text(f, x, y++, $"FPS: {fps.RealFps}", ConsoleColor.Green);
+        FrameDraw.Text(f, x, y, $"TPS: {fps.TicksPerSecond}", ConsoleColor.Cyan);
+    }
+
+    private static void DrawWeather(RenderFrame f, int x, int y, World world)
+    {
+        var weather = world.Resource<WeatherCurrent>();
+        var source = world.Resource<WeatherDataSource>();
+
+        if (!weather.HasData)
+        {
+            FrameDraw.Text(f, x, y++, "── ПОГОДА ──", ConsoleColor.DarkGray);
+            FrameDraw.Text(f, x, y++, "нет данных", ConsoleColor.DarkGray);
+            if (source.LoadError != null) FrameDraw.Text(f, x, y, source.LoadError, ConsoleColor.Red);
+            return;
+        }
+
+        var d = weather.Current;
+        FrameDraw.Text(f, x, y++, "── ПОГОДА ──", ConsoleColor.Cyan);
+        FrameDraw.Text(f, x, y++, $"Час: {weather.HourIndex:D2}", ConsoleColor.DarkGray);
+        FrameDraw.Text(f, x, y++, $"Воздух: {d.AirTemp,7:F1}°C", ConsoleColor.White);
+        FrameDraw.Text(f, x, y++, $"Земля: {d.GroundTemp,7:F1}°C", d.GroundTemp < 0 ? ConsoleColor.Blue : ConsoleColor.White);
+        FrameDraw.Text(f, x, y++, $"Влажн: {d.AirHumidity * 100,6:F0}%", ConsoleColor.White);
+        FrameDraw.Text(f, x, y++, $"Почва: {d.SoilMoisture * 100,6:F0}%", d.SoilMoisture < 0.2f ? ConsoleColor.Red : ConsoleColor.Green);
+        FrameDraw.Text(f, x, y++, $"Солнц: {d.SolarEnergyMj,6:F2}МДж", ConsoleColor.Yellow);
+        FrameDraw.Text(f, x, y++, $"Снег: {d.EffectiveSnowCm,6:F1}см", ConsoleColor.White);
+        FrameDraw.Text(f, x, y, $"Осад: {d.PrecipitationMm,6:F1}мм", ConsoleColor.Blue);
+    }
+}.
+//конец Rendering\HudRenderer.cs
+.
+//начало Rendering\IFrameRenderer.cs
+﻿// Rendering/IFrameRenderer.cs
+using AsciiFarm.Core;
+
+namespace AsciiFarm.Rendering;
+
+public interface IFrameRenderer
+{
+    void Render(RenderFrame frame, World world);
+}.
+//конец Rendering\IFrameRenderer.cs
+.
+//начало Rendering\MapRenderer.cs
+﻿// Rendering/MapRenderer.cs
+using AsciiFarm.Components;
+using AsciiFarm.Core;
+using AsciiFarm.Data;
+using AsciiFarm.Systems;
+
+namespace AsciiFarm.Rendering;
+
+public sealed class MapRenderer : IFrameRenderer
+{
+    public void Render(RenderFrame frame, World world)
+    {
+        var palette = world.Resource<TilePalette>();
+        world.TryGetResource<WaterColorCache>(out var water);   // P1-8
+
+        foreach (var entity in world.Query<TileMapComponent>())
+        {
+            var map = world.Store<TileMapComponent>().Get(entity);
+            int width = Math.Min(map.Width, frame.Width);
+            int height = Math.Min(map.Height, frame.Height);
+
+            for (int y = 0; y < height; y++)
+                for (int x = 0; x < width; x++)
+                {
+                    char tile = map.Tiles[x, y].Symbol;
+                    var style = water != null && water.Colors.TryGetValue((x, y), out var ws)
+                        ? ws
+                        : palette.Resolve(tile);
+                    FrameDraw.Put(frame, x, y, tile, style.Foreground, style.Background);
+                }
+        }
+    }
+}.
+//конец Rendering\MapRenderer.cs
 .
 //начало Rendering\RenderFrame.cs
 ﻿// Rendering/RenderFrame.cs
@@ -2626,75 +2941,53 @@ public sealed class RenderFrame
 //конец Rendering\RenderFrame.cs
 .
 //начало Serialization\ComponentSaveSystem.cs
-﻿using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
+﻿// Serialization/ComponentSaveSystem.cs
 using System.Reflection;
 using System.Text;
 using AsciiFarm.Core;
+
 namespace AsciiFarm.Serialization;
 
 /// <summary>
-/// Компонентная система сохранения. Формат файла:
-/// [6 байт: сигнатура "AFARM2"]
-/// [4 байта: версия формата]
-/// [4 байта: количество записей]
-/// Для каждой записи:
-///   [строка: имя типа компонента]
-///   [4 байта: версия компонента]
-///   [4 байта: ID сущности]
-///   [4 байта: длина данных]
-///   [N байт: данные]
-/// 
-/// Forward compatibility: неизвестные компоненты пропускаются.
-/// Backward compatibility: старые компоненты читаются через миграции.
+/// Формат: "AFARM2" | int version | int count | записи { string type, int ver, int id, int len, byte[len] }.
 /// </summary>
 public sealed class ComponentSaveSystem
 {
     private static readonly byte[] Signature = Encoding.ASCII.GetBytes("AFARM2");
     public const int FormatVersion = 1;
 
-    private readonly ComponentSerializerRegistry _registry;
+    // P0-5: жёсткие лимиты против «злых»/битых файлов
+    public const int MaxComponentBytes = 64 * 1024 * 1024;   // 64 МБ на компонент
+    public const int MaxRecords = 1_000_000;
+    private const int MinRecordBytes = 13;                   // 1 (string) + 4 + 4 + 4
 
+    private readonly ComponentSerializerRegistry _registry;
     public ComponentSaveSystem(ComponentSerializerRegistry registry) => _registry = registry;
 
     public void Save(string filePath, World world)
     {
-        using var stream = new FileStream(filePath, FileMode.Create, FileAccess.Write);
-        using var writer = new BinaryWriter(stream, Encoding.UTF8);
-
-        writer.Write(Signature);
-        writer.Write(FormatVersion);
-
-        var entries = new List<(string typeName, int version, int entityId, byte[] data)>();
+        var entries = new List<Entry>();
+        var visitor = new SaveVisitor(_registry, entries);
 
         foreach (var (componentType, store) in world.AllStores())
         {
-            // Пропускаем компоненты с [DontSave]
-            if (componentType.GetCustomAttribute<DontSaveAttribute>() != null)
-                continue;
-
-            var serializer = _registry.Get(componentType);
-            if (serializer == null) continue; // нет сериализатора — не сохраняем
-
-            foreach (var (entity, component) in store.AllComponentsBoxed())
-            {
-                using var ms = new MemoryStream();
-                using var compWriter = new BinaryWriter(ms, Encoding.UTF8, leaveOpen: true);
-                serializer.Serialize(compWriter, component);
-                entries.Add((serializer.TypeName, serializer.Version, entity.Id, ms.ToArray()));
-            }
+            if (componentType.GetCustomAttribute<DontSaveAttribute>() != null) continue;
+            if (_registry.Get(componentType) == null) continue;
+            store.Accept(visitor);      // P2-14: типобезопасный обход, без boxing
         }
 
+        using var stream = new FileStream(filePath, FileMode.Create, FileAccess.Write);
+        using var writer = new BinaryWriter(stream, Encoding.UTF8);
+        writer.Write(Signature);
+        writer.Write(FormatVersion);
         writer.Write(entries.Count);
-        foreach (var (typeName, version, entityId, data) in entries)
+        foreach (var e in entries)
         {
-            writer.Write(typeName);
-            writer.Write(version);
-            writer.Write(entityId);
-            writer.Write(data.Length);
-            writer.Write(data);
+            writer.Write(e.TypeName);
+            writer.Write(e.Version);
+            writer.Write(e.EntityId);
+            writer.Write(e.Data.Length);
+            writer.Write(e.Data);
         }
     }
 
@@ -2703,69 +2996,106 @@ public sealed class ComponentSaveSystem
         using var stream = new FileStream(filePath, FileMode.Open, FileAccess.Read);
         using var reader = new BinaryReader(stream, Encoding.UTF8);
 
-        var sig = reader.ReadBytes(6);
+        var sig = reader.ReadBytes(Signature.Length);
         if (!sig.AsSpan().SequenceEqual(Signature))
-            throw new InvalidOperationException($"Неверная сигнатура файла сохранения");
+            throw new InvalidDataException("Неверная сигнатура файла сохранения.");
 
         int formatVersion = reader.ReadInt32();
-        if (formatVersion > FormatVersion)
-            throw new InvalidOperationException($"Формат {formatVersion} новее поддерживаемого {FormatVersion}");
+        if (formatVersion <= 0 || formatVersion > FormatVersion)
+            throw new InvalidDataException($"Формат {formatVersion} не поддерживается (максимум {FormatVersion}).");
 
         int count = reader.ReadInt32();
-        int maxEntityId = 0;
+        if (count < 0 || count > MaxRecords || count > (stream.Length - stream.Position) / MinRecordBytes)
+            throw new InvalidDataException($"Некорректное число записей: {count}.");
 
+        int maxEntityId = -1;
         for (int i = 0; i < count; i++)
         {
             string typeName = reader.ReadString();
             int version = reader.ReadInt32();
             int entityId = reader.ReadInt32();
             int dataLen = reader.ReadInt32();
+
+            if (entityId < 0)
+                throw new InvalidDataException($"Некорректный ID сущности: {entityId}.");
+            if (dataLen < 0 || dataLen > MaxComponentBytes)
+                throw new InvalidDataException($"Компонент '{typeName}': недопустимый размер {dataLen} (лимит {MaxComponentBytes}).");
+            if (dataLen > stream.Length - stream.Position)
+                throw new InvalidDataException($"Компонент '{typeName}': файл оборван.");
+
             byte[] data = reader.ReadBytes(dataLen);
+            if (data.Length != dataLen) throw new EndOfStreamException();
 
             var serializer = _registry.Get(typeName);
-            if (serializer == null)
-            {
-                // Неизвестный компонент — пропускаем (forward compatibility!)
-                continue;
-            }
+            if (serializer == null || version <= 0 || version > serializer.Version)
+                continue;   // forward compatibility
 
-            if (version > serializer.Version)
-            {
-                // Версия компонента новее — пропускаем (forward compatibility!)
-                continue;
-            }
-
-            using var ms = new MemoryStream(data);
+            using var ms = new MemoryStream(data, writable: false);
             using var compReader = new BinaryReader(ms, Encoding.UTF8, leaveOpen: true);
             var component = serializer.Deserialize(compReader, version);
 
-            var entity = new Entity(entityId);
-
-            // Добавляем компонент через рефлексию
-            var addMethod = typeof(World).GetMethod(nameof(World.Add))!.MakeGenericMethod(serializer.ComponentType);
-            addMethod.Invoke(world, new[] { entity, component });
-
+            serializer.Applier(world, new Entity(entityId), component);   // P2-16: без рефлексии
             if (entityId > maxEntityId) maxEntityId = entityId;
         }
 
-        // Резервируем ID, чтобы новые сущности не конфликтовали
-        world.ReserveId(maxEntityId);
+        if (maxEntityId >= 0) world.ReserveId(maxEntityId);
     }
 
     public static bool IsNewFormat(string filePath)
     {
         if (!File.Exists(filePath)) return false;
         using var stream = File.OpenRead(filePath);
-        if (stream.Length < 6) return false;
-        var sig = new byte[6];
-        stream.Read(sig, 0, 6);
-        return sig.AsSpan().SequenceEqual(Signature);
+        if (stream.Length < Signature.Length) return false;
+        var sig = new byte[Signature.Length];
+        return stream.Read(sig, 0, sig.Length) == sig.Length && sig.AsSpan().SequenceEqual(Signature);
+    }
+
+    private readonly record struct Entry(string TypeName, int Version, int EntityId, byte[] Data);
+
+    /// <summary>Обход компонентов без упаковки: T известен статически.</summary>
+    private sealed class SaveVisitor : IComponentVisitor
+    {
+        private readonly ComponentSerializerRegistry _registry;
+        private readonly List<Entry> _entries;
+        private readonly MemoryStream _ms = new();
+        private readonly BinaryWriter _writer;
+
+        public SaveVisitor(ComponentSerializerRegistry registry, List<Entry> entries)
+        {
+            _registry = registry;
+            _entries = entries;
+            _writer = new BinaryWriter(_ms, Encoding.UTF8, leaveOpen: true);
+        }
+
+        public void Visit<T>(Entity entity, in T component) where T : struct
+        {
+            var typed = _registry.Get<T>();
+            if (typed != null)
+            {
+                Reset();
+                typed.Serialize(_writer, component);
+                _writer.Flush();
+                _entries.Add(new Entry(typed.TypeName, typed.Version, entity.Id, _ms.ToArray()));
+                return;
+            }
+
+            // Fallback для сериализаторов, не наследующих ComponentSerializer<T>.
+            var untyped = _registry.Get(typeof(T));
+            if (untyped == null) return;
+            Reset();
+            untyped.Serialize(_writer, component);
+            _writer.Flush();
+            _entries.Add(new Entry(untyped.TypeName, untyped.Version, entity.Id, _ms.ToArray()));
+        }
+
+        private void Reset() { _ms.SetLength(0); _ms.Position = 0; }
     }
 }.
 //конец Serialization\ComponentSaveSystem.cs
 .
 //начало Serialization\ComponentSerializers.cs
-﻿using System;
+﻿// Serialization/ComponentSerializers.cs
+using System;
 using System.IO;
 using AsciiFarm.Components;
 using AsciiFarm.Core;
@@ -2775,22 +3105,36 @@ namespace AsciiFarm.Serialization;
 public sealed class PositionSerializer : ComponentSerializer<Position>
 {
     public override string TypeName => nameof(Position);
-    public override void Serialize(BinaryWriter w, Position p) { w.Write(p.X); w.Write(p.Y); }
-    public override Position Deserialize(BinaryReader r, int version) => new(r.ReadInt32(), r.ReadInt32());
+
+    public override void Serialize(BinaryWriter w, Position p)
+    {
+        w.Write(p.X);
+        w.Write(p.Y);
+    }
+
+    public override Position Deserialize(BinaryReader r, int version)
+    {
+        int x = r.ReadInt32();
+        int y = r.ReadInt32();
+        return new Position(x, y);
+    }
 }
 
 public sealed class TileMapSerializer : ComponentSerializer<TileMapComponent>
 {
+    /// <summary>P0-5: лимит тайлов, чтобы битый файл не вызвал OOM при аллокации.</summary>
+    public const int MaxTiles = 2_000_000;   // ~36 МБ при 18 байтах на тайл
+
     public override string TypeName => nameof(TileMapComponent);
-    public override int Version => 2; // Увеличиваем версию формата
+    public override int Version => 2;
 
     public override void Serialize(BinaryWriter w, TileMapComponent m)
     {
         int width = m.Width, height = m.Height;
         w.Write(width);
         w.Write(height);
+
         for (int y = 0; y < height; y++)
-        {
             for (int x = 0; x < width; x++)
             {
                 var tile = m.Tiles[x, y];
@@ -2800,64 +3144,58 @@ public sealed class TileMapSerializer : ComponentSerializer<TileMapComponent>
                 w.Write(tile.Potassium);
                 w.Write(tile.Moisture);
             }
-        }
     }
 
     public override TileMapComponent Deserialize(BinaryReader r, int version)
     {
-        int width = r.ReadInt32(), height = r.ReadInt32();
+        if (version is < 1 or > 2)
+            throw new InvalidDataException($"TileMap: неизвестная версия {version}.");
 
-        if (version == 1)
-        {
-            // МИГРАЦИЯ: старый формат содержал только char. 
-            // Читаем символ и сразу назначаем ему параметры по умолчанию.
-            var tiles = new TileData[width, height];
-            for (int y = 0; y < height; y++)
+        int width = r.ReadInt32();
+        int height = r.ReadInt32();
+        ValidateSize(width, height);          // проверка ДО new TileData[...]
+
+        var tiles = new TileData[width, height];
+        for (int y = 0; y < height; y++)
+            for (int x = 0; x < width; x++)
             {
-                for (int x = 0; x < width; x++)
-                {
-                    char symbol = r.ReadChar();
-                    tiles[x, y] = MigrateTile(symbol);
-                }
-            }
-            return new TileMapComponent { Tiles = tiles };
-        }
-        else
-        {
-            // Новый формат (версия 2)
-            var tiles = new TileData[width, height];
-            for (int y = 0; y < height; y++)
-            {
-                for (int x = 0; x < width; x++)
-                {
-                    tiles[x, y] = new TileData
+                char symbol = r.ReadChar();
+                tiles[x, y] = version == 1
+                    ? MigrateTile(symbol)
+                    : new TileData
                     {
-                        Symbol = r.ReadChar(),
+                        Symbol = symbol,
                         Nitrogen = r.ReadSingle(),
                         Phosphorus = r.ReadSingle(),
                         Potassium = r.ReadSingle(),
                         Moisture = r.ReadSingle()
                     };
-                }
             }
-            return new TileMapComponent { Tiles = tiles };
-        }
+
+        return new TileMapComponent { Tiles = tiles };
     }
 
-    private static TileData MigrateTile(char symbol)
+    private static void ValidateSize(int width, int height)
     {
-        return symbol switch
-        {
-            '≈' => new TileData { Symbol = symbol, Nitrogen = 0f, Phosphorus = 0f, Potassium = 0f, Moisture = 1.0f },
-            '♣' or '♠' => new TileData { Symbol = symbol, Nitrogen = 0.7f, Phosphorus = 0.5f, Potassium = 0.6f, Moisture = 0.7f },
-            '.' or ',' or '\'' or '`' or ';' => new TileData { Symbol = symbol, Nitrogen = 0.5f, Phosphorus = 0.3f, Potassium = 0.4f, Moisture = 0.6f },
-            '#' or '▒' or '┌' or '┐' or '└' or '┘' or '─' or '│' or '┬' or '┴' or '├' or '┤' or '┼' or '╪'
+        if (width <= 0 || height <= 0)
+            throw new InvalidDataException($"TileMap: некорректный размер {width}x{height}.");
+
+        if ((long)width * height > MaxTiles)
+            throw new InvalidDataException(
+                $"TileMap: {width}x{height} превышает лимит {MaxTiles} тайлов.");
+    }
+
+    private static TileData MigrateTile(char symbol) => symbol switch
+    {
+        '≈' => new TileData { Symbol = symbol, Nitrogen = 0f, Phosphorus = 0f, Potassium = 0f, Moisture = 1.0f },
+        '♣' or '♠' => new TileData { Symbol = symbol, Nitrogen = 0.7f, Phosphorus = 0.5f, Potassium = 0.6f, Moisture = 0.7f },
+        '.' or ',' or '\'' or '`' or ';' => new TileData { Symbol = symbol, Nitrogen = 0.5f, Phosphorus = 0.3f, Potassium = 0.4f, Moisture = 0.6f },
+        '#' or '▒' or '┌' or '┐' or '└' or '┘' or '─' or '│' or '┬' or '┴' or '├' or '┤' or '┼' or '╪'
             or '╔' or '╗' or '╚' or '╝' or '═' or '║' or '╠' or '╣' or '╦' or '╩' or '╬'
             => new TileData { Symbol = symbol, Nitrogen = 0f, Phosphorus = 0f, Potassium = 0f, Moisture = 0f },
-            ' ' => new TileData { Symbol = symbol, Nitrogen = 0.1f, Phosphorus = 0.1f, Potassium = 0.1f, Moisture = 0.1f },
-            _ => new TileData { Symbol = symbol, Nitrogen = 0.3f, Phosphorus = 0.3f, Potassium = 0.3f, Moisture = 0.4f }
-        };
-    }
+        ' ' => new TileData { Symbol = symbol, Nitrogen = 0.1f, Phosphorus = 0.1f, Potassium = 0.1f, Moisture = 0.1f },
+        _ => new TileData { Symbol = symbol, Nitrogen = 0.3f, Phosphorus = 0.3f, Potassium = 0.3f, Moisture = 0.4f }
+    };
 }
 
 public sealed class PlayerTagSerializer : ComponentSerializer<PlayerTag>
@@ -2870,15 +3208,21 @@ public sealed class PlayerTagSerializer : ComponentSerializer<PlayerTag>
 public sealed class GlyphSerializer : ComponentSerializer<Glyph>
 {
     public override string TypeName => nameof(Glyph);
+
     public override void Serialize(BinaryWriter w, Glyph g)
     {
-        w.Write(g.Symbol); w.Write((int)g.Foreground); w.Write((int)g.Background); w.Write(g.Layer);
+        w.Write(g.Symbol);
+        w.Write((int)g.Foreground);
+        w.Write((int)g.Background);
+        w.Write(g.Layer);
     }
+
     public override Glyph Deserialize(BinaryReader r, int version) => new()
     {
         Symbol = r.ReadChar(),
-        Foreground = (ConsoleColor)r.ReadInt32(),
-        Background = (ConsoleColor)r.ReadInt32(),
+        // Clamp: битый сейв не должен ронять рендер в MakeAttribute
+        Foreground = (ConsoleColor)Math.Clamp(r.ReadInt32(), 0, 15),
+        Background = (ConsoleColor)Math.Clamp(r.ReadInt32(), 0, 15),
         Layer = r.ReadInt32()
     };
 }.
@@ -2890,7 +3234,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
-namespace askiifarm.Serialization
+namespace AsciiFarm.Serialization
 {
     public class GameStorage
     {
@@ -3040,7 +3384,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
-namespace askiifarm.Serialization
+namespace AsciiFarm.Serialization
 {
     // ═══════════════════════════════════════════════════════════════
     //  МОДЕЛИ ДАННЫХ
@@ -3376,25 +3720,27 @@ namespace askiifarm.Serialization
 //конец Serialization\Serialization.cs
 .
 //начало Systems\ConsolePresentSystem.cs
-﻿// Rendering/ConsolePresentSystem.cs
+﻿// Systems/ConsolePresentSystem.cs
 using AsciiFarm.Data;
 using AsciiFarm.Rendering;
-using askiifarm;
-using askiifarm.Rendering;
+using System.Diagnostics;
+
 namespace AsciiFarm.Systems;
 
 public sealed class ConsolePresentSystem
 {
     private readonly DoubleBufferedConsole _console;
     private readonly FrameExchange<RenderFrame> _frames;
-    private readonly FpsCounter _fpsCounter;  // ДОБАВИТЬ
+    private readonly FpsCounter _fpsCounter;
+    private readonly Stopwatch _clock = Stopwatch.StartNew();   // P0-3: реальное время
 
-    public ConsolePresentSystem(DoubleBufferedConsole console, FrameExchange<RenderFrame> frames,
-                                FpsCounter fpsCounter)  // ДОБАВИТЬ ПАРАМЕТР
+    public ConsolePresentSystem(DoubleBufferedConsole console,
+                                FrameExchange<RenderFrame> frames,
+                                FpsCounter fpsCounter)
     {
         _console = console;
         _frames = frames;
-        _fpsCounter = fpsCounter;  // ДОБАВИТЬ
+        _fpsCounter = fpsCounter;
     }
 
     public void Present()
@@ -3407,9 +3753,9 @@ public sealed class ConsolePresentSystem
                     int i = y * frame.Width + x;
                     _console.PutChar(x, y, frame.Symbols[i], frame.Foreground[i], frame.Background[i]);
                 }
-            _fpsCounter.RecordFrame(frame.Tick);
+
+            _fpsCounter.RecordFrame(_clock.Elapsed.TotalSeconds);  // не frame.Tick!
         }
-        // Вызываем Draw() всегда, даже если нет свежего кадра
         _console.Draw();
     }
 }.
@@ -3419,39 +3765,28 @@ public sealed class ConsolePresentSystem
 ﻿// Systems/ElapsedTimeSystem.cs
 using AsciiFarm.Core;
 using AsciiFarm.Data;
-using System.Diagnostics;
+
 namespace AsciiFarm.Systems;
 
 [GameSystem(Order = 1)]
-public sealed class ElapsedTimeSystem : ISystem
+public sealed class ElapsedTimeSystem : ISystem   // P2-10: stateless
 {
-    private readonly Stopwatch _tickTimer = Stopwatch.StartNew();
-    private double _lastTickTime = 0;
-
     public void Update(World world)
     {
         var state = world.Resource<GameState>();
+        var clock = world.Resource<SimulationClock>();
         var fpsCounter = world.Resource<FpsCounter>();
 
-        // Реальное время между тиками — считаем всегда
-        double now = _tickTimer.Elapsed.TotalSeconds;
-        double realDeltaTime = now - _lastTickTime;
-        _lastTickTime = now;
-        realDeltaTime = Math.Min(realDeltaTime, 0.1);
+        double realDeltaTime = Math.Min(clock.NextDelta(), 0.1);
 
-        // Реальное время всегда растёт на реальное время между тиками
         state.ElapsedTime += realDeltaTime;
         state.DeltaTime = (float)realDeltaTime;
-        state.Tick++;
+        state.Tick++;                       // единственный инкремент Tick в проекте
         fpsCounter.RecordTick();
 
-        // При перемотке игровое время уже добавлено в SimulationLoop — не дублируем
-        if (state.FastForwardUntil.HasValue) return;
+        if (state.FastForwardUntil.HasValue) return;   // время уже добавлено в SimulationLoop
 
-        // В обычном режиме: игровое время = реальное × скорость, но не более MaxTimeStep
-        double effectiveDeltaTime = realDeltaTime * state.TimeSpeed;
-        effectiveDeltaTime = Math.Min(effectiveDeltaTime, state.MaxTimeStep);
-        state.GameTimeElapsed += effectiveDeltaTime;
+        state.GameTimeElapsed += Math.Min(realDeltaTime * state.TimeSpeed, state.MaxTimeStep);
     }
 }.
 //конец Systems\ElapsedTimeSystem.cs
@@ -3527,6 +3862,7 @@ using AsciiFarm.Components;
 using AsciiFarm.Core;
 using AsciiFarm.Data;
 using AsciiFarm.Input;
+
 namespace AsciiFarm.Systems;
 
 [GameSystem(Order = 3)]
@@ -3534,77 +3870,78 @@ public sealed class PlayerIntentSystem : ISystem
 {
     public void Update(World world)
     {
-        var state = world.Resource<GameState>();
         var commands = world.Resource<CommandBuffer>().Items;
+        if (commands.Count == 0) return;
+
+        var state = world.Resource<GameState>();
         var intents = world.Store<MoveIntent>();
-        var players = world.Query<PlayerTag, Position>();
+        Entity[]? players = null;
 
-        foreach (var command in commands)
+        foreach (var command in commands)   // один проход
         {
-            if (command == GameCommand.Exit)
-            {
-                state.IsRunning = false;
-                state.NeedsSave = true;
-                continue;
-            }
-
-            var (dx, dy) = command switch
-            {
-                GameCommand.MoveUp => (0, -1),
-                GameCommand.MoveDown => (0, 1),
-                GameCommand.MoveLeft => (-1, 0),
-                GameCommand.MoveRight => (1, 0),
-                _ => (0, 0)
-            };
-
-            if (dx == 0 && dy == 0) continue;
-
-            foreach (var entity in players)
-                intents.Set(entity, new MoveIntent(dx, dy));
-        }
-
-        // Обработка команд управления временем
-        foreach (var command in commands)
-        {
-            // Systems/PlayerIntentSystem.cs
-            // ... внутри foreach (var command in commands)
             switch (command)
             {
-                // Относительные скорости (от базовой DefaultTimeSpeed, например 48)
-                case GameCommand.Speed1: state.TimeSpeed = state.DefaultTimeSpeed; break;          // x1 от базы (48x)
-                case GameCommand.Speed2: state.TimeSpeed = state.DefaultTimeSpeed * 10; break;     // x10 от базы (480x)
+                case GameCommand.Exit:
+                    state.IsRunning = false;
+                    state.NeedsSave = true;
+                    break;
 
-                // Абсолютные скорости для масштабного ускорения
-                case GameCommand.Speed3: state.TimeSpeed = 1440.0; break;      // 1 игровой день за 1 реальную минуту
-                case GameCommand.Speed4: state.TimeSpeed = 43200.0; break;     // 1 игровой месяц за 1 реальную минуту
-                case GameCommand.Speed5: state.TimeSpeed = 518400.0; break;    // 1 игровой год за 1 реальную минуту
+                case GameCommand.MoveUp: Move(0, -1); break;
+                case GameCommand.MoveDown: Move(0, 1); break;
+                case GameCommand.MoveLeft: Move(-1, 0); break;
+                case GameCommand.MoveRight: Move(1, 0); break;
 
-                // Промотка (абсолютные значения в секундах)
-                case GameCommand.FastForward1: state.FastForwardUntil = state.GameTimeElapsed + 3600.0; break;       // +1 час
-                case GameCommand.FastForward2: state.FastForwardUntil = state.GameTimeElapsed + 86400.0; break;      // +1 день
-                case GameCommand.FastForward3: state.FastForwardUntil = state.GameTimeElapsed + 604800.0; break;     // +1 неделя
-                case GameCommand.FastForward4: state.FastForwardUntil = state.GameTimeElapsed + 2592000.0; break;    // +1 месяц
-                case GameCommand.FastForward5: state.FastForwardUntil = state.GameTimeElapsed + 31536000.0; break;   // +1 год
+                // Относительные скорости
+                case GameCommand.Speed1: state.TimeSpeed = state.DefaultTimeSpeed; break;
+                case GameCommand.Speed2: state.TimeSpeed = state.DefaultTimeSpeed * 10; break;
+
+                // Абсолютные: сутки / месяц / год ИГРОВОГО календаря за реальную минуту
+                case GameCommand.Speed3:
+                    state.TimeSpeed = CalendarHelper.SecondsPerDay / CalendarHelper.SecondsPerMinute;
+                    break;
+                case GameCommand.Speed4:
+                    state.TimeSpeed = MonthSeconds(state) / CalendarHelper.SecondsPerMinute;
+                    break;
+                case GameCommand.Speed5:
+                    state.TimeSpeed = YearSeconds(state) / CalendarHelper.SecondsPerMinute;
+                    break;
+
+                // Промотка: час / сутки / неделя / месяц / год ИГРОВОГО календаря
+                case GameCommand.FastForward1: Forward(CalendarHelper.SecondsPerHour); break;
+                case GameCommand.FastForward2: Forward(CalendarHelper.SecondsPerDay); break;
+                case GameCommand.FastForward3: Forward(7 * CalendarHelper.SecondsPerDay); break;
+                case GameCommand.FastForward4: Forward(MonthSeconds(state)); break;
+                case GameCommand.FastForward5: Forward(YearSeconds(state)); break;
             }
         }
 
         commands.Clear();
+
+        void Move(int dx, int dy)
+        {
+            players ??= world.Query<PlayerTag, Position>();
+            foreach (var entity in players) intents.Set(entity, new MoveIntent(dx, dy));
+        }
+
+        void Forward(double seconds) => state.FastForwardUntil = state.GameTimeElapsed + seconds;
     }
+
+    private static double MonthSeconds(GameState s) =>
+        CalendarHelper.GetMonthSeconds(s.GameStartDate, s.GameTimeElapsed, s.DaysPerMonth);
+
+    private static double YearSeconds(GameState s) =>
+        CalendarHelper.GetYearSeconds(s.GameStartDate, s.GameTimeElapsed, s.DaysPerMonth);
 }.
 //конец Systems\PlayerIntentSystem.cs
 .
 //начало Systems\RiverFlowSystem.cs
 ﻿// Systems/RiverFlowSystem.cs
-using System.Collections.Generic;
 using AsciiFarm.Components;
 using AsciiFarm.Core;
 using AsciiFarm.Data;
+
 namespace AsciiFarm.Systems;
 
-/// <summary>
-/// Анимация реки: каждый водный тайл с шансом 80% синий, 20% белый.
-/// Псевдослучайность детерминирована по (x, y, time).
-/// </summary>
 [GameSystem(Order = 5)]
 public sealed class RiverFlowSystem : ISystem
 {
@@ -3614,355 +3951,61 @@ public sealed class RiverFlowSystem : ISystem
 
     public void Update(World world)
     {
+        var cache = world.Resource<WaterColorCache>();
         var state = world.Resource<GameState>();
+
+        int bucket = (int)(state.ElapsedTime * AnimationSpeed);
+        if (bucket == cache.LastBucket) return;   // картинка не изменилась — не считаем
+        cache.LastBucket = bucket;
+        cache.Colors.Clear();                     // словарь переиспользуется
+
         var maps = world.Query<TileMapComponent>();
         if (maps.Length == 0) return;
-
         var map = world.Store<TileMapComponent>().Get(maps[0]);
-        float time = (float)state.ElapsedTime;
-
-        var waterColors = new Dictionary<(int, int), TileStyle>();
 
         for (int y = 0; y < map.Height; y++)
-        {
             for (int x = 0; x < map.Width; x++)
             {
                 if (map.Tiles[x, y].Symbol != WaterSymbol) continue;
-
-                // Детерминированный псевдослучайный выбор цвета
-                int hash = HashCode.Combine(x, y, (int)(time * AnimationSpeed));
-                float randomValue = (hash & 0xFFFF) / (float)0xFFFF;
-
-                ConsoleColor fg = randomValue < BlueProbability
-                    ? ConsoleColor.Cyan
-                    : ConsoleColor.White;
-
-                waterColors[(x, y)] = new TileStyle(fg, ConsoleColor.Black, false);
+                int hash = HashCode.Combine(x, y, bucket);
+                float value = (hash & 0xFFFF) / (float)0xFFFF;
+                var fg = value < BlueProbability ? ConsoleColor.Cyan : ConsoleColor.White;
+                cache.Colors[(x, y)] = new TileStyle(fg, ConsoleColor.Black, false);
             }
-        }
-
-        world.SetResource(new WaterColorCache(waterColors));
     }
-}
-
-/// <summary>Кэш цветов воды на текущий кадр. Данные.</summary>
-public sealed class WaterColorCache
-{
-    public Dictionary<(int, int), TileStyle> Colors { get; }
-    public WaterColorCache(Dictionary<(int, int), TileStyle> colors) => Colors = colors;
 }.
 //конец Systems\RiverFlowSystem.cs
 .
 //начало Systems\SnapshotSystem.cs
-﻿// Systems/SnapshotSystem.cs
-using AsciiFarm.Components;
+﻿// Systems/SnapshotSystem.cs — только оркестрация.
+// Мёртвые DrawUI / DrawWeatherUI / DrawGameTime удалены.
 using AsciiFarm.Core;
 using AsciiFarm.Data;
 using AsciiFarm.Rendering;
+
 namespace AsciiFarm.Systems;
 
 public sealed class SnapshotSystem
 {
     private readonly FrameExchange<RenderFrame> _frames;
+    private readonly IFrameRenderer[] _renderers;
 
-    public SnapshotSystem(FrameExchange<RenderFrame> frames) => _frames = frames;
+    public SnapshotSystem(FrameExchange<RenderFrame> frames, params IFrameRenderer[] renderers)
+    {
+        _frames = frames;
+        _renderers = renderers;
+    }
 
     public void Update(World world)
     {
         var frame = _frames.WriteBuffer;
-        var palette = world.Resource<TilePalette>();
-        var gameState = world.Resource<GameState>();
-        var characterPalette = world.Resource<CharacterPalette>();
-        var fpsCounter = world.Resource<FpsCounter>();
+        var fallback = world.Resource<TilePalette>().Fallback;
+        FrameDraw.Clear(frame, ' ', fallback.Foreground, fallback.Background);
 
-        WaterColorCache? waterCache = null;
-        try { waterCache = world.Resource<WaterColorCache>(); } catch { }
+        foreach (var renderer in _renderers) renderer.Render(frame, world);
 
-        Array.Fill(frame.Symbols, ' ');
-        Array.Fill(frame.Foreground, palette.Fallback.Foreground);
-        Array.Fill(frame.Background, palette.Fallback.Background);
-
-        // Рисуем тайлы карты
-        foreach (var entity in world.Query<TileMapComponent>())
-            DrawTiles(frame, world.Store<TileMapComponent>().Get(entity), palette, waterCache);
-
-        // Рисуем персонажей
-        var glyphs = world.Store<Glyph>();
-        var positions = world.Store<Position>();
-        var playerTags = world.Store<PlayerTag>();
-
-        foreach (var entity in world.Query<Glyph, Position>().OrderBy(e => glyphs.Get(e).Layer))
-        {
-            var glyph = glyphs.Get(entity);
-            var pos = positions.Get(entity);
-            if (playerTags.Has(entity))
-                glyph = characterPalette.Get(characterPalette.DefaultPlayerKey);
-            Put(frame, pos.X, pos.Y, glyph.Symbol, glyph.Foreground, glyph.Background);
-        }
-
-        // Рисуем UI в две колонки
-        DrawTwoColumnUI(frame, world, gameState, fpsCounter);
-
-        frame.Tick = gameState.Tick;
+        frame.Tick = world.Resource<GameState>().Tick;
         _frames.Publish();
-    }
-
-    private static void DrawTiles(RenderFrame frame, TileMapComponent map,
-        TilePalette palette, WaterColorCache? waterCache)
-    {
-        int width = Math.Min(map.Width, frame.Width);
-        int height = Math.Min(map.Height, frame.Height);
-
-        for (int y = 0; y < height; y++)
-            for (int x = 0; x < width; x++)
-            {
-                char tile = map.Tiles[x, y].Symbol;
-                var style = waterCache != null && waterCache.Colors.TryGetValue((x, y), out var ws)
-                    ? ws
-                    : palette.Resolve(tile);
-                Put(frame, x, y, tile, style.Foreground, style.Background);
-            }
-    }
-
-    // Systems/SnapshotSystem.cs — метод DrawTwoColumnUI
-    /// <summary>Рисует UI в две колонки справа.</summary>
-    private static void DrawTwoColumnUI(RenderFrame frame, World world,
-        GameState state, FpsCounter fpsCounter)
-    {
-        int colWidth = 20;
-        int gap = 2;
-        int totalWidth = colWidth * 2 + gap;
-
-        // Если экран слишком узкий, не рисуем UI
-        if (frame.Width < totalWidth + 5) return;
-
-        int startX = frame.Width - totalWidth;
-        int col1X = startX;
-        int col2X = startX + colWidth + gap;
-
-        // Колонка 1: Дата/время (верх), информация о тайле (низ)
-        DrawDateTimeColumn(frame, col1X, 0, state);
-        DrawTileInfoColumn(frame, world, col1X, frame.Height - 12);
-
-        // Колонка 2: FPS/TPS/Погода
-        DrawStatsColumn(frame, col2X, 0, fpsCounter);
-        DrawWeatherColumn(frame, col2X, 3, world);
-    }
-
-    /// <summary>Колонка 1 (верх): Дата и время.</summary>
-    private static void DrawDateTimeColumn(RenderFrame frame, int startX, int startY, GameState state)
-    {
-        string gameTimeStr = CalendarHelper.FormatGameTime(
-            state.GameStartDate, state.GameTimeElapsed, state.DaysPerMonth);
-        string speedStr = $"x{state.TimeSpeed:F0}";
-        TimeSpan realTime = TimeSpan.FromSeconds(state.ElapsedTime);
-        string realTimeStr = $"{(int)realTime.TotalHours:D2}:{realTime.Minutes:D2}:{realTime.Seconds:D2}";
-
-        string[] timeParts = gameTimeStr.Split(' ');
-        string dateStr = timeParts.Length > 0 ? timeParts[0] : "";
-        string timeOfDayStr = timeParts.Length > 1 ? timeParts[1] : "";
-
-        int y = startY;
-        DrawText(frame, startX, y++, "── ВРЕМЯ ──", ConsoleColor.Cyan);
-        DrawText(frame, startX, y++, dateStr, ConsoleColor.White);
-        DrawText(frame, startX, y++, timeOfDayStr, ConsoleColor.Yellow);
-        DrawText(frame, startX, y++, $"Скорость: {speedStr}", ConsoleColor.Green);
-        DrawText(frame, startX, y++, $"Реальное: {realTimeStr}", ConsoleColor.DarkGray);
-    }
-
-    /// <summary>Колонка 1 (низ): Информация о тайле под игроком.</summary>
-    // Systems/SnapshotSystem.cs (найдите метод DrawTileInfoColumn)
-
-    /// <summary>Колонка 1 (низ): Информация о тайле под игроком.</summary>
-    private static void DrawTileInfoColumn(RenderFrame frame, World world, int startX, int startY)
-    {
-        var players = world.Query<PlayerTag, Position>();
-        if (players.Length == 0) return;
-
-        var positions = world.Store<Position>();
-        var maps = world.Query<TileMapComponent>();
-        if (maps.Length == 0) return;
-
-        var map = world.Store<TileMapComponent>().Get(maps[0]);
-        var playerPos = positions.Get(players[0]);
-
-        if (playerPos.X < 0 || playerPos.Y < 0 ||
-            playerPos.X >= map.Width || playerPos.Y >= map.Height)
-            return;
-
-        char tile = map.Tiles[playerPos.X, playerPos.Y].Symbol; // .Symbol добавлен из-за TileData
-
-        // Получаем информацию, передавая координаты!
-        var registry = world.Resource<TileInfoRegistry>();
-        var infoLines = registry.GetAllInfo(playerPos.X, playerPos.Y, tile, world).ToList();
-
-        int y = startY;
-        DrawText(frame, startX, y++, "── ТАЙЛ ──", ConsoleColor.Cyan);
-        DrawText(frame, startX, y++, $"Позиция: ({playerPos.X}, {playerPos.Y})", ConsoleColor.White);
-
-        foreach (var line in infoLines)
-        {
-            if (y >= frame.Height) break;
-            DrawText(frame, startX, y++, line, ConsoleColor.Gray);
-        }
-    }
-    /// <summary>Колонка 2 (верх): FPS и TPS.</summary>
-    private static void DrawStatsColumn(RenderFrame frame, int startX, int startY, FpsCounter fpsCounter)
-    {
-        int y = startY;
-        DrawText(frame, startX, y++, "── СТАТИСТИКА ──", ConsoleColor.Cyan);
-        DrawText(frame, startX, y++, $"FPS: {fpsCounter.RealFps}", ConsoleColor.Green);
-        DrawText(frame, startX, y++, $"TPS: {fpsCounter.TicksPerSecond}", ConsoleColor.Cyan);
-    }
-
-    /// <summary>Колонка 2: Погода.</summary>
-    private static void DrawWeatherColumn(RenderFrame frame, int startX, int startY, World world)
-    {
-        var weather = world.Resource<WeatherCurrent>();
-        var source = world.Resource<WeatherDataSource>();
-
-        int y = startY;
-
-        if (!weather.HasData)
-        {
-            DrawText(frame, startX, y++, "── ПОГОДА ──", ConsoleColor.DarkGray);
-            DrawText(frame, startX, y++, "нет данных", ConsoleColor.DarkGray);
-            if (source.LoadError != null)
-                DrawText(frame, startX, y++, source.LoadError, ConsoleColor.Red);
-            return;
-        }
-
-        var d = weather.Current;
-        DrawText(frame, startX, y++, "── ПОГОДА ──", ConsoleColor.Cyan);
-        DrawText(frame, startX, y++, $"Час: {weather.HourIndex:D2}", ConsoleColor.DarkGray);
-        DrawText(frame, startX, y++, $"Воздух: {d.AirTemp,7:F1}°C", ConsoleColor.White);
-        DrawText(frame, startX, y++, $"Земля: {d.GroundTemp,7:F1}°C",
-            d.GroundTemp < 0 ? ConsoleColor.Blue : ConsoleColor.White);
-        DrawText(frame, startX, y++, $"Влажн: {d.AirHumidity * 100,6:F0}%", ConsoleColor.White);
-        DrawText(frame, startX, y++, $"Почва: {d.SoilMoisture * 100,6:F0}%",
-            d.SoilMoisture < 0.2f ? ConsoleColor.Red : ConsoleColor.Green);
-        DrawText(frame, startX, y++, $"Солнц: {d.SolarEnergyMj,6:F2}МДж", ConsoleColor.Yellow);
-        DrawText(frame, startX, y++, $"Снег: {d.EffectiveSnowCm,6:F1}см", ConsoleColor.White);
-        DrawText(frame, startX, y++, $"Осад: {d.PrecipitationMm,6:F1}мм", ConsoleColor.Blue);
-    }
-
-    /// <summary>Вспомогательный метод для вывода текста.</summary>
-    private static void DrawText(RenderFrame frame, int x, int y, string text, ConsoleColor color)
-    {
-        for (int i = 0; i < text.Length && x + i < frame.Width; i++)
-        {
-            if (y < frame.Height)
-                Put(frame, x + i, y, text[i], color, ConsoleColor.Black);
-        }
-    }
-
-    // В методе DrawUI:
-    private static void DrawUI(RenderFrame frame, GameState state, FpsCounter fpsCounter)
-    {
-        string fpsStr = $"FPS: {fpsCounter.RealFps}";
-        string tickStr = $"TPS: {fpsCounter.TicksPerSecond}";
-
-        int startX = frame.Width - Math.Max(fpsStr.Length, tickStr.Length) - 1;
-
-        for (int i = 0; i < fpsStr.Length; i++)
-            if (startX + i < frame.Width)
-                Put(frame, startX + i, 0, fpsStr[i], ConsoleColor.Green, ConsoleColor.Black);
-
-        for (int i = 0; i < tickStr.Length; i++)
-            if (startX + i < frame.Width && 1 < frame.Height)
-                Put(frame, startX + i, 1, tickStr[i], ConsoleColor.Cyan, ConsoleColor.Black);
-    }
-    // Новый метод:
-    private static void DrawWeatherUI(RenderFrame frame, WeatherCurrent weather, WeatherDataSource source)
-    {
-        int panelWidth = 24;
-        int startX = frame.Width - panelWidth - 2;
-        int startY = 3;
-
-        (string text, ConsoleColor color)[] lines;
-
-        if (!weather.HasData)
-        {
-            var err = source.LoadError ?? "Данные не загружены";
-            if (err.Length > 22) err = err.Substring(0, 22);
-            lines = new (string, ConsoleColor)[]
-            {
-            ("── ПОГОДА ──", ConsoleColor.DarkGray),
-            ("  нет данных", ConsoleColor.DarkGray),
-            (err, ConsoleColor.Red),
-            };
-        }
-        else
-        {
-            var d = weather.Current;
-            lines = new (string, ConsoleColor)[]
-            {
-            ("── ПОГОДА ──", ConsoleColor.Cyan),
-            ($"Час: {weather.HourIndex:D2}", ConsoleColor.DarkGray),
-            ($"Воздух:{d.AirTemp,7:F1}°C", ConsoleColor.White),
-            ($"Земля: {d.GroundTemp,7:F1}°C", d.GroundTemp < 0 ? ConsoleColor.Blue : ConsoleColor.White),
-            ($"Влажн: {d.AirHumidity * 100,6:F0}%", ConsoleColor.White),
-            ($"Почва: {d.SoilMoisture * 100,6:F0}%", d.SoilMoisture < 0.2f ? ConsoleColor.Red : ConsoleColor.Green),
-            ($"Солнц: {d.SolarEnergyMj,6:F2}МДж", ConsoleColor.Yellow),
-            ($"Снег:  {d.EffectiveSnowCm,6:F1}см", ConsoleColor.White),
-            ($"Осад:  {d.PrecipitationMm,6:F1}мм", ConsoleColor.Blue),
-            };
-        }
-
-        for (int i = 0; i < lines.Length; i++)
-        {
-            var (text, color) = lines[i];
-            for (int j = 0; j < text.Length && startX + j < frame.Width; j++)
-            {
-                if (startY + i < frame.Height)
-                    Put(frame, startX + j, startY + i, text[j], color, ConsoleColor.Black);
-            }
-        }
-    }
-
-    // В методе DrawGameTime:
-    private static void DrawGameTime(RenderFrame frame, GameState state)
-    {
-        // Используем CalendarHelper для правильного отображения
-        string gameTimeStr = CalendarHelper.FormatGameTime(
-            state.GameStartDate, state.GameTimeElapsed, state.DaysPerMonth);
-        string speedStr = $"x{state.TimeSpeed:F0}";
-
-        // Реальное время, прошедшее с запуска
-        TimeSpan realTime = TimeSpan.FromSeconds(state.ElapsedTime);
-        string realTimeStr = $"{(int)realTime.TotalHours:D2}:{realTime.Minutes:D2}:{realTime.Seconds:D2}";
-
-        int startX = frame.Width - 12;  // Сдвинуто вправо
-        int startY = frame.Height - 4;
-
-        // Разделяем "dd.MM.yyyy HH:mm:ss" на дату и время
-        string[] timeParts = gameTimeStr.Split(' ');
-        string dateStr = timeParts.Length > 0 ? timeParts[0] : "";
-        string timeOfDayStr = timeParts.Length > 1 ? timeParts[1] : "";
-
-        // 1. Дата игры
-        for (int i = 0; i < dateStr.Length && startX + i < frame.Width; i++)
-            Put(frame, startX + i, startY, dateStr[i], ConsoleColor.White, ConsoleColor.Black);
-
-        // 2. Время игры
-        for (int i = 0; i < timeOfDayStr.Length && startX + i < frame.Width; i++)
-            Put(frame, startX + i, startY + 1, timeOfDayStr[i], ConsoleColor.Yellow, ConsoleColor.Black);
-
-        // 3. Скорость времени
-        for (int i = 0; i < speedStr.Length && startX + i < frame.Width; i++)
-            Put(frame, startX + i, startY + 2, speedStr[i], ConsoleColor.Green, ConsoleColor.Black);
-
-        // 4. Реальное время
-        for (int i = 0; i < realTimeStr.Length && startX + i < frame.Width; i++)
-            Put(frame, startX + i, startY + 3, realTimeStr[i], ConsoleColor.DarkGray, ConsoleColor.Black);
-    }
-    private static void Put(RenderFrame frame, int x, int y, char symbol, ConsoleColor fg, ConsoleColor bg)
-    {
-        if ((uint)x >= (uint)frame.Width || (uint)y >= (uint)frame.Height) return;
-        int index = y * frame.Width + x;
-        frame.Symbols[index] = symbol;
-        frame.Foreground[index] = fg;
-        frame.Background[index] = bg;
     }
 }.
 //конец Systems\SnapshotSystem.cs
@@ -3993,37 +4036,32 @@ public static class SystemPipeline
 .
 //начало Systems\WeatherSystem.cs
 ﻿// Systems/WeatherSystem.cs
-using System;
 using AsciiFarm.Core;
 using AsciiFarm.Data;
+
 namespace AsciiFarm.Systems;
 
 [GameSystem(Order = 6)]
 public sealed class WeatherSystem : ISystem
 {
-    private int _lastWeatherIndex = -1;
-
     public void Update(World world)
     {
-        var weather = world.Resource<WeatherCurrent>();
         var source = world.Resource<WeatherDataSource>();
-        var state = world.Resource<GameState>();
-
         if (source.HourlyData.Count == 0) return;
 
-        // Вычисляем индекс погоды: StartIndex + количество игровых часов, по модулю длины CSV
-        int hoursPassed = (int)(state.GameTimeElapsed / 3600.0);
-        int weatherIndex = (source.StartIndex + hoursPassed) % source.HourlyData.Count;
+        var weather = world.Resource<WeatherCurrent>();
+        var state = world.Resource<GameState>();
+        var sys = world.Resource<WeatherSystemState>();
 
-        if (weatherIndex != _lastWeatherIndex)
-        {
-            weather.Current = source.HourlyData[weatherIndex];
-            weather.HourIndex = weatherIndex;
-            weather.HasData = true;
-            // Игровое время = GameStartDate + GameTimeElapsed
-            weather.GameTime = state.GameStartDate.AddSeconds(state.GameTimeElapsed);
-            _lastWeatherIndex = weatherIndex;
-        }
+        int hoursPassed = (int)(state.GameTimeElapsed / 3600.0);
+        int index = (source.StartIndex + hoursPassed) % source.HourlyData.Count;
+        if (index == sys.LastWeatherIndex) return;
+
+        weather.Current = source.HourlyData[index];
+        weather.HourIndex = index;
+        weather.HasData = true;
+        weather.GameTime = state.GameStartDate.AddSeconds(state.GameTimeElapsed);
+        sys.LastWeatherIndex = index;
     }
 }.
 //конец Systems\WeatherSystem.cs

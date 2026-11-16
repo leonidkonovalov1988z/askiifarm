@@ -1,4 +1,4 @@
-﻿using AsciiFarm.Components;
+﻿// App/GameApplication.cs
 using AsciiFarm.Content;
 using AsciiFarm.Core;
 using AsciiFarm.Data;
@@ -6,8 +6,8 @@ using AsciiFarm.Input;
 using AsciiFarm.Rendering;
 using AsciiFarm.Serialization;
 using AsciiFarm.Systems;
-using askiifarm.Rendering;
 using System.Collections.Concurrent;
+using System.Reflection;
 
 namespace AsciiFarm.App;
 
@@ -21,7 +21,6 @@ public sealed class GameApplication
         if (Console.IsInputRedirected)
             throw new InvalidOperationException("Нужна настоящая консоль: ввод перенаправлен.");
 
-        // 1. Сначала пытаемся установить размер окна консоли
         try
         {
             Console.BufferWidth = _settings.ScreenWidth;
@@ -29,82 +28,59 @@ public sealed class GameApplication
             Console.WindowWidth = _settings.ScreenWidth;
             Console.WindowHeight = _settings.ScreenHeight;
         }
-        catch
-        {
-            // Если не удалось — используем текущий размер
-        }
+        catch { /* остаёмся на текущем размере */ }
 
-        // 2. Получаем реальный размер окна (может отличаться от запрошенного)
         int actualWidth = Console.WindowWidth;
         int actualHeight = Console.WindowHeight;
 
-        // 3. Создаём мир и канал команд
         var world = GameWorldBuilder.Build(_settings);
         var channel = new CommandChannel(_settings.CommandQueueCapacity);
-
-        // 4. Factory для создания кадров нужного размера
-        Func<RenderFrame> frameFactory = () => new RenderFrame(actualWidth, actualHeight);
-        var frames = new FrameExchange<RenderFrame>(frameFactory);
+        var frames = new FrameExchange<RenderFrame>(() => new RenderFrame(actualWidth, actualHeight));
 
         using var console = new DoubleBufferedConsole(actualWidth, actualHeight);
         using var shutdown = new CancellationTokenSource();
         var errors = new ConcurrentQueue<Exception>();
 
-        // 5. Загружаем привязки
-        KeyBindings bindings;
-        if (_settings.UseJsonContent && Directory.Exists(_settings.ContentRoot))
-        {
-            bindings = new ContentLoader(_settings.ContentRoot).LoadKeyBindings();
-        }
-        else
-        {
-            bindings = GameContent.CreateKeyBindings();
-        }
+        KeyBindings bindings = _settings.UseJsonContent && Directory.Exists(_settings.ContentRoot)
+            ? new ContentLoader(_settings.ContentRoot).LoadKeyBindings()
+            : GameContent.CreateKeyBindings();
 
-        // 6. Создаём симуляцию
+        var snapshot = new SnapshotSystem(frames, new MapRenderer(), new EntityRenderer(), new HudRenderer());
+
         var simulation = new SimulationLoop(
             world, channel, SystemPipeline.CreateSimulationSystems(),
-            new SnapshotSystem(frames), frames, shutdown, _settings.SimulationFps);
+            snapshot, frames, shutdown, _settings.SimulationFps);
 
-        // 7. Создаём рендер с передачей factory
         var fpsCounter = world.Resource<FpsCounter>();
-        var render = new RenderLoop(
-            console, frames,
+        var render = new RenderLoop(console, frames,
             new ConsolePresentSystem(console, frames, fpsCounter),
-            1000 / _settings.RenderFps,
-            frameFactory);
+            1000 / _settings.RenderFps);
 
-        // 8. Создаём ввод
         var input = new InputLoop(channel, bindings, _settings.InputPollMs);
 
-        // 9. Запускаем потоки
         var threads = new[]
         {
             Start("Simulation", () => simulation.Run(shutdown.Token), shutdown, errors),
             Start("Render",     () => render.Run(shutdown.Token),     shutdown, errors),
             Start("Input",      () => input.Run(shutdown.Token),      shutdown, errors),
         };
-
         foreach (var thread in threads) thread.Join();
-        channel.Close();
 
+        channel.Close();
         if (!errors.IsEmpty) throw new AggregateException("Сбой игрового потока.", errors);
 
         world.Guard.Detach();
-        var state = world.Resource<GameState>();
-        if (state.NeedsSave) SaveGame(world);
+        if (world.Resource<GameState>().NeedsSave) SaveGame(world);
     }
 
     private void SaveGame(World world)
     {
-        var registry = ComponentSerializerRegistry.AutoRegister(
-            System.Reflection.Assembly.GetExecutingAssembly());
-        var saveSystem = new ComponentSaveSystem(registry);
-        saveSystem.Save(_settings.MapPath, world);
+        var registry = ComponentSerializerRegistry.AutoRegister(Assembly.GetExecutingAssembly());
+        new ComponentSaveSystem(registry).Save(SafePath.Resolve(_settings.MapPath), world);
     }
 
     private static Thread Start(string name, Action body,
-        CancellationTokenSource shutdown, ConcurrentQueue<Exception> errors)
+                                CancellationTokenSource shutdown, ConcurrentQueue<Exception> errors)
     {
         var thread = new Thread(() =>
         {

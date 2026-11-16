@@ -1,18 +1,21 @@
-﻿using AsciiFarm.Core;
+﻿// Rendering/FrameExchange.cs
+using AsciiFarm.Core;
 
 namespace AsciiFarm.Rendering;
 
 public sealed class FrameExchange<T> where T : class
 {
-    private T[] _buffers;  // Убрали readonly
     private readonly object _gate = new();
     private readonly ThreadGuard _writerGuard = new("FrameExchange.Writer");
     private readonly ThreadGuard _readerGuard = new("FrameExchange.Reader");
 
+    private T[] _buffers;
     private int _writeIndex;
     private int _readIndex = 1;
     private int _readyIndex = 2;
     private bool _hasFreshFrame;
+
+    private Func<T>? _pendingResize;   // защищён _gate; применяет только писатель
 
     public FrameExchange(Func<T> factory) =>
         _buffers = new[] { factory(), factory(), factory() };
@@ -22,7 +25,12 @@ public sealed class FrameExchange<T> where T : class
 
     public T WriteBuffer
     {
-        get { _writerGuard.Validate(); return _buffers[_writeIndex]; }
+        get
+        {
+            _writerGuard.Validate();
+            ApplyPendingResize();                 // безопасная точка: кадр ещё не начат
+            lock (_gate) return _buffers[_writeIndex];
+        }
     }
 
     public void Publish()
@@ -47,17 +55,33 @@ public sealed class FrameExchange<T> where T : class
                 frame = _buffers[_readIndex];
                 return true;
             }
+            frame = _buffers[_readIndex];
+            return false;
         }
-        frame = _buffers[_readIndex];
-        return false;
     }
 
-    /// <summary>Пересоздаёт все буферы (при изменении размера окна).</summary>
+    /// <summary>Заявка на смену размера (вызывается из render-потока).</summary>
     public void Resize(Func<T> factory)
     {
+        lock (_gate) _pendingResize = factory;
+    }
+
+    private void ApplyPendingResize()
+    {
+        Func<T>? factory;
         lock (_gate)
         {
-            _buffers = new[] { factory(), factory(), factory() };
+            factory = _pendingResize;
+            if (factory == null) return;
+            _pendingResize = null;
+        }
+
+        // Аллокация вне замка; _buffers меняет только писатель.
+        var newBuffers = new[] { factory(), factory(), factory() };
+
+        lock (_gate)
+        {
+            _buffers = newBuffers;
             _writeIndex = 0;
             _readIndex = 1;
             _readyIndex = 2;

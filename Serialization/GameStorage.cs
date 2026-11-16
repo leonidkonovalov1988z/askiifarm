@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
-namespace askiifarm.Serialization
+namespace AsciiFarm.Serialization
 {
     public class GameStorage
     {

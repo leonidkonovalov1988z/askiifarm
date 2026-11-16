@@ -24,4 +24,6 @@ public sealed class GameSettings
 
     // НОВОЕ: дней в месяце (0 = реальный календарь, иначе настраиваемый)
     public int DaysPerMonth { get; init; } = 3;
+    public string CropsCsvPath { get; init; } = "Content/slavic_crops.csv";
+    public float StartingSeedUnits { get; init; } = 5f;
 }
